@@ -72,10 +72,10 @@ metadata:
 
 **Goal:** Deeply understand the codebase before asking the user questions or planning changes. Ground all subsequent phases in real code, not assumptions.
 
-**Trigger:** ANY task that involves the current codebase. Detection rules:
+**Trigger:** ALL of the following:
 - Project is brownfield (has go.mod + Go files from Phase 0)
-- OR the user's question clearly references code in this project ("how does X work?", "why is Y failing?", "what does Z do?")
-- Skip if: greenfield project, or user asks a purely general Go question ("how do I write a benchmark?")
+- The user's question/task involves the current codebase (detected by: "这个"/"这里的"/"该项目", or mentions files/packages in the project, or is a change request like "加"/"改"/"修"/"重构")
+- Skip if: greenfield, purely general Go question ("how do I write X?"), greeting, or question clearly about external topics
 
 **Procedure:**
 
