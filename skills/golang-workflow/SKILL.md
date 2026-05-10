@@ -152,7 +152,7 @@ metadata:
    | slice, map, array, data structure, container | `golang-data-structures` |
    | debug, troubleshoot, bug, fix, 调试 | `golang-troubleshooting` |
    | defensive, safe, nil, panic prevention | `golang-safety` |
-   | analyze, investigate, why does, what's causing, how does, codebase, understand, explain the code | `analyze` |
+   | analyze, investigate, why does, what's causing, how does, codebase, understand, explain the code, 分析, 为啥, 为什么, 怎么工作, 怎么回事, what's going on, whats going on, what's happening, 弄清楚, 查一下原因, 帮我理解 | `analyze` |
 
 3. **Always-loaded baseline** (zero skill_view calls, just internalized rules):
    - `golang-modernize` principles: use `min`/`max`, `slog`, `t.Context()`, `b.Loop()`, `any`. Check `go.mod` version to know which features are available.
