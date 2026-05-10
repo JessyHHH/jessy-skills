@@ -36,6 +36,7 @@ metadata:
    - Check for `go.mod` → read `go` directive (e.g., `go 1.23`)
    - If `go.mod` exists: Docker image = `golang:<version>-alpine` (matches project)
    - If no `go.mod` (greenfield): `docker run --rm golang:alpine go version` → extract latest → use it
+   - If no Go toolchain at all (not a Go project): skip all Go-specific phases, announce "Not a Go project — workflow inactive.", and answer normally with karpathy-guidelines only.
    - NEVER hardcode a Go version. Always detect.
 
 2. **Project type detection:**
@@ -159,12 +160,7 @@ metadata:
    - `golang-code-style` principles: functions <50 lines, no nested >4 levels, gofmt.
    - `golang-naming` principles: ErrNotFound, -er interfaces, ALL_CAPS acronyms.
 
-4. **Load selected skills:**
-   ```
-   skill_view(name='golang-concurrency')  # if task involves goroutines
-   skill_view(name='golang-testing')      # if task involves tests
-   ...
-   ```
+4. **Load selected skills:** For each skill identified in steps 1-2, call `skill_view(name='<skill>')` to load its full content. Announce each loaded skill. Skip skills already internalized in baseline.
 
 5. **Announce selection:**
    ```
@@ -243,27 +239,31 @@ Parallel execution via `delegate_task(tasks=[...])`. Internally uses `ThreadPool
 
 ## Phase 6: Verified Completion (Enhanced)
 
-Unchanged core: go build → go vet → go test -race → benchmark.
+Unchanged core: go mod tidy → go build → go vet → go test -race → benchmark.
 
-**New additions:**
+**Verification steps:**
 
-1. **govulncheck** (if available):
+1. **go mod tidy** — ensures go.sum is clean, dependencies resolved
+2. **go build ./...** — must exit 0
+3. **go vet ./...** — no warnings
+4. **go test -race -count=1 ./...** — ALL PASS
+5. **govulncheck** (if available):
    ```
    go run golang.org/x/vuln/cmd/govulncheck@latest ./...
    ```
-   Must show no known vulnerabilities in dependencies.
+   Must show no known vulnerabilities.
 
-2. **modernize linter** (if golangci-lint >= v2.6.0 and go.mod >= 1.21):
+6. **modernize linter** (if golangci-lint >= v2.6.0 and go.mod >= 1.21):
    ```
    golangci-lint run --enable-only modernize ./...
    ```
    Must show zero modernization warnings.
 
-3. **Go version consistency check:**
+7. **Go version consistency check:**
    - Verify `go.mod` version matches the Docker image used
    - If greenfield: verify go.mod uses the latest detected version
 
-4. **Ralph loop:** On any failure → fix → re-verify. Loop until ALL pass.
+8. **Ralph loop:** On any failure → fix → re-verify. Loop until ALL pass.
 
 5. **Completion declaration** with evidence:
    ```
@@ -282,7 +282,8 @@ Unchanged core: go build → go vet → go test -race → benchmark.
 
 | Phase | Auto-transition to | Condition |
 |-------|-------------------|-----------|
-| 0 (Environment) | 0.5 (Skills) | Detection complete |
+| 0 (Environment) | 0.3 (Analyze) | Detection complete |
+| 0.3 (Analyze) | 0.5 (Skills) | Analysis done OR skipped (greenfield/question-only) |
 | 0.5 (Skills) | 1 (Interview) | Skills selected |
 | 1 (Interview) | 2 (Ralplan) | Clarity reached |
 | 2 (Ralplan) | 3 (Load) | Plan approved |

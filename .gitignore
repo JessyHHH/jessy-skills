@@ -1,3 +1,5 @@
 .DS_Store
 *.swp
 *~
+# Protect against accidental skill overwrites
+*.bak.*
