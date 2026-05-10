@@ -64,7 +64,40 @@ metadata:
    - Project: greenfield (no go.mod)
    - Linter: golangci-lint not installed → will install in Docker
    ```
-   **Auto-transition to Phase 0.5.**
+   **Auto-transition to Phase 0.3.**
+
+---
+
+## Phase 0.3: Pre-Task Codebase Analysis (brownfield only)
+
+**Goal:** Deeply understand the codebase before asking the user questions or planning changes. Ground all subsequent phases in real code, not assumptions.
+
+**Trigger:** ANY task that involves the current codebase. Detection rules:
+- Project is brownfield (has go.mod + Go files from Phase 0)
+- OR the user's question clearly references code in this project ("how does X work?", "why is Y failing?", "what does Z do?")
+- Skip if: greenfield project, or user asks a purely general Go question ("how do I write a benchmark?")
+
+**Procedure:**
+
+1. Announce: "**Phase 0.3: Codebase Analysis** — understanding the project before proceeding."
+
+2. Run analyze via `delegate_task`:
+   ```
+   delegate_task(
+     goal="Deep read-only analysis of this Go codebase. Understand: architecture, key abstractions, data flow, error handling patterns, concurrency patterns, testing patterns. Identify confidence levels for each finding.",
+     context="Project: <path from Phase 0>. Files: <list from Phase 0 file scan>. Task the user is asking about: <summary>. Produce: ranked synthesis with file references, evidence-vs-inference boundaries, confidence scores.",
+     toolsets=["terminal", "file"]
+   )
+   ```
+
+3. **Use analysis results to:**
+   - Inform Phase 0.5 skill selection (e.g., "codebase uses samber/lo patterns" → auto-load golang-samber-lo)
+   - Ground Phase 1 deep-interview questions in real code ("I see you have X pattern in Y file — should we follow that?")
+   - Provide evidence-backed answers if the user just asked a question (not a change request)
+
+4. If the user only asked a question (not a change request): present findings directly and STOP. Do not proceed to Phase 1.
+
+5. If the user asked for changes: **Auto-transition to Phase 0.5.**
 
 ---
 
@@ -119,6 +152,7 @@ metadata:
    | slice, map, array, data structure, container | `golang-data-structures` |
    | debug, troubleshoot, bug, fix, 调试 | `golang-troubleshooting` |
    | defensive, safe, nil, panic prevention | `golang-safety` |
+   | analyze, investigate, why does, what's causing, how does, codebase, understand, explain the code | `analyze` |
 
 3. **Always-loaded baseline** (zero skill_view calls, just internalized rules):
    - `golang-modernize` principles: use `min`/`max`, `slog`, `t.Context()`, `b.Loop()`, `any`. Check `go.mod` version to know which features are available.
