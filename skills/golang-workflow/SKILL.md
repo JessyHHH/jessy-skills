@@ -1,0 +1,288 @@
+---
+name: golang-workflow
+description: "v4.0 Self-driving Golang workflow: environment detection → smart skill selection → deep-interview → ralplan → parallel impl → mandatory code-review → verified completion. Zero hardcoded skills. Go version auto-detected from go.mod or latest available."
+version: "4.0"
+author: "jessyhuang"
+metadata:
+  hermes:
+    tags: [golang, workflow, meta-skill, auto-loaded, self-driving, smart]
+    auto_load: true
+---
+
+# Golang Workflow v4.0 — Intelligent Self-Driving Pipeline
+
+**Core design:** Zero pre-loaded skills (except `karpathy-guidelines`). Everything is context-detected: Go version, project type, codebase patterns, task signals. The agent adapts to the project, not the other way around.
+
+**Self-driving:** Announce phases → execute → auto-transition. Never wait for user to say "next".
+
+---
+
+## Karpathy Enforcement (ALL phases, ALWAYS)
+
+1. **Think Before Coding** — Assumptions stated. Tradeoffs surfaced. Confusion named.
+2. **Simplicity First** — Minimum code. No speculative abstractions. Senior engineer would approve.
+3. **Surgical Changes** — Only requested files. Match existing style. Every change traces to request.
+4. **Goal-Driven Execution** — Success criteria defined BEFORE implementation. Verify with fresh evidence.
+
+---
+
+## Phase 0: Environment Detection (NEW — always first)
+
+**Goal:** Know the project's Go version, dependency patterns, and available tooling before making any decisions.
+
+**Procedure:**
+
+1. **Go version detection:**
+   - Check for `go.mod` → read `go` directive (e.g., `go 1.23`)
+   - If `go.mod` exists: Docker image = `golang:<version>-alpine` (matches project)
+   - If no `go.mod` (greenfield): `docker run --rm golang:alpine go version` → extract latest → use it
+   - NEVER hardcode a Go version. Always detect.
+
+2. **Project type detection:**
+   - `search_files(pattern='go.mod', target='files')` → exists = brownfield, absent = greenfield
+   - For brownfield: `search_files(pattern='*.go', target='files')` → map the codebase
+   - Read key files to understand architecture: `read_file('go.mod')`, `read_file('main.go')` if exists
+
+3. **Dependency pattern scanning** (brownfield only):
+   ```
+   search_files(pattern='github.com/samber/lo', target='content', file_glob='go.mod')  → samber/lo detected
+   search_files(pattern='google.golang.org/grpc', target='content', file_glob='go.mod') → gRPC detected
+   search_files(pattern='github.com/prometheus', target='content', file_glob='go.mod')  → Prometheus detected
+   ```
+   These signals feed Phase 0.5 skill selection.
+
+4. **Tooling check:**
+   - `which golangci-lint` → available or not
+   - `which govulncheck` → available or not
+   - If missing in Docker: `go install` them on demand
+
+5. **Announce findings:**
+   ```
+   "Phase 0: Environment
+   - Go: 1.26.3 (latest, greenfield)
+   - Docker: golang:alpine
+   - Project: greenfield (no go.mod)
+   - Linter: golangci-lint not installed → will install in Docker
+   ```
+   **Auto-transition to Phase 0.5.**
+
+---
+
+## Phase 0.5: Smart Skill Selection (NEW)
+
+**Goal:** Select exactly the right skills for this task — no more, no less. No hardcoded pre-loads.
+
+**Full routing table:** `references/golang-skill-routing.md` (task signals + codebase signals + common combos).
+
+**Procedure:**
+
+1. **Codebase signal matching** (from Phase 0 dependency scan):
+   | Detected in go.mod / imports | Auto-select Skill |
+   |-----------------------------|-------------------|
+   | `google.golang.org/grpc` | `golang-grpc` |
+   | `github.com/prometheus/client_golang` | (Prometheus patterns known, no separate skill needed) |
+   | `github.com/samber/lo` | `golang-samber-lo` |
+   | `github.com/samber/mo` | `golang-samber-mo` |
+   | `github.com/samber/do` | `golang-samber-do` |
+   | `github.com/samber/oops` | `golang-samber-oops` |
+   | `github.com/samber/ro` | `golang-samber-ro` |
+   | `database/sql` / `pgx` / `sqlx` | `golang-database` |
+   | `github.com/stretchr/testify` | `golang-stretchr-testify` |
+   | `cobra` / `urfave/cli` | `golang-cli` |
+   | `go.uber.org/goleak` | (goleak patterns known) |
+   | `log/slog` | (slog patterns known) |
+
+2. **Task signal matching** (from user's request and Phase 1 deep-interview):
+   | Task Keyword / Signal | Auto-select Skill |
+   |----------------------|-------------------|
+   | goroutine, channel, select, mutex, sync, race, concurrency, worker pool | `golang-concurrency` |
+   | test, 测试, tdd, unit, integration, testify, mock, benchmark | `golang-testing` + `golang-stretchr-testify` (if testify detected) |
+   | error, panic, recover, oops, fmt.Errorf, errors.Is | `golang-error-handling` |
+   | refactor, 重构, rewrite, restructure, clean | `golang-code-style` + `golang-modernize` |
+   | CLI, cobra, flag, command, 命令行 | `golang-cli` |
+   | benchmark, 性能, profile, pprof, fast, slow | `golang-benchmark` + `golang-performance` |
+   | lint, linter, golangci, vet, staticcheck | `golang-lint` |
+   | context, ctx, timeout, deadline, cancel | `golang-context` |
+   | security, 安全, vulnerability, injection, crypto | `golang-security` |
+   | naming, 命名, convention, rename | `golang-naming` |
+   | struct, interface, type, embed, receiver | `golang-structs-interfaces` |
+   | database, sql, pg, mysql, sqlite, migration | `golang-database` |
+   | DI, dependency injection, wire, fx, container | `golang-dependency-injection` |
+   | pattern, 设计模式, functional options, builder | `golang-design-patterns` |
+   | new project, init, layout, 项目结构 | `golang-project-layout` |
+   | CI/CD, github actions, release, goreleaser | `golang-continuous-integration` |
+   | grpc, protobuf, proto | `golang-grpc` |
+   | log, observability, metric, trace, slog | `golang-observability` |
+   | dependency, pkg, module, go.mod, upgrade | `golang-dependency-management` |
+   | doc, comment, godoc, readme | `golang-documentation` |
+   | library, 推荐, choose, pick | `golang-popular-libraries` |
+   | slice, map, array, data structure, container | `golang-data-structures` |
+   | debug, troubleshoot, bug, fix, 调试 | `golang-troubleshooting` |
+   | defensive, safe, nil, panic prevention | `golang-safety` |
+
+3. **Always-loaded baseline** (zero skill_view calls, just internalized rules):
+   - `golang-modernize` principles: use `min`/`max`, `slog`, `t.Context()`, `b.Loop()`, `any`. Check `go.mod` version to know which features are available.
+   - `golang-code-style` principles: functions <50 lines, no nested >4 levels, gofmt.
+   - `golang-naming` principles: ErrNotFound, -er interfaces, ALL_CAPS acronyms.
+
+4. **Load selected skills:**
+   ```
+   skill_view(name='golang-concurrency')  # if task involves goroutines
+   skill_view(name='golang-testing')      # if task involves tests
+   ...
+   ```
+
+5. **Announce selection:**
+   ```
+   "Phase 0.5: Skills
+   - Codebase signals: [testify detected] → golang-stretchr-testify
+   - Task signals: [concurrency, testing, error handling] → 3 skills
+   - Baseline: modernize + code-style + naming (internalized)
+   - Total: 4 skills loaded
+   ```
+   **Auto-transition to Phase 1.**
+
+---
+
+## Phase 1: Deep Interview (Mandatory)
+
+Same as v3.0. Minimum 3 clarify() rounds. Intent → Scope → Non-goals → Constraints → Acceptance. Crystallize to memory.
+
+Depth auto-selection (unchanged from v3.0):
+- **quick**: concrete files + function names + acceptance criteria given
+- **standard** (default): clear intent, medium complexity
+- **deep**: auth/security, migration, new architecture, breaking changes
+
+---
+
+## Phase 2: Ralplan Consensus Planning
+
+Unchanged from v3.0. Quick = Planner+SelfReview only. Standard = + Critic. Deep = full 3-agent.
+
+Additional check in Planner: verify the Go version from Phase 0 is used in all commands and Docker references.
+
+---
+
+## Phase 3: Load Skills
+
+Use the list from Phase 0.5. No additional routing needed — this phase is now just execution.
+
+---
+
+## Phase 4: Implement (Ultrawork Parallel)
+
+Parallel execution via `delegate_task(tasks=[...])`. Internally uses `ThreadPoolExecutor` — truly parallel, not serialized. (See hermes-agent skill `references/delegate-task-concurrency.md` for internals.)
+
+---
+
+## Phase 5: Mandatory Code Review (ALWAYS RUNS)
+
+**This phase now ALWAYS executes.** Depth only affects scope, not whether it runs.
+
+| Depth | Review Scope |
+|-------|-------------|
+| **quick** | git diff + concurrency safety + Go idioms + error handling |
+| **standard** | quick scope + security scan + test coverage check |
+| **deep** | standard scope + modernization audit + architecture consistency |
+
+### Procedure:
+
+1. `terminal('git diff --name-only')` → list changed files
+2. `delegate_task(code-review)` with scope appropriate to depth
+3. **Concurrency safety checklist** (always checked):
+   - goroutine lifecycle: every goroutine has clear exit?
+   - shared state: all protected by mutex/channel/atomic?
+   - TOCTOU: gaps between check and action? (see `references/toctou-shutdown.md`)
+   - channels: only sender closes? direction specified?
+   - WaitGroup: Add() before go? sync.Once for shutdown?
+4. **Modernization checklist** (deep depth, or if go.mod >= 1.21):
+   - `min()`/`max()` instead of if-then-cap?
+   - `slog` instead of `log`?
+   - `t.Context()` instead of `context.Background()` in tests?
+   - `b.Loop()` instead of `for i:=0; i<b.N; i++`?
+   - `any` instead of `interface{}`?
+   - `errors.Is`/`errors.As` instead of `==` comparison?
+5. Fix CRITICAL and HIGH before Phase 6. Re-review after fixes if substantial.
+6. **Auto-transition to Phase 6.**
+
+---
+
+## Phase 6: Verified Completion (Enhanced)
+
+Unchanged core: go build → go vet → go test -race → benchmark.
+
+**New additions:**
+
+1. **govulncheck** (if available):
+   ```
+   go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+   ```
+   Must show no known vulnerabilities in dependencies.
+
+2. **modernize linter** (if golangci-lint >= v2.6.0 and go.mod >= 1.21):
+   ```
+   golangci-lint run --enable-only modernize ./...
+   ```
+   Must show zero modernization warnings.
+
+3. **Go version consistency check:**
+   - Verify `go.mod` version matches the Docker image used
+   - If greenfield: verify go.mod uses the latest detected version
+
+4. **Ralph loop:** On any failure → fix → re-verify. Loop until ALL pass.
+
+5. **Completion declaration** with evidence:
+   ```
+   "Verification complete:
+   - go build: ✓
+   - go vet: ✓
+   - go test -race: ✓  (23/23 PASS)
+   - govulncheck: ✓  (0 vulnerabilities)
+   - modernize lint: ✓  (0 warnings)
+   - benchmarks: ✓  (<1µs/op)"
+   ```
+
+---
+
+## Self-Driving Transition Rules
+
+| Phase | Auto-transition to | Condition |
+|-------|-------------------|-----------|
+| 0 (Environment) | 0.5 (Skills) | Detection complete |
+| 0.5 (Skills) | 1 (Interview) | Skills selected |
+| 1 (Interview) | 2 (Ralplan) | Clarity reached |
+| 2 (Ralplan) | 3 (Load) | Plan approved |
+| 3 (Load) | 4 (Implement) | Skills loaded |
+| 4 (Implement) | 5 (Review) | All tasks done |
+| 5 (Review) | 6 (Verify) | Issues fixed |
+| 6 (Verify) | Done | ALL checks PASS |
+
+---
+
+## Escape Hatches
+
+| Command | Effect |
+|---------|--------|
+| "quick" / "fast" | Force quick depth (lightweight interview + review) |
+| "deep" / "careful" | Force deep depth (full review + modernization audit) |
+| "skip interview" | Jump to Phase 2 (keep Phase 0/0.5) |
+| "skip plan" | Jump to Phase 4 (keep Phase 5+6) |
+| "no review" | Skip Phase 5 (DANGEROUS — use only for trivial changes) |
+| "I'll test" | Skip Phase 6 verification |
+| "FULL" | All phases with deep depth |
+
+## References
+
+- `references/golang-skill-routing.md` — Full routing table (task signals + codebase signals + common combos)
+- `references/performance-benchmarks.md` — v2.0/v3.0/v4.0 timing data, delegate_task concurrency model, bottleneck findings
+
+---
+
+## Anti-Patterns (NEVER)
+
+1. ❌ Hardcode a Go version — always detect from go.mod or latest
+2. ❌ Skip Phase 5 (code review) for non-trivial changes
+3. ❌ Skip Phase 0 (environment detection) — leads to wrong Docker images
+4. ❌ Use old Go version when go.mod specifies newer
+5. ❌ Load all possible skills "just in case" — select based on signals
+6. ❌ Declare done without go test -race output showing PASS
