@@ -1,6 +1,6 @@
 # jessy-skills — Hermes Agent Golang Workflow
 
-一个为 [Hermes Agent](https://github.com/NousResearch/hermes-agent) 定制的 Golang 工作流技能集合。11 个自驱动 Phase，从环境检测到验证交付全自动化。
+一个为 [Hermes Agent](https://github.com/NousResearch/hermes-agent) 定制的 Golang 工作流技能集合。11 阶段自驱动并行流水线，从环境检测到验证交付全自动化。
 
 ## 快速安装
 
@@ -22,22 +22,25 @@ source ~/.bashrc         # Linux · macOS 用 ~/.zshrc
 
 ```
 Phase 0    → Environment Detection     Go 版本、项目类型、依赖扫描
-Phase 0.3  → Codebase Analysis         brownfield 强制分析（不可跳过）
-Phase 0.5  → Smart Skill Selection     按代码信号 + 任务信号选技能
+Phase 0.3  ∥  Codebase Analysis +      并行执行：delegate_task 分析代码库
+Phase 0.5  ∥  Smart Skill Selection    同时 skill_view 加载任务信号匹配的技能
+              ↓ 两者完成后 augment      0.3 成果补全遗漏的代码库模式 skill
 Phase 1    → Deep Interview            3 轮 clarify 澄清需求
-Phase 1.5  → Skill Re-Check            重扫弥补 Phase 0.5 遗漏
+Phase 1.5  → Skill Re-Check            重扫 interview 上下文弥补遗漏
 Phase 2    → Write Plan                写计划到 .hermes/plans/
-Phase 3    → Ralplan Consensus         多 agent 审查计划
+Phase 2.5  → Post-Plan Skill Check     扫 plan 技术决策加载遗漏 skill ← NEW
+Phase 3    → Ralplan Consensus         多 agent 审查计划（Planner→Architect→Critic）
 Phase 4    → Consolidate Skills        所有技能就位
-Phase 5    → Implement                 并行实现
-Phase 6    → Code Review               安全 + 并发 + 现代化审计
+Phase 5    → Implement                 并行实现（delegate_task tasks=[]）
+Phase 6    → Code Review               安全 + 并发 + 现代化审计（始终执行）
 Phase 7    → Verified Completion       build·vet·test·race·vulncheck
 ```
 
 ## 核心设计
 
 - **零硬编码**：Go 版本从 `go.mod` 自动检测，Docker 镜像自动匹配
-- **自驱动**：每 Phase 完成后自动进入下一 Phase，不等用户说 "继续"
+- **自驱动并行**：Phase 0.3 + 0.5 并行启动，Phase 5 delegate_task 并发实现
+- **三层补漏**：Phase 0.5（prompt）+ Phase 1.5（interview）+ Phase 2.5（plan）确保不遗漏 skill
 - **Modernize 保鲜**：检测到项目 Go 版本超过 skill 覆盖范围 → 自动 web search 新版特性 → 更新 golang-modernize skill
 - **Ralph 循环**：任何验证失败 → 自动修复 → 重新验证，直到全部通过
 
@@ -55,14 +58,16 @@ Phase 7    → Verified Completion       build·vet·test·race·vulncheck
 ## 工作流内部规则
 
 - **Karpathy Guidelines**：先思考再编码 · 极简主义 · 手术式修改 · 目标驱动
-- **Phase 0.3 强制**：brownfield 项目任何问题都必须先跑代码分析
-- **Phase 1.5 自动**：deep interview 后自动重扫任务信号，补加载遗漏的 skill
-- **Phase 5 强制**：代码审查始终执行，深度只影响审查范围
+- **Phase 0.3 ∥ 0.5**：环境检测后 analyze 和 skill 选择并行启动，完成后 augment 补漏
+- **Phase 0.3 强制**：brownfield 项目任何非问候消息都必须先跑代码分析
+- **Phase 2.5 自动**：plan 写完后扫描技术决策（sync.RWMutex、goroutine、prometheus 等）加载遗漏 skill
+- **Phase 6 强制**：代码审查始终执行，深度只影响审查范围（quick/standard/deep）
+- **Phase 7 完整**：go mod tidy → build → vet → test -race → govulncheck → modernize lint
 
 ## 包含的技能（42 个）
 
 ### 工作流
-- `golang-workflow` — 11-Phase 自驱动 pipeline（核心）
+- `golang-workflow` — 11-Phase 自驱动并行流水线（核心）
 - `karpathy-guidelines` — LLM 编码纪律
 - `deep-interview` — 苏格拉底式需求澄清
 - `ralplan` — 多 agent 共识计划
