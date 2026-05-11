@@ -1,5 +1,5 @@
 # Auto-load core skills into every Hermes session
-# Core: golang-workflow (8-phase intelligent pipeline) + karpathy-guidelines (coding discipline)
+# Core: golang-workflow (10-phase intelligent pipeline) + karpathy-guidelines (coding discipline)
 # Bypass: HERMES_NO_AUTO_SKILL=1 hermes ...
 hermes() {
     if [[ "${HERMES_NO_AUTO_SKILL}" == "1" ]]; then
