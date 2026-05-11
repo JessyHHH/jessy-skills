@@ -264,7 +264,57 @@ Phase 0.3 is MANDATORY for ALL brownfield questions. No "lightweight" bypass. No
    - **Risks**: Known risks, tradeoffs, open questions
 4. Save with `write_file` to `.hermes/plans/<timestamp>-<slug>.md`
 5. Announce: "Plan saved to `.hermes/plans/<filename>.md`"
-6. **Auto-transition to Phase 3.**
+6. **Auto-transition to Phase 2.5.**
+
+---
+
+## Phase 2.5: Post-Plan Skill Check (NEW)
+
+**Goal:** The written plan contains explicit technical decisions (concurrency primitives, data structures, dependencies, patterns) that Phase 0.5 and Phase 1.5 could not know from the user's short prompt alone. This phase scans the plan for those signals and loads any missing skills before Ralplan review — ensuring the Architect and Critic have complete context.
+
+**Trigger:** Always runs after Phase 2, before Phase 3.
+
+**Procedure:**
+
+1. Announce: "**Phase 2.5: Post-Plan Skill Check** — scanning plan for missed technical signals."
+
+2. Read the plan file: `read_file('.hermes/plans/<filename>.md')`
+
+3. Scan for technical signals using the full Phase 0.5 routing table PLUS these plan-specific signals:
+
+   | Plan Signal | Skill to Load |
+   |-------------|---------------|
+   | `sync.Mutex`, `sync.RWMutex`, `sync.WaitGroup`, `sync.Once`, `channel`, `goroutine`, `atomic`, `race` | `golang-concurrency` |
+   | `context.Context`, `ctx`, `WithTimeout`, `WithCancel`, `WithDeadline` | `golang-context` |
+   | `interface`, `struct`, `embed`, `receiver`, `pointer`, `field tags`, `json:` | `golang-structs-interfaces` |
+   | `error`, `fmt.Errorf`, `%w`, `errors.Is`, `errors.As`, `panic`, `recover` | `golang-error-handling` |
+   | `test`, `mock`, `stub`, `table-driven`, `-race`, `benchmark` | `golang-testing` |
+   | `sql`, `database`, `pgx`, `sqlx`, `migration`, `transaction` | `golang-database` |
+   | `http`, `handler`, `middleware`, `endpoint`, `REST`, `API`, `route` | `golang-structs-interfaces` |
+   | `grpc`, `protobuf`, `proto`, `stream` | `golang-grpc` |
+   | `log`, `slog`, `metrics`, `prometheus`, `trace`, `OpenTelemetry` | `golang-observability` |
+   | `config`, `options`, `builder`, `functional`, `constructor`, `DI`, `dependency injection` | `golang-design-patterns` |
+   | `samber/lo`, `samber/mo`, `samber/do`, `samber/oops`, `samber/ro` | match specific golang-samber-* |
+   | `crypto`, `hash`, `token`, `auth`, `JWT`, `TLS`, `XSS`, `SQL injection` | `golang-security` |
+   | `defensive`, `nil`, `copy`, `immutable`, `zero value` | `golang-safety` |
+   | `CI`, `CD`, `GitHub Actions`, `release`, `goreleaser` | `golang-continuous-integration` |
+   | `refactor`, `modernize`, `upgrade`, `migration` | `golang-modernize` |
+   | `CLI`, `cobra`, `flag`, `command` | `golang-cli` |
+   | `eino`, `agent`, `LLM`, `RAG`, `embedding`, `vector`, `AI` | (AI agent patterns — note: domain-specific, no dedicated skill yet) |
+
+4. **Diff against already-loaded skills** (Phase 0.5 + Phase 1.5). Only load missing ones.
+
+5. **Load missing skills:** `skill_view(name='<skill>')` for each. Skip already in context.
+
+6. **Announce additions** (silent skip if nothing new):
+   ```
+   "Phase 2.5: Post-Plan Skill Check
+   - Plan signals: [sync.RWMutex, goroutine, prometheus] → golang-concurrency, golang-observability
+   - Already loaded: [golang-structs-interfaces] — skipped
+   - Total now: 6 skills in context"
+   ```
+
+7. **Auto-transition to Phase 3.**
 
 ---
 
@@ -382,7 +432,8 @@ Unchanged core: go mod tidy → go build → go vet → go test -race → benchm
 | 0.5 (Skills) | 1 (Interview) | Skills selected |
 | 1 (Interview) | 1.5 (Re-Check) | Clarity reached |
 | 1.5 (Re-Check) | 2 (Write Plan) | Missing skills loaded |
-| 2 (Write Plan) | 3 (Ralplan) | Plan saved to .hermes/plans/ |
+| 2 (Write Plan) | 2.5 (Post-Plan) | Plan saved to .hermes/plans/ |
+| 2.5 (Post-Plan) | 3 (Ralplan) | Missing skills loaded |
 | 3 (Ralplan) | 4 (Consolidate) | Plan approved |
 | 4 (Consolidate) | 5 (Implement) | Skills loaded |
 | 5 (Implement) | 6 (Review) | All tasks done |
