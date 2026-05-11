@@ -60,7 +60,7 @@ metadata:
 5. **Modernize Freshness Check** — ensure golang-modernize skill covers the detected Go version:
    a. Load golang-modernize via `skill_view(name='golang-modernize')`
    b. Extract the highest Go version from its "Go Version Changelogs" table (e.g., `Go 1.26`)
-   c. Compare: if detected project Go version > modernize's latest covered version:
+   c. Compare major.minor: if detected project Go version (e.g., `1.27`) > modernize's latest covered major.minor (e.g., `1.26`):
       - `web_search("Go <version> release notes new features standard library changes")`
       - `web_fetch("https://go.dev/doc/go<version>")` (e.g., `https://go.dev/doc/go1.27`)
       - Extract: new builtins, new packages, deprecated APIs, language changes, standard library additions
@@ -145,7 +145,7 @@ Phase 0.3 is MANDATORY for ALL brownfield questions. No "lightweight" bypass. No
    | `go.uber.org/goleak` | (goleak patterns known) |
    | `log/slog` | (slog patterns known) |
 
-2. **Task signal matching** (from user's request and Phase 1 deep-interview):
+2. **Task signal matching** (from user's initial request — Phase 1 deep-interview runs AFTER this phase and may refine selections later):
    | Task Keyword / Signal | Auto-select Skill |
    |----------------------|-------------------|
    | goroutine, channel, select, mutex, sync, race, concurrency, worker pool | `golang-concurrency` |
@@ -238,9 +238,9 @@ Phase 0.3 is MANDATORY for ALL brownfield questions. No "lightweight" bypass. No
 
 ---
 
-## Phase 3: Load Skills
+## Phase 3: Consolidate Skills
 
-Use the list from Phase 0.5. No additional routing needed — this phase is now just execution.
+All skills are now in context: the Phase 0.5 selected set + `deep-interview` (Phase 1) + `ralplan` (Phase 2). No additional skill loading needed — proceed directly to implementation.
 
 ---
 
@@ -331,7 +331,7 @@ Unchanged core: go mod tidy → go build → go vet → go test -race → benchm
 | 0.5 (Skills) | 1 (Interview) | Skills selected |
 | 1 (Interview) | 2 (Ralplan) | Clarity reached |
 | 2 (Ralplan) | 3 (Load) | Plan approved |
-| 3 (Load) | 4 (Implement) | Skills loaded |
+| 3 (Consolidate) | 4 (Implement) | Skills loaded |
 | 4 (Implement) | 5 (Review) | All tasks done |
 | 5 (Review) | 6 (Verify) | Issues fixed |
 | 6 (Verify) | Done | ALL checks PASS |
