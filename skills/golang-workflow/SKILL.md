@@ -432,9 +432,8 @@ Unchanged core: go mod tidy → go build → go vet → go test -race → benchm
 
 | Phase | Auto-transition to | Condition |
 |-------|-------------------|-----------|
-| 0 (Environment) | 0.3 (Analyze) | Detection complete |
-| 0.3 (Analyze) | 0.5 (Skills) | Analysis done (user asked for changes) OR skipped (greenfield only) |
-| 0.5 (Skills) | 1 (Interview) | Skills selected |
+| 0 (Environment) | 0.3 + 0.5 (parallel) | Detection complete — launch both simultaneously |
+| 0.3 + 0.5 (done) | 1 (Interview) | 0.3 analysis complete + 0.5 skills loaded + augment done |
 | 1 (Interview) | 1.5 (Re-Check) | Clarity reached |
 | 1.5 (Re-Check) | 2 (Write Plan) | Missing skills loaded |
 | 2 (Write Plan) | 2.5 (Post-Plan) | Plan saved to .hermes/plans/ |
