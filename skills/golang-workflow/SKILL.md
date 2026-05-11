@@ -1,6 +1,6 @@
 ---
 name: golang-workflow
-description: "v4.0 Self-driving Golang workflow: environment detection → smart skill selection → deep-interview → ralplan → parallel impl → mandatory code-review → verified completion. Zero hardcoded skills. Go version auto-detected from go.mod or latest available."
+description: "v4.0 Self-driving Golang workflow: environment detection → smart skill selection → deep-interview → write plan → ralplan → parallel impl → mandatory code-review → verified completion. Zero hardcoded skills. Go version auto-detected from go.mod or latest available."
 version: "4.0"
 author: "jessyhuang"
 metadata:
@@ -219,14 +219,35 @@ Phase 0.3 is MANDATORY for ALL brownfield questions. No "lightweight" bypass. No
 
 ---
 
-## Phase 2: Ralplan Consensus Planning
+## Phase 2: Write Plan (NEW)
+
+**Goal:** Produce a concrete, written implementation plan for ralplan consensus review. The plan lives in the project repo under `.hermes/plans/` so it persists across sessions and can be referenced by the ralplan critic.
+
+**Procedure:**
+
+1. Load the plan skill: `skill_view(name='plan')`
+2. Announce: "**Phase 2: Write Plan** — writing plan to .hermes/plans/."
+3. Write a plan following the plan skill format to `.hermes/plans/YYYY-MM-DD_HHMMSS-<slug>.md`:
+   - **Goal**: What we're building — concise one-liner
+   - **Context**: Go version, project type, key decisions from Phase 0 and Phase 1
+   - **Approach**: Step-by-step implementation plan with exact file paths
+   - **Files**: All files to create or modify, with expected changes per file
+   - **Verification**: How we'll test each step (go build, go test, curl, etc.)
+   - **Risks**: Known risks, tradeoffs, open questions
+4. Save with `write_file` to `.hermes/plans/<timestamp>-<slug>.md`
+5. Announce: "Plan saved to `.hermes/plans/<filename>.md`"
+6. **Auto-transition to Phase 3.**
+
+---
+
+## Phase 3: Ralplan Consensus Planning
 
 **Goal:** Produce a reviewed, critic-validated implementation plan before writing code.
 
 **Procedure:**
 
 1. Load the ralplan skill: `skill_view(name='ralplan')`
-2. Announce: "**Phase 2: Ralplan Consensus Planning** — building implementation plan."
+2. Announce: "**Phase 3: Ralplan Consensus Planning** — building implementation plan."
 3. **Depth → agent configuration:**
    - **quick**: Planner subagent + SelfReview only
    - **standard**: Planner + SelfReview + Critic subagent
@@ -234,23 +255,25 @@ Phase 0.3 is MANDATORY for ALL brownfield questions. No "lightweight" bypass. No
 4. Planner MUST verify the Go version from Phase 0 is used in all commands and Docker references.
 5. **Output:** A bite-sized task list with file paths, expected changes, and verification criteria per task.
 6. Present the plan for user approval before proceeding.
-7. **Auto-transition to Phase 3.**
+7. **Auto-transition to Phase 4.**
 
 ---
 
-## Phase 3: Consolidate Skills
+## Phase 4: Consolidate Skills
 
 All skills are now in context: the Phase 0.5 selected set + `deep-interview` (Phase 1) + `ralplan` (Phase 2). No additional skill loading needed — proceed directly to implementation.
 
 ---
 
-## Phase 4: Implement (Ultrawork Parallel)
+## Phase 5: Implement (Ultrawork Parallel)
 
 Parallel execution via `delegate_task(tasks=[...])`. For large-scale parallelism patterns, see `references/delegate-task-parallelism.md`.
 
+**Auto-transition to Phase 6.**
+
 ---
 
-## Phase 5: Mandatory Code Review (ALWAYS RUNS)
+## Phase 6: Mandatory Code Review (ALWAYS RUNS)
 
 **This phase now ALWAYS executes.** Depth only affects scope, not whether it runs.
 
@@ -276,12 +299,12 @@ Parallel execution via `delegate_task(tasks=[...])`. For large-scale parallelism
    - If Phase 0 freshness check discovered features for a Go version newer than golang-modernize's table, those items take priority
    - Flag every missed modernization opportunity with severity: `[HIGH]`, `[MEDIUM]`, `[LOW]`
    - Do NOT re-suggest items listed in the project's `.modernize` ignore file
-5. Fix CRITICAL and HIGH before Phase 6. Re-review after fixes if substantial.
-6. **Auto-transition to Phase 6.**
+5. Fix CRITICAL and HIGH before Phase 7. Re-review after fixes if substantial.
+6. **Auto-transition to Phase 7.**
 
 ---
 
-## Phase 6: Verified Completion (Enhanced)
+## Phase 7: Verified Completion (Enhanced)
 
 Unchanged core: go mod tidy → go build → go vet → go test -race → benchmark.
 
@@ -329,12 +352,13 @@ Unchanged core: go mod tidy → go build → go vet → go test -race → benchm
 | 0 (Environment) | 0.3 (Analyze) | Detection complete |
 | 0.3 (Analyze) | 0.5 (Skills) | Analysis done (user asked for changes) OR skipped (greenfield only) |
 | 0.5 (Skills) | 1 (Interview) | Skills selected |
-| 1 (Interview) | 2 (Ralplan) | Clarity reached |
-| 2 (Ralplan) | 3 (Load) | Plan approved |
-| 3 (Consolidate) | 4 (Implement) | Skills loaded |
-| 4 (Implement) | 5 (Review) | All tasks done |
-| 5 (Review) | 6 (Verify) | Issues fixed |
-| 6 (Verify) | Done | ALL checks PASS |
+| 1 (Interview) | 2 (Write Plan) | Clarity reached |
+| 2 (Write Plan) | 3 (Ralplan) | Plan saved to .hermes/plans/ |
+| 3 (Ralplan) | 4 (Consolidate) | Plan approved |
+| 4 (Consolidate) | 5 (Implement) | Skills loaded |
+| 5 (Implement) | 6 (Review) | All tasks done |
+| 6 (Review) | 7 (Verify) | Issues fixed |
+| 7 (Verify) | Done | ALL checks PASS |
 
 ---
 
@@ -345,9 +369,9 @@ Unchanged core: go mod tidy → go build → go vet → go test -race → benchm
 | "quick" / "fast" | Force quick depth (lightweight interview + review) |
 | "deep" / "careful" | Force deep depth (full review + modernization audit) |
 | "skip interview" | Jump to Phase 2 (keep Phase 0/0.5) |
-| "skip plan" | Jump to Phase 4 (keep Phase 5+6) |
-| "no review" | Skip Phase 5 (DANGEROUS — use only for trivial changes) |
-| "I'll test" | Skip Phase 6 verification |
+| "skip plan" | Jump to Phase 5 (keep Phase 6+7) |
+| "no review" | Skip Phase 6 (DANGEROUS — use only for trivial changes) |
+| "I'll test" | Skip Phase 7 verification |
 | "FULL" | All phases with deep depth |
 
 ## References
@@ -361,7 +385,7 @@ Unchanged core: go mod tidy → go build → go vet → go test -race → benchm
 ## Anti-Patterns (NEVER)
 
 1. ❌ Hardcode a Go version — always detect from go.mod or latest
-2. ❌ Skip Phase 5 (code review) for non-trivial changes
+2. ❌ Skip Phase 6 (code review) for non-trivial changes
 3. ❌ Skip Phase 0 (environment detection) — leads to wrong Docker images
 4. ❌ Use old Go version when go.mod specifies newer
 5. ❌ Load all possible skills "just in case" — select based on signals
