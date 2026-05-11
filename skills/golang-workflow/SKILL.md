@@ -76,9 +76,9 @@ metadata:
 6. **Announce findings:**
    ```
    "Phase 0: Environment
-   - Go: 1.26.3 (from go.mod)
-   - Modernize coverage: Go 1.26 ✓ (up to date)
-   - Docker: golang:1.26-alpine
+   - Go: <version> (from go.mod / latest)
+   - Modernize coverage: Go <latest covered> ✓ (up to date)
+   - Docker: golang:<version>-alpine
    - Project: brownfield (go.mod found, N Go files)
    - Linter: golangci-lint available
    ```
@@ -174,20 +174,23 @@ Phase 0.3 is MANDATORY for ALL brownfield questions. No "lightweight" bypass. No
    | defensive, safe, nil, panic prevention | `golang-safety` |
    | analyze, investigate, why does, what's causing, how does, codebase, understand, explain the code, 分析, 为啥, 为什么, 怎么工作, 怎么回事, what's going on, whats going on, what's happening, 弄清楚, 查一下原因, 帮我理解 | `analyze` |
 
-3. **Always-loaded baseline** (zero skill_view calls, just internalized rules):
+3. **Modernize freshness trigger:** If Phase 0 freshness check discovered features for a Go version newer than the skill's table, **force-load** `golang-modernize` via `skill_view(name='golang-modernize')` regardless of task signals. New language features are essential context for all subsequent phases (planning, implementation, review, verification).
+
+4. **Always-loaded baseline** (zero skill_view calls, just internalized rules):
    - `golang-modernize` principles: use `min`/`max`, `slog`, `t.Context()`, `b.Loop()`, `any`. Check `go.mod` version to know which features are available.
    - `golang-code-style` principles: functions <50 lines, no nested >4 levels, gofmt.
    - `golang-naming` principles: ErrNotFound, -er interfaces, ALL_CAPS acronyms.
 
-4. **Load selected skills:** For each skill identified in steps 1-2, call `skill_view(name='<skill>')` to load its full content. Announce each loaded skill. Skip skills already internalized in baseline.
+5. **Load selected skills:** For each skill identified in steps 1-2, call `skill_view(name='<skill>')` to load its full content. Announce each loaded skill. Skip skills already internalized in baseline.
 
-5. **Announce selection:**
+6. **Announce selection:**
    ```
    "Phase 0.5: Skills
    - Codebase signals: [testify detected] → golang-stretchr-testify
    - Task signals: [concurrency, testing, error handling] → 3 skills
+   - Freshness check: [Go 1.27 features found] → golang-modernize force-loaded
    - Baseline: modernize + code-style + naming (internalized)
-   - Total: 4 skills loaded
+   - Total: 5 skills loaded"
    ```
    **Auto-transition to Phase 1.**
 
@@ -195,20 +198,43 @@ Phase 0.3 is MANDATORY for ALL brownfield questions. No "lightweight" bypass. No
 
 ## Phase 1: Deep Interview (Mandatory)
 
-Same as v3.0. Minimum 3 clarify() rounds. Intent → Scope → Non-goals → Constraints → Acceptance. Crystallize to memory.
+**Goal:** Clarify intent, scope, non-goals, constraints, and acceptance criteria before any planning or coding.
 
-Depth auto-selection (unchanged from v3.0):
-- **quick**: concrete files + function names + acceptance criteria given
-- **standard** (default): clear intent, medium complexity
-- **deep**: auth/security, migration, new architecture, breaking changes
+**Procedure:**
+
+1. Load the deep-interview skill: `skill_view(name='deep-interview')`
+2. Announce: "**Phase 1: Deep Interview** — clarifying requirements."
+3. Run a minimum of 3 `clarify()` rounds covering:
+   - **Intent**: What are we actually trying to achieve? What problem does this solve?
+   - **Scope**: What files/packages/modules are in scope? What's explicitly out of scope?
+   - **Non-goals**: What are we deliberately NOT doing? (prevents scope creep)
+   - **Constraints**: Go version, dependency versions, performance targets, compatibility requirements
+   - **Acceptance**: How do we know it's done? Concrete, verifiable success criteria.
+4. **Depth auto-selection** (from deep-interview skill):
+   - **quick**: concrete files + function names + acceptance criteria already provided by user
+   - **standard** (default): clear intent, medium complexity, some ambiguity to resolve
+   - **deep**: auth/security, data migration, new architecture, breaking changes, multi-service coordination
+5. Save key decisions to memory for cross-session persistence.
+6. **Auto-transition to Phase 2.**
 
 ---
 
 ## Phase 2: Ralplan Consensus Planning
 
-Unchanged from v3.0. Quick = Planner+SelfReview only. Standard = + Critic. Deep = full 3-agent.
+**Goal:** Produce a reviewed, critic-validated implementation plan before writing code.
 
-Additional check in Planner: verify the Go version from Phase 0 is used in all commands and Docker references.
+**Procedure:**
+
+1. Load the ralplan skill: `skill_view(name='ralplan')`
+2. Announce: "**Phase 2: Ralplan Consensus Planning** — building implementation plan."
+3. **Depth → agent configuration:**
+   - **quick**: Planner subagent + SelfReview only
+   - **standard**: Planner + SelfReview + Critic subagent
+   - **deep**: Planner + SelfReview + Critic + full 3-agent consensus round
+4. Planner MUST verify the Go version from Phase 0 is used in all commands and Docker references.
+5. **Output:** A bite-sized task list with file paths, expected changes, and verification criteria per task.
+6. Present the plan for user approval before proceeding.
+7. **Auto-transition to Phase 3.**
 
 ---
 
@@ -220,7 +246,7 @@ Use the list from Phase 0.5. No additional routing needed — this phase is now 
 
 ## Phase 4: Implement (Ultrawork Parallel)
 
-Parallel execution via `delegate_task(tasks=[...])`. Internally uses `ThreadPoolExecutor` — truly parallel, not serialized. (See hermes-agent skill `references/delegate-task-concurrency.md` for internals.)
+Parallel execution via `delegate_task(tasks=[...])`. For large-scale parallelism patterns, see `references/delegate-task-parallelism.md`.
 
 ---
 
@@ -244,13 +270,12 @@ Parallel execution via `delegate_task(tasks=[...])`. Internally uses `ThreadPool
    - TOCTOU: gaps between check and action? (see `references/toctou-shutdown.md`)
    - channels: only sender closes? direction specified?
    - WaitGroup: Add() before go? sync.Once for shutdown?
-4. **Modernization checklist** (deep depth, or if go.mod >= 1.21):
-   - `min()`/`max()` instead of if-then-cap?
-   - `slog` instead of `log`?
-   - `t.Context()` instead of `context.Background()` in tests?
-   - `b.Loop()` instead of `for i:=0; i<b.N; i++`?
-   - `any` instead of `interface{}`?
-   - `errors.Is`/`errors.As` instead of `==` comparison?
+4. **Modernization audit** (deep depth, or if go.mod >= 1.21):
+   - Load `golang-modernize` via `skill_view(name='golang-modernize')` — use the version already loaded by Phase 0 freshness check or Phase 0.5; only reload if not in context
+   - Run through golang-modernize's **Migration Priority Guide** (HIGH → MEDIUM → LOW) against ALL changed files
+   - If Phase 0 freshness check discovered features for a Go version newer than golang-modernize's table, those items take priority
+   - Flag every missed modernization opportunity with severity: `[HIGH]`, `[MEDIUM]`, `[LOW]`
+   - Do NOT re-suggest items listed in the project's `.modernize` ignore file
 5. Fix CRITICAL and HIGH before Phase 6. Re-review after fixes if substantial.
 6. **Auto-transition to Phase 6.**
 
@@ -284,7 +309,7 @@ Unchanged core: go mod tidy → go build → go vet → go test -race → benchm
 
 8. **Ralph loop:** On any failure → fix → re-verify. Loop until ALL pass.
 
-5. **Completion declaration** with evidence:
+9. **Completion declaration** with evidence:
    ```
    "Verification complete:
    - go build: ✓
