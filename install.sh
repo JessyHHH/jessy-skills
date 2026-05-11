@@ -38,13 +38,23 @@ for skill_dir in ~/.hermes/skills/*/; do
     fi
 done
 
+# Auto-detect shell config file
+SHELL_RC=""
+if [ -f ~/.zshrc ]; then SHELL_RC=~/.zshrc; fi
+if [ -f ~/.bashrc ]; then SHELL_RC=~/.bashrc; fi
+if [ -z "$SHELL_RC" ]; then
+    echo "  ⚠ No ~/.zshrc or ~/.bashrc found — creating ~/.bashrc"
+    touch ~/.bashrc
+    SHELL_RC=~/.bashrc
+fi
+
 # Add hermes shell function
-if ! grep -q 'hermes()' ~/.zshrc 2>/dev/null; then
-    echo "" >> ~/.zshrc
-    cat "$DOTFILES/shell/hermes.sh" >> ~/.zshrc
-    echo "  ✓ Shell function added to ~/.zshrc"
+if ! grep -q 'hermes()' "$SHELL_RC" 2>/dev/null; then
+    echo "" >> "$SHELL_RC"
+    cat "$DOTFILES/shell/hermes.sh" >> "$SHELL_RC"
+    echo "  ✓ Shell function added to $SHELL_RC"
 else
-    echo "  - Shell function already exists, skipped (update manually if needed)"
+    echo "  - Shell function already exists in $SHELL_RC, skipped"
 fi
 
 # Reload
@@ -52,4 +62,4 @@ echo "→ Reloading Hermes skills..."
 hermes skills list > /dev/null 2>&1 || true
 
 echo ""
-echo "Done. Run 'source ~/.zshrc' or open a new terminal."
+echo "Done. Run 'source $SHELL_RC' or open a new terminal."

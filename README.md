@@ -4,11 +4,14 @@
 
 ## 快速安装
 
+**AI 自安装（推荐）：** 克隆后在 Hermes 里说 "读 SETUP.md 并安装"
+
+**手动安装：**
 ```bash
 git clone https://github.com/JessyHHH/jessy-skills.git
 cd jessy-skills
-bash install.sh
-source ~/.bashrc          # Linux · macOS 用 ~/.zshrc
+bash install.sh          # 自动检测 bash/zsh
+source ~/.bashrc         # Linux · macOS 用 ~/.zshrc
 ```
 
 安装后每次启动 `hermes` 自动加载 `golang-workflow` + `karpathy-guidelines`。
