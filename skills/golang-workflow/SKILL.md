@@ -57,13 +57,30 @@ metadata:
    - `which govulncheck` → available or not
    - If missing in Docker: `go install` them on demand
 
-5. **Announce findings:**
+5. **Modernize Freshness Check** — ensure golang-modernize skill covers the detected Go version:
+   a. Load golang-modernize via `skill_view(name='golang-modernize')`
+   b. Extract the highest Go version from its "Go Version Changelogs" table (e.g., `Go 1.26`)
+   c. Compare: if detected project Go version > modernize's latest covered version:
+      - `web_search("Go <version> release notes new features standard library changes")`
+      - `web_fetch("https://go.dev/doc/go<version>")` (e.g., `https://go.dev/doc/go1.27`)
+      - Extract: new builtins, new packages, deprecated APIs, language changes, standard library additions
+      - Update golang-modernize via `skill_manage(action='patch', name='golang-modernize', ...)`:
+        - Append row to Go Version Changelogs table: `| Go 1.27 | August 2026 | https://go.dev/doc/go1.27 |`
+        - Append relevant entries to Deprecated Packages Migration table
+        - Append new high/medium/low priority items to Migration Priority Guide
+        - Update Scope line: `...through Go 1.27...`
+      - Announce: `"Updated golang-modernize with Go <version> features (N new entries)"`
+   d. If detected version <= covered version: silent skip
+   e. Pass any newly discovered features to Phase 0.5 baseline and Phase 5 modernization checklist
+
+6. **Announce findings:**
    ```
    "Phase 0: Environment
-   - Go: 1.26.3 (latest, greenfield)
-   - Docker: golang:alpine
-   - Project: greenfield (no go.mod)
-   - Linter: golangci-lint not installed → will install in Docker
+   - Go: 1.26.3 (from go.mod)
+   - Modernize coverage: Go 1.26 ✓ (up to date)
+   - Docker: golang:1.26-alpine
+   - Project: brownfield (go.mod found, N Go files)
+   - Linter: golangci-lint available
    ```
    **Auto-transition to Phase 0.3.**
 
@@ -324,3 +341,4 @@ Unchanged core: go mod tidy → go build → go vet → go test -race → benchm
 4. ❌ Use old Go version when go.mod specifies newer
 5. ❌ Load all possible skills "just in case" — select based on signals
 6. ❌ Declare done without go test -race output showing PASS
+7. ❌ Skip the modernize freshness check — leads to missing new Go features when project uses a version beyond golang-modernize coverage
