@@ -71,7 +71,7 @@ metadata:
         - Update Scope line: `...through Go 1.27...`
       - Announce: `"Updated golang-modernize with Go <version> features (N new entries)"`
    d. If detected version <= covered version: silent skip
-   e. Pass any newly discovered features to Phase 0.5 baseline and Phase 5 modernization checklist
+   e. Pass any newly discovered features to Phase 0.5 baseline and Phase 6 modernization audit
 
 6. **Announce findings:**
    ```
@@ -261,7 +261,7 @@ Phase 0.3 is MANDATORY for ALL brownfield questions. No "lightweight" bypass. No
 
 ## Phase 4: Consolidate Skills
 
-All skills are now in context: the Phase 0.5 selected set + `deep-interview` (Phase 1) + `ralplan` (Phase 2). No additional skill loading needed — proceed directly to implementation.
+All skills are now in context: the Phase 0.5 selected set + `plan` (Phase 2) + `deep-interview` (Phase 1) + `ralplan` (Phase 3). No additional skill loading needed — proceed directly to implementation.
 
 ---
 
