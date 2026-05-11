@@ -215,6 +215,34 @@ Phase 0.3 is MANDATORY for ALL brownfield questions. No "lightweight" bypass. No
    - **standard** (default): clear intent, medium complexity, some ambiguity to resolve
    - **deep**: auth/security, data migration, new architecture, breaking changes, multi-service coordination
 5. Save key decisions to memory for cross-session persistence.
+6. **Auto-transition to Phase 1.5.**
+
+---
+
+## Phase 1.5: Skill Re-Check (NEW)
+
+**Goal:** Deep interview 可能揭示 Phase 0.5 未捕获的新需求 → 补充遗漏的技能，确保后续 Phase 有完整上下文。
+
+**Trigger:** 始终执行，Phase 1 结束后。
+
+**Procedure:**
+
+1. **Re-scan codebase signals:** 重新对 go.mod 依赖执行 Phase 0.5 步骤 1 的匹配表，防御性重扫以防遗漏。
+
+2. **Re-scan task signals:** 对 Phase 1 所有 `clarify()` 的问答结果 + 当前对话上下文，执行 Phase 0.5 步骤 2 的匹配表。用 deep interview 挖出的真实需求补全初始消息中缺失的关键词。
+
+3. **Diff:** 与 Phase 0.5 已加载的 skill 列表比对，只挑出遗漏的。已加载的不重复调用 `skill_view`。
+
+4. **Load missing:** 对每个遗漏 skill 调用 `skill_view(name='<skill>')`。跳过已经在上下文的（Phase 0.5 已加载的、baseline 内化的）。
+
+5. **Announce additions** (silent skip if nothing new):
+   ```
+   "Phase 1.5: Skill Re-Check
+   - New from deep interview: [concurrency, testing] → 2 skills loaded
+   - Already loaded (Phase 0.5): [golang-stretchr-testify] — skipped
+   - Total now: 7 skills in context"
+   ```
+
 6. **Auto-transition to Phase 2.**
 
 ---
@@ -261,7 +289,7 @@ Phase 0.3 is MANDATORY for ALL brownfield questions. No "lightweight" bypass. No
 
 ## Phase 4: Consolidate Skills
 
-All skills are now in context: the Phase 0.5 selected set + `plan` (Phase 2) + `deep-interview` (Phase 1) + `ralplan` (Phase 3). No additional skill loading needed — proceed directly to implementation.
+All skills are now in context: the Phase 0.5 selected set + Phase 1.5 additions + `plan` (Phase 2) + `deep-interview` (Phase 1) + `ralplan` (Phase 3). No additional skill loading needed — proceed directly to implementation.
 
 ---
 
@@ -352,7 +380,8 @@ Unchanged core: go mod tidy → go build → go vet → go test -race → benchm
 | 0 (Environment) | 0.3 (Analyze) | Detection complete |
 | 0.3 (Analyze) | 0.5 (Skills) | Analysis done (user asked for changes) OR skipped (greenfield only) |
 | 0.5 (Skills) | 1 (Interview) | Skills selected |
-| 1 (Interview) | 2 (Write Plan) | Clarity reached |
+| 1 (Interview) | 1.5 (Re-Check) | Clarity reached |
+| 1.5 (Re-Check) | 2 (Write Plan) | Missing skills loaded |
 | 2 (Write Plan) | 3 (Ralplan) | Plan saved to .hermes/plans/ |
 | 3 (Ralplan) | 4 (Consolidate) | Plan approved |
 | 4 (Consolidate) | 5 (Implement) | Skills loaded |
@@ -391,3 +420,7 @@ Unchanged core: go mod tidy → go build → go vet → go test -race → benchm
 5. ❌ Load all possible skills "just in case" — select based on signals
 6. ❌ Declare done without go test -race output showing PASS
 7. ❌ Skip the modernize freshness check — leads to missing new Go features when project uses a version beyond golang-modernize coverage
+8. ❌ Skip Phase 3 plan review and jump straight to implementation — present the plan, WAIT for user to say "确认"/"执行"/"改"/"开始" before touching code, then execute. The confirmation step is NOT optional — even for small changes. Ending the plan presentation with "确认后执行" and waiting for the actual response word is mandatory. Do NOT auto-transition past this gate without user sign-off.
+9. ❌ Skip Phase 6+7 (code review + verification) after any code change — always run go build + go vet + go test -race. After batch changes, announce which group completed, present verification output explicitly, then proceed to next group.
+10. ❌ Fuse Phase 2 (plan writing) into Phase 3 (ralplan presentation) — they are separate steps
+11. ❌ Present plan inline without writing it to `.hermes/plans/` first — Phase 2 requires a saved plan file before Phase 3 presentation
