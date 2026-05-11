@@ -75,8 +75,10 @@ metadata:
 
 **Trigger:** ALL of the following:
 - Project is brownfield (has go.mod + Go files from Phase 0)
-- The user's question/task involves the current codebase (detected by: "这个"/"这里的"/"该项目", or mentions files/packages in the project, or is a change request like "加"/"改"/"修"/"重构")
-- Skip if: greenfield, purely general Go question ("how do I write X?"), greeting, or question clearly about external topics
+- The user sent a message requiring a response (not just a bare greeting like "hi"/"hello")
+- Skip if: greenfield only — NO OTHER EXCEPTIONS
+
+Phase 0.3 is MANDATORY for ALL brownfield questions. No "lightweight" bypass. No "general Go question" bypass. No "external topic" bypass. The agent cannot judge relevance without reading the codebase first — what looks like a general question may have project-specific context that completely changes the answer. This trigger fires for EVERY non-greeting message in a brownfield project.
 
 **Procedure:**
 
@@ -283,7 +285,7 @@ Unchanged core: go mod tidy → go build → go vet → go test -race → benchm
 | Phase | Auto-transition to | Condition |
 |-------|-------------------|-----------|
 | 0 (Environment) | 0.3 (Analyze) | Detection complete |
-| 0.3 (Analyze) | 0.5 (Skills) | Analysis done OR skipped (greenfield/question-only) |
+| 0.3 (Analyze) | 0.5 (Skills) | Analysis done (user asked for changes) OR skipped (greenfield only) |
 | 0.5 (Skills) | 1 (Interview) | Skills selected |
 | 1 (Interview) | 2 (Ralplan) | Clarity reached |
 | 2 (Ralplan) | 3 (Load) | Plan approved |
@@ -310,6 +312,7 @@ Unchanged core: go mod tidy → go build → go vet → go test -race → benchm
 
 - `references/golang-skill-routing.md` — Full routing table (task signals + codebase signals + common combos)
 - `references/performance-benchmarks.md` — v2.0/v3.0/v4.0 timing data, delegate_task concurrency model, bottleneck findings
+- `references/jessy-skills-setup.md` — Installing & syncing the jessy-skills Hermes dotfiles workflow across machines
 
 ---
 
