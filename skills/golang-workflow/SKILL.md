@@ -81,8 +81,7 @@ metadata:
    - Docker: golang:<version>-alpine
    - Project: brownfield (go.mod found, N Go files)
    - Linter: golangci-lint available
-   ```
-   **Auto-transition to Phase 0.3.**
+   ```\n   **Auto-transition: Launch Phase 0.3 and Phase 0.5 in parallel.**\n   - Phase 0.3: `delegate_task(analyze)` — runs in background\n   - Phase 0.5: task signal matching + skill loading — runs concurrently\n   - When both complete: Phase 0.5 augments from Phase 0.3 findings → Phase 1
 
 ---
 
@@ -192,7 +191,13 @@ Phase 0.3 is MANDATORY for ALL brownfield questions. No "lightweight" bypass. No
    - Baseline: modernize + code-style + naming (internalized)
    - Total: 5 skills loaded"
    ```
-   **Auto-transition to Phase 1.**
+
+7. **Augment from Phase 0.3 findings** (runs after Phase 0.3 completes):
+   - Phase 0.3 runs in parallel with the selection above. When it finishes, scan its analysis output for codebase patterns not yet covered (samber, gRPC, database, concurrency patterns).
+   - Diff against already-loaded skills. Load missing ones via `skill_view(name='...')`.
+   - Silent skip if nothing new. Announce any additions.
+
+8. **Auto-transition to Phase 1.**
 
 ---
 
