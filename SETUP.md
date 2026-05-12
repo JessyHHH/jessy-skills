@@ -26,23 +26,27 @@ bash install.sh
 
 This single command handles everything:
 - Backs up existing skills to `~/.hermes/skills.bak.*`
-- Copies all 42 skills to `~/.hermes/skills/`
+- Copies all 59 skills to `~/.hermes/skills/`
 - Cleans stale skills removed from the repo
-- Updates the `hermes()` shell function (auto-detects bash/zsh)
+- Installs `hermes.sh` to `~/.jessy-skills/` (clean source-based, not inline)
+- Configures shell: zsh/bash/pwsh auto-detected
+- Removes old inline function if exists
+- Adds `source ~/.jessy-skills/hermes.sh` to shell config
 - Reloads Hermes skills
 
 ### Step 3: Activate
 
 ```bash
 source ~/.zshrc   # macOS / Linux with zsh
-# or: source ~/.bashrc  # Linux with bash
+source ~/.bashrc  # Linux with bash
+. $PROFILE        # Windows PowerShell
 ```
 
 ### Step 4: Verify
 
 ```bash
-ls ~/.hermes/skills/golang-workflow/SKILL.md  # must exist
-grep -c "hermes()" ~/.zshrc                    # should be 2 (function + no dups)
+ls ~/.hermes/skills/project-workflow/SKILL.md  # must exist
+grep "jessy-skills" ~/.zshrc ~/.bashrc         # single source line
 ```
 
 ## Update (repo already cloned)
@@ -51,13 +55,22 @@ grep -c "hermes()" ~/.zshrc                    # should be 2 (function + no dups
 cd /path/to/jessy-skills
 git pull
 bash install.sh
-source ~/.zshrc
+source ~/.zshrc  # or ~/.bashrc
 ```
+
+## Platform Support
+
+| Shell | Config File | Status |
+|-------|-------------|--------|
+| zsh | `~/.zshrc` | ✅ |
+| bash | `~/.bashrc` | ✅ |
+| PowerShell / pwsh | `$PROFILE` | ✅ |
+| fish | manual | ⚠️ |
 
 ## Report to User
 
 After install, tell the user:
-- 42 skills installed to `~/.hermes/skills/`
-- Shell function `hermes()` added to `~/.zshrc` (auto-detected)
-- `golang-workflow` + `karpathy-guidelines` will auto-load on every `hermes` invocation
-- Run `source ~/.zshrc` or open a new terminal to activate
+- 59 skills installed to `~/.hermes/skills/`
+- Shell integration installed to `~/.jessy-skills/hermes.sh` (sourced from config)
+- `project-workflow` + `karpathy-guidelines` will auto-load on every `hermes` invocation
+- Run `source ~/.zshrc` (or `~/.bashrc`, or `. $PROFILE`) or open a new terminal to activate
