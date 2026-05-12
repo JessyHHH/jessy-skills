@@ -1,6 +1,6 @@
 # jessy-skills — Multi-Language AI Engineering Skills
 
-一个为 [Hermes Agent](https://github.com/NousResearch/hermes-agent) 定制的多语言工作流技能集合。13 阶段自驱动并行流水线，59 个技能覆盖 Go/Vue/前端/工程全流程。
+一个为 [Hermes Agent](https://github.com/NousResearch/hermes-agent) 定制的多语言工作流技能集合。10 阶段自驱动并行流水线，59 个技能覆盖 Go/Vue/前端/工程全流程。
 
 ## 快速安装
 
@@ -23,24 +23,20 @@ Phase 0    → Environment Detection     项目类型、语言版本、依赖扫
 Phase 0.3  ∥  Codebase Analysis +      并行执行：delegate_task 分析代码库
 Phase 0.5  ∥  Smart Skill Selection    同时匹配 59-skill 路由表加载技能
               ↓ 两者完成后 augment      0.3 成果补全遗漏的代码库模式 skill
-Phase 1    → Deep Interview            3 轮 clarify 澄清需求
-Phase 1.5  → Skill Re-Check            重扫 interview 上下文弥补遗漏
-Phase 2    → Write Plan                写计划到 .hermes/plans/
-Phase 2.5  → Post-Plan Skill Check     扫 plan 技术信号加载遗漏 skill
+Phase 1    → Deep Interview            3 轮 clarify + skill re-check 补漏
+Phase 2    → Write Plan                写计划 + post-plan 扫技术信号补漏
 Phase 3    → Ralplan Consensus         多 agent 审查计划
-Phase 4    → Consolidate Skills        所有技能就位
-Phase 5    → Implement                 并行实现（delegate_task tasks=[]）
-Phase 6    → Code Review               安全 + 并发 + 现代化审计（始终执行）
-Phase 7    → Verified Completion       Go: build/vet/test · Vue: vitest/lint
-Phase 8    → Retrospective & Learn     子进程反省 → 保存 memory → 建议 skill
+Phase 4    → Implement                 并行实现（delegate_task tasks=[]）
+Phase 5    → Code Review               安全 + 并发 + 现代化审计（始终执行）
+Phase 6    → Verified Completion       Go: build/vet/test · Vue: vitest/lint
+Phase 7    → Retrospective & Learn     后台子进程反省 → 保存 memory → 建议 skill
 ```
 
 ## 核心设计
 
 - **零硬编码**：项目类型从 go.mod/package.json 自动检测，skill 自动路由
 - **自驱动并行**：Phase 0.3 + 0.5 并行启动，Phase 5 delegate_task 并发实现
-- **四层补漏**：Phase 0.5（prompt）+ augment（codebase）+ Phase 1.5（interview）+ Phase 2.5（plan）
-- **自学习**：Phase 8 后台反省 → 保存 memory → 越用越聪明
+- **自学习**：Phase 7 后台反省 → 保存 memory → 越用越聪明
 - **Ralph 循环**：任何验证失败 → 自动修复 → 重新验证，直到全部通过
 
 ## 逃逸命令
@@ -59,14 +55,14 @@ Phase 8    → Retrospective & Learn     子进程反省 → 保存 memory → �
 - **Karpathy 五条**：先思考再编码 · 极简主义 · 手术式修改 · 目标驱动 · **先搜再断言**
 - **Phase 0.3 ∥ 0.5**：环境检测后 analyze 和 skill 选择并行启动
 - **Phase 0.3 强制**：brownfield 项目任何非问候消息都必须先跑代码分析
-- **Phase 2.5 自动**：plan 写完后全量路由表扫描技术信号，补漏 skill
+- **Phase 2 自动**：plan 写完后全量路由表扫描技术信号，补漏 skill
 - **Phase 6 强制**：代码审查始终执行，深度只影响审查范围
-- **Phase 8 后台**：反省学习跑在子进程，主 agent 继续干活不阻塞
+- **Phase 7 后台**：反省学习跑在子进程，主 agent 继续干活不阻塞
 
 ## 包含的技能（59 个）
 
 ### 工作流
-- `project-workflow` — 13-Phase 自驱动并行流水线（核心）
+- `project-workflow` — 10-Phase 自驱动并行流水线（核心）
 - `karpathy-guidelines` — LLM 编码五条纪律
 - `deep-interview` — 苏格拉底式需求澄清
 - `ralplan` — 多 agent 共识计划
