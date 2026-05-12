@@ -111,56 +111,17 @@ Phase 0.3 is MANDATORY for ALL brownfield questions. No "lightweight" bypass. No
 **Procedure:**
 
 1. **Codebase signal matching** (from Phase 0 dependency scan):
-   | Detected in go.mod / imports | Auto-select Skill |
-   |-----------------------------|-------------------|
-   | `google.golang.org/grpc` | `golang-grpc` |
-   | `github.com/prometheus/client_golang` | (Prometheus patterns known, no separate skill needed) |
-   | `github.com/samber/lo` | `golang-samber-lo` |
-   | `github.com/samber/mo` | `golang-samber-mo` |
-   | `github.com/samber/do` | `golang-samber-do` |
-   | `github.com/samber/oops` | `golang-samber-oops` |
-   | `github.com/samber/ro` | `golang-samber-ro` |
-   | `database/sql` / `pgx` / `sqlx` | `golang-database` |
-   | `github.com/stretchr/testify` | `golang-stretchr-testify` |
-   | `cobra` / `urfave/cli` | `golang-cli` |
-   | `go.uber.org/goleak` | (goleak patterns known) |
-   | `log/slog` | (slog patterns known) |
+   - **Go:** scan `go.mod` for known patterns (samber, grpc, testify, etc.) → see `references/golang-skill-routing.md`
+   - **Vue:** scan `package.json` for vue/pinia/vitest/vue-router → see `references/full-skill-routing.md`
 
-2. **Task signal matching** (from user's initial request — Phase 1 deep-interview runs AFTER this phase and may refine selections later):
-   | Task Keyword / Signal | Auto-select Skill |
-   |----------------------|-------------------|
-   | goroutine, channel, select, mutex, sync, race, concurrency, worker pool | `golang-concurrency` |
-   | test, 测试, tdd, unit, integration, testify, mock, benchmark | `golang-testing` + `golang-stretchr-testify` (if testify detected) |
-   | error, panic, recover, oops, fmt.Errorf, errors.Is | `golang-error-handling` |
-   | refactor, 重构, rewrite, restructure, clean | `golang-code-style` + `golang-modernize` |
-   | CLI, cobra, flag, command, 命令行 | `golang-cli` |
-   | benchmark, 性能, profile, pprof, fast, slow | `golang-benchmark` + `golang-performance` |
-   | lint, linter, golangci, vet, staticcheck | `golang-lint` |
-   | context, ctx, timeout, deadline, cancel | `golang-context` |
-   | security, 安全, vulnerability, injection, crypto | `golang-security` |
-   | naming, 命名, convention, rename | `golang-naming` |
-   | struct, interface, type, embed, receiver | `golang-structs-interfaces` |
-   | database, sql, pg, mysql, sqlite, migration | `golang-database` |
-   | DI, dependency injection, wire, fx, container | `golang-dependency-injection` |
-   | pattern, 设计模式, functional options, builder | `golang-design-patterns` |
-   | new project, init, layout, 项目结构 | `golang-project-layout` |
-   | CI/CD, github actions, release, goreleaser | `golang-continuous-integration` |
-   | grpc, protobuf, proto | `golang-grpc` |
-   | log, observability, metric, trace, slog | `golang-observability` |
-   | dependency, pkg, module, go.mod, upgrade | `golang-dependency-management` |
-   | doc, comment, godoc, readme | `golang-documentation` |
-   | library, 推荐, choose, pick | `golang-popular-libraries` |
-   | slice, map, array, data structure, container | `golang-data-structures` |
-   | debug, troubleshoot, bug, fix, 调试 | `golang-troubleshooting` |
-   | defensive, safe, nil, panic prevention | `golang-safety` |
-   | analyze, investigate, why does, what's causing, how does, codebase, understand, explain the code, 分析, 为啥, 为什么, 怎么工作, 怎么回事, what's going on, whats going on, what's happening, 弄清楚, 查一下原因, 帮我理解 | `analyze` |
+2. **Task signal matching** (from user's initial request):
+   - Match keywords against `references/full-skill-routing.md` — covers all 59 skills across Go, Vue, Frontend, and Engineering categories.
+   - Also scan for self-learning triggers: if the user mentions "performance" with an error tone, preload `golang-benchmark`; if they mention repeated failures, preload `diagnose`.
 
-3. **Modernize freshness trigger:** If Phase 0 freshness check discovered features for a Go version newer than the skill's table, **force-load** `golang-modernize` via `skill_view(name='golang-modernize')` regardless of task signals. New language features are essential context for all subsequent phases (planning, implementation, review, verification).
+3. **Modernize freshness trigger:** (Go only) If Phase 0 freshness check discovered features for a Go version newer than the skill's table, **force-load** `golang-modernize`.
 
 4. **Always-loaded baseline** (zero skill_view calls, just internalized rules):
-   - `golang-modernize` principles: use `min`/`max`, `slog`, `t.Context()`, `b.Loop()`, `any`. Check `go.mod` version to know which features are available.
-   - `golang-code-style` principles: functions <50 lines, no nested >4 levels, gofmt.
-   - `golang-naming` principles: ErrNotFound, -er interfaces, ALL_CAPS acronyms.
+   - `golang-modernize` principles: use `min`/`max`, `slog`, `t.Context()`, `b.Loop()`, `any`. Check `go.mod` version (Go projects only).
 
 5. **Load selected skills:** For each skill identified in steps 1-2, call `skill_view(name='<skill>')` to load its full content. Announce each loaded skill. Skip skills already internalized in baseline.
 
@@ -267,7 +228,7 @@ Phase 0.3 is MANDATORY for ALL brownfield questions. No "lightweight" bypass. No
 
 2. Read the plan file: `read_file('.hermes/plans/<filename>.md')`
 
-3. Scan for technical signals using the full Phase 0.5 routing table PLUS these plan-specific signals:
+3. Scan for technical signals using the FULL routing table from `references/full-skill-routing.md` (all 59 skills) PLUS these plan-specific signals:
 
    | Plan Signal | Skill to Load |
    |-------------|---------------|
@@ -399,7 +360,53 @@ Parallel execution via `delegate_task(tasks=[...])`. For large-scale parallelism
 - <lang> test: ✓  (N/N PASS)
 - lint: ✓  (0 warnings)
 - security: ✓  (0 vulnerabilities)"
+```
 
+---
+
+## Phase 8: Self-Iteration Loop (test branch only)
+
+**Goal:** On `test` branches, run self-review → auto-fix → re-test until no more improvements. On `main`, skip directly to Done.
+
+**Trigger:** Phase 7 passes AND current branch is `test`.
+
+**Procedure:**
+
+1. **Self-Review:** Load `code-review` skill. Run full review against all changed files.
+
+2. **Self-Learning checks:**
+   - If Phase 7 failed >0 times before finally passing → search for root cause pattern, save to `.hermes/plans/learned-*.md`
+   - If review finds >3 issues in one category → auto-load the relevant skill for context
+   - If build time >30s → flag performance regression
+
+3. **Decision:**
+   - **No issues found** → Auto-transition to merge
+   - **Issues found** → Auto-fix → Go back to Phase 7 (re-test)
+   - **Same issue persists 3 rounds** → Stop. Report to user with evidence.
+
+4. **Iteration limit:** Max 3 cycles. Each cycle must produce measurable improvement (fewer review findings, faster build, fewer lint warnings).
+
+5. **Merge to main:**
+   ```
+   git checkout main && git merge test && git push
+   ```
+   Delete test branch after successful merge.
+
+6. **Transition:** Done.
+
+---
+
+## Self-Learning Mechanisms (all phases)
+
+The workflow monitors itself and adapts:
+
+| Trigger | Action |
+|---------|--------|
+| Phase 7 fails >3 times on same issue | Auto-load `diagnose` + `golang-troubleshooting` (Go) or `vue-debug-guides` (Vue) |
+| Phase 6 finds >5 modernization warnings | Force-load `golang-modernize` for next cycle |
+| User corrects same pattern twice | Save to `memory` as durable preference |
+| Plan misses a relevant skill | Phase 2.5 catches. If same pattern missed twice, update routing table |
+| Performance degradation detected | Load `golang-benchmark` or relevant performance skill |
 ---
 
 ## Self-Driving Transition Rules
@@ -416,7 +423,8 @@ Parallel execution via `delegate_task(tasks=[...])`. For large-scale parallelism
 | 4 (Consolidate) | 5 (Implement) | Skills loaded |
 | 5 (Implement) | 6 (Review) | All tasks done |
 | 6 (Review) | 7 (Verify) | Issues fixed |
-| 7 (Verify) | Done | ALL checks PASS |
+| 7 (Verify) | 8 (Iterate) or Done | ALL checks PASS. If `test` branch → Phase 8, else → Done |
+| 8 (Iterate) | 7 (re-test) or Done | Issues fixed → re-test. No more issues → merge to main → Done |
 
 ---
 
@@ -432,10 +440,9 @@ Parallel execution via `delegate_task(tasks=[...])`. For large-scale parallelism
 | "I'll test" | Skip Phase 7 verification |
 | "FULL" | All phases with deep depth |
 
-## References
-
-- `references/golang-skill-routing.md` — Full routing table (task signals + codebase signals + common combos)
-- `references/performance-benchmarks.md` — v2.0/v3.0/v5.0 timing data, delegate_task concurrency model, bottleneck findings
+- `references/full-skill-routing.md` — Complete 59-skill routing table (Go + Vue + Frontend + Engineering + plan-specific)
+- `references/golang-skill-routing.md` — Go-specific dependency → skill mapping
+- `references/performance-benchmarks.md` — v2.0/v3.0/v4.0 timing data
 - `references/jessy-skills-setup.md` — Installing & syncing the jessy-skills Hermes dotfiles workflow across machines
 
 ---
