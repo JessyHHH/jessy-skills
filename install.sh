@@ -97,7 +97,7 @@ if [ -f ~/.zshrc ] || [ "$SHELL" = "/bin/zsh" ] || [ "$SHELL" = "/usr/bin/zsh" ]
 fi
 
 # bash
-if [ -f ~/.bashrc ] || [ "$SHELL" = "/bin/bash" ] || [ "$SHELL" = "/usr/bin/bash" ]; then
+if [ -f ~/.bashrc ] || [ "$SHELL" = "/bin/bash" ] || [ "$SHELL" = "/usr/bin/bash" ] || command -v bash >/dev/null 2>&1; then
     install_shell_config ~/.bashrc "bash"
     SHELLS_CONFIGURED=$((SHELLS_CONFIGURED + 1))
 fi
