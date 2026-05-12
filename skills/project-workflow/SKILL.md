@@ -1,7 +1,7 @@
 ---
 name: project-workflow
 description: "v5.0 Generic self-driving project workflow: environment detection → smart skill selection → deep-interview → write plan → ralplan → parallel impl → mandatory code-review → verified completion. Zero hardcoded skills. Project type auto-detected from go.mod or latest available."
-version: "5.0"
+version: "5.1"
 author: "jessyhuang"
 metadata:
   hermes:
@@ -9,7 +9,7 @@ metadata:
     auto_load: true
 ---
 
-# Project Workflow v5.0 — Intelligent Self-Driving Pipeline
+# Project Workflow v5.1 — Intelligent Self-Driving Pipeline
 
 **Core design:** Zero pre-loaded skills (except `karpathy-guidelines`). Everything is context-detected: Go version, project type, codebase patterns, task signals. The agent adapts to the project, not the other way around.
 
@@ -364,100 +364,36 @@ Parallel execution via `delegate_task(tasks=[...])`. For large-scale parallelism
 
 ---
 
-## Phase 8: Self-Iteration Loop (test branch only)
+## Phase 8: Retrospective & Learn (always last, runs in background)
 
-**Goal:** On `test` branches, run self-review → auto-fix → re-test until no more improvements. On `main`, skip directly to Done.
+**Goal:** After every session, launch a subprocess to reflect, extract lessons, save to durable memory, and suggest skill improvements — while the main agent stays responsive.
 
-**Trigger:** Phase 7 passes AND current branch is `test`.
-
-**Procedure:**
-
-1. **Self-Review:** Load `code-review` skill. Run full review against all changed files.
-
-2. **Self-Learning checks:**
-   - If Phase 7 failed >0 times before finally passing → search for root cause pattern, save to `.hermes/plans/learned-*.md`
-   - If review finds >3 issues in one category → auto-load the relevant skill for context
-   - If build time >30s → flag performance regression
-
-3. **Decision:**
-   - **No issues found** → Auto-transition to merge
-   - **Issues found** → Auto-fix → Go back to Phase 7 (re-test)
-   - **Same issue persists 3 rounds** → Stop. Report to user with evidence.
-
-4. **Iteration limit:** Max 3 cycles. Each cycle must produce measurable improvement (fewer review findings, faster build, fewer lint warnings).
-
-5. **Merge to main:**
-   ```
-   git checkout main && git merge test && git push
-   ```
-   Delete test branch after successful merge.
-
-6. **Transition:** Done.
-
----
-
-## Self-Learning Mechanisms (all phases)
-
-The workflow monitors itself and adapts:
-
-| Trigger | Action |
-|---------|--------|
-| Phase 7 fails >3 times on same issue | Auto-load `diagnose` + `golang-troubleshooting` (Go) or `vue-debug-guides` (Vue) |
-| Phase 6 finds >5 modernization warnings | Force-load `golang-modernize` for next cycle |
-| User corrects same pattern twice | Save to `memory` as durable preference |
-| Plan misses a relevant skill | Phase 2.5 catches. If same pattern missed twice, update routing table |
-| Performance degradation detected | Load `golang-benchmark` or relevant performance skill |
-
----
-
-## Phase 9: Retrospective & Learn (always last)
-
-**Goal:** After every session, reflect on what happened, extract lessons, save to durable memory, and suggest skill improvements — so the agent gets smarter every run.
-
-**Trigger:** Phase 7 (or Phase 8 on test branch) completed.
+**Trigger:** Phase 7 completed.
 
 **Procedure:**
 
-1. **Session scan:** Review key events from this workflow run:
-   - How many times did Phase 7 fail before passing?
-   - What did Phase 6 flag? Any patterns?
-   - User corrections — what did the user say "no, do it this way" about?
-   - Which skills were loaded by routing vs missed and loaded later?
-   - Total tool calls, total time, bottlenecks.
+1. **Launch retrospective in subprocess:**
+   ```
+   delegate_task(
+     goal="Phase 8 Retrospective. Scan this session: errors, user corrections, skill misses, patterns. Extract lessons. Save to memory(). Output retrospective report.",
+     context="Session summary: <key events, failures, corrections, skills loaded>",
+     toolsets=["terminal","file","skills"]
+   )
+   ```
+   The subprocess runs asynchronously. Main agent continues immediately.
 
-2. **Lesson extraction:**
-   | Pattern | Action |
+2. **Self-Learning (inline checks, runs before delegate_task dispatch):**
+   | Trigger | Action |
    |---------|--------|
-   | Same error ≥2 times | Save correction to `memory` |
-   | User preference expressed | Save to `memory(action='add', target='user')` |
-   | New project convention discovered | Save to `memory(action='add', target='memory')` |
-   | Tool quirk encountered | Save to `memory(action='add', target='memory')` |
-   | Complex task succeeded (5+ calls) | Suggest saving as skill |
-   | Routing table missed a skill | Patch `full-skill-routing.md` |
+   | Phase 7 failed >3 times on same issue | Auto-load `diagnose` + relevant debug skill |
+   | Phase 6 found >5 modernization warnings | Force-load `golang-modernize` for next cycle |
+   | User corrected same pattern ≥2 times | Save to `memory` as durable preference |
+   | Plan missed a relevant skill | Phase 2.5 catches. Update routing table if repeated |
+   | Performance degradation detected | Load relevant performance/benchmark skill |
 
-3. **Memory persistence:** Use `memory()` tool to save durable facts. Prioritize:
-   - User corrections (prevents repeating mistakes)
-   - Environment quirks (saves discovery time next session)
-   - Stable conventions (reduces steering)
+3. **Transition:** Done immediately. Retrospective completes in background.
 
-4. **Skill suggestion:** If a non-trivial workflow was discovered, offer to save it:
-   ```
-   clarify("本次发现了一个新模式：... 要保存为 skill 吗？", choices=["保存","跳过"])
-   ```
-
-5. **Retrospective output:**
-   ```
-   "Phase 9: Retrospective
-   - Phases: N completed, M skipped
-   - Tool calls: X total, Y sec
-   - Corrections: Z user corrections → saved to memory
-   - Skills: A loaded (B new this session)
-   - Learnings: C memories saved, D skill suggestions
-   - Next session will: [concrete improvement]"
-   ```
-
-6. **Auto-transition to Done.**
-
+---
 
 ## Self-Driving Transition Rules
 
@@ -473,9 +409,8 @@ The workflow monitors itself and adapts:
 | 4 (Consolidate) | 5 (Implement) | Skills loaded |
 | 5 (Implement) | 6 (Review) | All tasks done |
 | 6 (Review) | 7 (Verify) | Issues fixed |
-| 7 (Verify) | 8 (Iterate) or 9 (Retro) | ALL checks PASS. If `test` branch → Phase 8, else → Phase 9 |
-| 8 (Iterate) | 7 (re-test) or 9 (Retro) | Issues fixed → re-test. No more issues → merge to main → Phase 9 |
-| 9 (Retro) | Done | Learnings saved |
+| 7 (Verify) | 8 (Retro) | ALL checks PASS → Phase 8 background |
+| 8 (Retro) | Done | Retrospective dispatched. Main agent free. |
 
 ---
 
