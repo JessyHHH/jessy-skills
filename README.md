@@ -118,7 +118,19 @@ Phase 7    → Retrospective & Learn     后台子进程反省 → 保存 memory
 
 ## Shell 集成
 
-`shell/hermes.sh` 提供 `hermes()` 函数，自动追加 `-s project-workflow,karpathy-guidelines`。
+安装后 `~/.bashrc`（或 `~/.zshrc`、PowerShell `$PROFILE`）只需一行：
+
+```bash
+source ~/.jessy-skills/hermes.sh
+```
+
+自动注入 `-s project-workflow,karpathy-guidelines` 到每次 `hermes` 调用。
+
+| 平台 | 配置文件 |
+|------|---------|
+| bash | `source ~/.bashrc` |
+| zsh | `source ~/.zshrc` |
+| PowerShell | `. $PROFILE` |
 
 ## 更新
 
