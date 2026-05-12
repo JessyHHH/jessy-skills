@@ -106,12 +106,12 @@ Phase 0.3 is MANDATORY for ALL brownfield questions. No "lightweight" bypass. No
 
 **Goal:** Select exactly the right skills for this task — no more, no less. No hardcoded pre-loads.
 
-**Full routing table:** `references/golang-skill-routing.md` (task signals + codebase signals + common combos).
+**Full routing table:** `references/full-skill-routing.md` (task signals + codebase signals + common combos).
 
 **Procedure:**
 
 1. **Codebase signal matching** (from Phase 0 dependency scan):
-   - **Go:** scan `go.mod` for known patterns (samber, grpc, testify, etc.) → see `references/golang-skill-routing.md`
+   - **Go:** scan `go.mod` for known patterns (samber, grpc, testify, etc.) → see `references/full-skill-routing.md`
    - **Vue:** scan `package.json` for vue/pinia/vitest/vue-router → see `references/full-skill-routing.md`
 
 2. **Task signal matching** (from user's initial request):
@@ -163,35 +163,12 @@ Phase 0.3 is MANDATORY for ALL brownfield questions. No "lightweight" bypass. No
    - **standard** (default): clear intent, medium complexity, some ambiguity to resolve
    - **deep**: auth/security, data migration, new architecture, breaking changes, multi-service coordination
 5. Save key decisions to memory for cross-session persistence.
-6. **Auto-transition to Phase 1.5.**
-
----
-
-## Phase 1.5: Skill Re-Check 
-
-**Goal:** Deep interview 可能揭示 Phase 0.5 未捕获的新需求 → 补充遗漏的技能，确保后续 Phase 有完整上下文。
-
-**Trigger:** 始终执行，Phase 1 结束后。
-
-**Procedure:**
-
-1. **Re-scan codebase signals:** 重新对 go.mod 依赖执行 Phase 0.5 步骤 1 的匹配表，防御性重扫以防遗漏。
-
-2. **Re-scan task signals:** 对 Phase 1 所有 `clarify()` 的问答结果 + 当前对话上下文，执行 Phase 0.5 步骤 2 的匹配表。用 deep interview 挖出的真实需求补全初始消息中缺失的关键词。
-
-3. **Diff:** 与 Phase 0.5 已加载的 skill 列表比对，只挑出遗漏的。已加载的不重复调用 `skill_view`。
-
-4. **Load missing:** 对每个遗漏 skill 调用 `skill_view(name='<skill>')`。跳过已经在上下文的（Phase 0.5 已加载的、baseline 内化的）。
-
-5. **Announce additions** (silent skip if nothing new):
-   ```
-   "Phase 1.5: Skill Re-Check
-   - New from deep interview: [concurrency, testing] → 2 skills loaded
-   - Already loaded (Phase 0.5): [golang-stretchr-testify] — skipped
-   - Total now: 7 skills in context"
-   ```
-
-6. **Auto-transition to Phase 2.**
+6. **Skill Re-Check** (runs after interview completes):
+   - **Re-scan codebase signals** against `references/full-skill-routing.md`
+   - **Re-scan task signals** from all `clarify()` results + conversation context
+   - **Diff** against Phase 0.5 loaded skills. Load missing via `skill_view()`.
+   - **Announce** additions (silent skip if nothing new).
+7. **Auto-transition to Phase 2.**
 
 ---
 
@@ -212,56 +189,11 @@ Phase 0.3 is MANDATORY for ALL brownfield questions. No "lightweight" bypass. No
    - **Risks**: Known risks, tradeoffs, open questions
 4. Save with `write_file` to `.hermes/plans/<timestamp>-<slug>.md`
 5. Announce: "Plan saved to `.hermes/plans/<filename>.md`"
-6. **Auto-transition to Phase 2.5.**
-
----
-
-## Phase 2.5: Post-Plan Skill Check 
-
-**Goal:** The written plan contains explicit technical decisions (concurrency primitives, data structures, dependencies, patterns) that Phase 0.5 and Phase 1.5 could not know from the user's short prompt alone. This phase scans the plan for those signals and loads any missing skills before Ralplan review — ensuring the Architect and Critic have complete context.
-
-**Trigger:** Always runs after Phase 2, before Phase 3.
-
-**Procedure:**
-
-1. Announce: "**Phase 2.5: Post-Plan Skill Check** — scanning plan for missed technical signals."
-
-2. Read the plan file: `read_file('.hermes/plans/<filename>.md')`
-
-3. Scan for technical signals using the FULL routing table from `references/full-skill-routing.md` (all 59 skills) PLUS these plan-specific signals:
-
-   | Plan Signal | Skill to Load |
-   |-------------|---------------|
-   | `sync.Mutex`, `sync.RWMutex`, `sync.WaitGroup`, `sync.Once`, `channel`, `goroutine`, `atomic`, `race` | `golang-concurrency` |
-   | `context.Context`, `ctx`, `WithTimeout`, `WithCancel`, `WithDeadline` | `golang-context` |
-   | `interface`, `struct`, `embed`, `receiver`, `pointer`, `field tags`, `json:` | `golang-structs-interfaces` |
-   | `error`, `fmt.Errorf`, `%w`, `errors.Is`, `errors.As`, `panic`, `recover` | `golang-error-handling` |
-   | `test`, `mock`, `stub`, `table-driven`, `-race`, `benchmark` | `golang-testing` |
-   | `sql`, `database`, `pgx`, `sqlx`, `migration`, `transaction` | `golang-database` |
-   | `http`, `handler`, `middleware`, `endpoint`, `REST`, `API`, `route` | `golang-structs-interfaces` |
-   | `grpc`, `protobuf`, `proto`, `stream` | `golang-grpc` |
-   | `log`, `slog`, `metrics`, `prometheus`, `trace`, `OpenTelemetry` | `golang-observability` |
-   | `config`, `options`, `builder`, `functional`, `constructor`, `DI`, `dependency injection` | `golang-design-patterns` |
-   | `samber/lo`, `samber/mo`, `samber/do`, `samber/oops`, `samber/ro` | match specific golang-samber-* |
-   | `crypto`, `hash`, `token`, `auth`, `JWT`, `TLS`, `XSS`, `SQL injection` | `golang-security` |
-   | `defensive`, `nil`, `copy`, `immutable`, `zero value` | `golang-safety` |
-   | `CI`, `CD`, `GitHub Actions`, `release`, `goreleaser` | `golang-continuous-integration` |
-   | `refactor`, `modernize`, `upgrade`, `migration` | `golang-modernize` |
-   | `CLI`, `cobra`, `flag`, `command` | `golang-cli` |
-   | `eino`, `agent`, `LLM`, `RAG`, `embedding`, `vector`, `AI` | (AI agent patterns — note: domain-specific, no dedicated skill yet) |
-
-4. **Diff against already-loaded skills** (Phase 0.5 + Phase 1.5). Only load missing ones.
-
-5. **Load missing skills:** `skill_view(name='<skill>')` for each. Skip already in context.
-
-6. **Announce additions** (silent skip if nothing new):
-   ```
-   "Phase 2.5: Post-Plan Skill Check
-   - Plan signals: [sync.RWMutex, goroutine, prometheus] → golang-concurrency, golang-observability
-   - Already loaded: [golang-structs-interfaces] — skipped
-   - Total now: 6 skills in context"
-   ```
-
+6. **Post-Plan Skill Check** (runs immediately after plan is written):
+   - Read the plan file
+   - Scan for technical signals using `references/full-skill-routing.md` (all 59 skills)
+   - **Diff** against already-loaded skills (Phase 0.5 + Phase 1 re-check)
+   - **Load missing** via `skill_view()`. Announce additions (silent skip if nothing new)
 7. **Auto-transition to Phase 3.**
 
 ---
@@ -285,21 +217,16 @@ Phase 0.3 is MANDATORY for ALL brownfield questions. No "lightweight" bypass. No
 
 ---
 
-## Phase 4: Consolidate Skills
 
-All skills are now in context: the Phase 0.5 selected set + Phase 1.5 additions + `plan` (Phase 2) + `deep-interview` (Phase 1) + `ralplan` (Phase 3). No additional skill loading needed — proceed directly to implementation.
-
----
-
-## Phase 5: Implement (Ultrawork Parallel)
+## Phase 4: Implement (Ultrawork Parallel)
 
 Parallel execution via `delegate_task(tasks=[...])`. For large-scale parallelism patterns, see `references/delegate-task-parallelism.md`.
 
-**Auto-transition to Phase 6.**
+**Auto-transition to Phase 5.**
 
 ---
 
-## Phase 6: Mandatory Code Review (ALWAYS RUNS)
+## Phase 5: Mandatory Code Review (ALWAYS RUNS)
 
 **This phase now ALWAYS executes.** Depth only affects scope, not whether it runs.
 
@@ -325,12 +252,12 @@ Parallel execution via `delegate_task(tasks=[...])`. For large-scale parallelism
    - If Phase 0 freshness check discovered features for a Go version newer than golang-modernize's table, those items take priority
    - Flag every missed modernization opportunity with severity: `[HIGH]`, `[MEDIUM]`, `[LOW]`
    - Do NOT re-suggest items listed in the project's `.modernize` ignore file
-5. Fix CRITICAL and HIGH before Phase 7. Re-review after fixes if substantial.
-6. **Auto-transition to Phase 7.**
+5. Fix CRITICAL and HIGH before Phase 6. Re-review after fixes if substantial.
+6. **Auto-transition to Phase 6.**
 
 ---
 
-## Phase 7: Verified Completion
+## Phase 6: Verified Completion
 
 **Goal:** Language-appropriate build, test, lint, and security verification.
 
@@ -364,7 +291,7 @@ Parallel execution via `delegate_task(tasks=[...])`. For large-scale parallelism
 
 ---
 
-## Phase 8: Retrospective & Learn (always last, runs in background)
+## Phase 7: Retrospective & Learn (always last, runs in background)
 
 **Goal:** After every session, launch a subprocess to reflect, extract lessons, save to durable memory, and suggest skill improvements — while the main agent stays responsive.
 
@@ -375,7 +302,7 @@ Parallel execution via `delegate_task(tasks=[...])`. For large-scale parallelism
 1. **Launch retrospective in subprocess:**
    ```
    delegate_task(
-     goal="Phase 8 Retrospective. Scan this session: errors, user corrections, skill misses, patterns. Extract lessons. Save to memory(). Output retrospective report.",
+     goal="Phase 7 Retrospective. Scan this session: errors, user corrections, skill misses, patterns. Extract lessons. Save to memory(). Output retrospective report.",
      context="Session summary: <key events, failures, corrections, skills loaded>",
      toolsets=["terminal","file","skills"]
    )
@@ -385,10 +312,10 @@ Parallel execution via `delegate_task(tasks=[...])`. For large-scale parallelism
 2. **Self-Learning (inline checks, runs before delegate_task dispatch):**
    | Trigger | Action |
    |---------|--------|
-   | Phase 7 failed >3 times on same issue | Auto-load `diagnose` + relevant debug skill |
+   | Phase 6 failed >3 times on same issue | Auto-load `diagnose` + relevant debug skill |
    | Phase 6 found >5 modernization warnings | Force-load `golang-modernize` for next cycle |
    | User corrected same pattern ≥2 times | Save to `memory` as durable preference |
-   | Plan missed a relevant skill | Phase 2.5 catches. Update routing table if repeated |
+   | Plan missed a relevant skill | Phase 2 post-plan check catches. Update routing table if repeated |
    | Performance degradation detected | Load relevant performance/benchmark skill |
 
 3. **Transition:** Done immediately. Retrospective completes in background.
@@ -401,16 +328,13 @@ Parallel execution via `delegate_task(tasks=[...])`. For large-scale parallelism
 |-------|-------------------|-----------|
 | 0 (Environment) | 0.3 + 0.5 (parallel) | Detection complete — launch both simultaneously |
 | 0.3 + 0.5 (done) | 1 (Interview) | 0.3 analysis complete + 0.5 skills loaded + augment done |
-| 1 (Interview) | 1.5 (Re-Check) | Clarity reached |
-| 1.5 (Re-Check) | 2 (Write Plan) | Missing skills loaded |
-| 2 (Write Plan) | 2.5 (Post-Plan) | Plan saved to .hermes/plans/ |
-| 2.5 (Post-Plan) | 3 (Ralplan) | Missing skills loaded |
-| 3 (Ralplan) | 4 (Consolidate) | Plan approved |
-| 4 (Consolidate) | 5 (Implement) | Skills loaded |
-| 5 (Implement) | 6 (Review) | All tasks done |
-| 6 (Review) | 7 (Verify) | Issues fixed |
-| 7 (Verify) | 8 (Retro) | ALL checks PASS → Phase 8 background |
-| 8 (Retro) | Done | Retrospective dispatched. Main agent free. |
+| 1 (Interview) | 2 (Write Plan) | Clarity reached + skill re-check done |
+| 2 (Write Plan) | 3 (Ralplan) | Plan saved + post-plan skill check done |
+| 3 (Ralplan) | 4 (Implement) | Plan approved |
+| 4 (Implement) | 5 (Review) | All tasks done |
+| 5 (Review) | 6 (Verify) | Issues fixed |
+| 6 (Verify) | 7 (Retro) | ALL checks PASS → Phase 7 background |
+| 7 (Retro) | Done | Retrospective dispatched. Main agent free. |
 
 ---
 
@@ -421,13 +345,13 @@ Parallel execution via `delegate_task(tasks=[...])`. For large-scale parallelism
 | "quick" / "fast" | Force quick depth (lightweight interview + review) |
 | "deep" / "careful" | Force deep depth (full review + modernization audit) |
 | "skip interview" | Jump to Phase 2 (keep Phase 0/0.5) |
-| "skip plan" | Jump to Phase 5 (keep Phase 6+7) |
+| "skip plan" | Jump to Phase 4 (keep Phase 5+6) |
 | "no review" | Skip Phase 6 (DANGEROUS — use only for trivial changes) |
-| "I'll test" | Skip Phase 7 verification |
+| "I'll test" | Skip Phase 6 verification |
 | "FULL" | All phases with deep depth |
 
 - `references/full-skill-routing.md` — Complete 59-skill routing table (Go + Vue + Frontend + Engineering + plan-specific)
-- `references/golang-skill-routing.md` — Go-specific dependency → skill mapping
+- `references/full-skill-routing.md` — 
 - `references/performance-benchmarks.md` — v2.0/v3.0/v4.0 timing data
 
 ---
