@@ -23,6 +23,7 @@ metadata:
 2. **Simplicity First** — Minimum code. No speculative abstractions. Senior engineer would approve.
 3. **Surgical Changes** — Only requested files. Match existing style. Every change traces to request.
 4. **Goal-Driven Execution** — Success criteria defined BEFORE implementation. Verify with fresh evidence.
+5. **Verify Before Asserting** — Search before claiming. For uncertain facts (library APIs, version differences, deprecated features, dependency compatibility), `web_search()` first. Don't guess. If results are ambiguous, state uncertainty explicitly.
 
 ---
 

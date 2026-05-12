@@ -65,3 +65,14 @@ For multi-step tasks, state a brief plan:
 ```
 
 Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
+
+## 5. Verify Before Asserting
+
+**Search before you claim. Don't guess facts.**
+
+For any uncertain factual assertion (library APIs, version differences, deprecated features, standard library changes, dependency compatibility):
+- Search first with `web_search()` — verify before outputting.
+- Do not guess. Do not assume you know.
+- If search results are ambiguous, state the uncertainty explicitly rather than fabricating.
+
+This applies to ALL phases — planning, implementation, review. Confidence without evidence is hallucination.
