@@ -9,84 +9,55 @@ each step autonomously. No human intervention required.
 - Hermes Agent installed (`which hermes`)
 - Git (`which git`)
 
-## Step 1: Clone (if not already in this directory)
+## Fresh Install
 
-If you are reading this file and are NOT already inside the jessy-skills repo:
+### Step 1: Clone
 
 ```bash
 git clone https://github.com/JessyHHH/jessy-skills.git
 cd jessy-skills
 ```
 
-Do NOT re-clone if you are already inside the repo.
-
-## Step 2: Copy skills to Hermes
+### Step 2: Run install.sh
 
 ```bash
-mkdir -p ~/.hermes/skills
-cp -r ./skills/* ~/.hermes/skills/
+bash install.sh
 ```
 
-Verify: `ls ~/.hermes/skills/golang-workflow/SKILL.md` must exist.
+This single command handles everything:
+- Backs up existing skills to `~/.hermes/skills.bak.*`
+- Copies all 42 skills to `~/.hermes/skills/`
+- Cleans stale skills removed from the repo
+- Updates the `hermes()` shell function (auto-detects bash/zsh)
+- Reloads Hermes skills
 
-## Step 3: Register GitHub tap for future updates
+### Step 3: Activate
 
 ```bash
-hermes skills tap add https://github.com/JessyHHH/jessy-skills.git
+source ~/.zshrc   # macOS / Linux with zsh
+# or: source ~/.bashrc  # Linux with bash
 ```
 
-## Step 4: Add shell auto-load function
-
-Auto-detect the correct shell config file:
+### Step 4: Verify
 
 ```bash
-if [ -f ~/.zshrc ]; then SHELL_RC=~/.zshrc; elif [ -f ~/.bashrc ]; then SHELL_RC=~/.bashrc; else SHELL_RC=~/.bashrc; fi
+ls ~/.hermes/skills/golang-workflow/SKILL.md  # must exist
+grep -c "hermes()" ~/.zshrc                    # should be 2 (function + no dups)
 ```
 
-Check if the function already exists:
+## Update (repo already cloned)
 
 ```bash
-grep -q 'hermes()' "$SHELL_RC" 2>/dev/null && echo "EXISTS" || echo "NOT_FOUND"
+cd /path/to/jessy-skills
+git pull
+bash install.sh
+source ~/.zshrc
 ```
 
-If NOT_FOUND, append `shell/hermes.sh`:
+## Report to User
 
-```bash
-echo "" >> "$SHELL_RC"
-cat ./shell/hermes.sh >> "$SHELL_RC"
-echo "Added hermes() to $SHELL_RC"
-```
-
-## Step 5: Reload skills
-
-```bash
-hermes skills list > /dev/null 2>&1
-```
-
-## Step 6: Verify
-
-```bash
-echo "=== Verification ==="
-echo "Skills installed: $(ls ~/.hermes/skills/ | wc -l)"
-hermes skills list 2>/dev/null | grep -c "enabled" && echo "✓ Skills loaded"
-echo "Shell function: $(grep -c 'hermes()' $SHELL_RC) occurrence(s) in $SHELL_RC"
-```
-
-Expected output: 70+ skills installed, shell function present.
-
-## Step 7: Report
-
-Tell the user:
-- How many skills were installed
-- Which shell config was updated (bashrc or zshrc)
-- That they should run `source <shell_rc>` or open a new terminal
-- That `golang-workflow` + `karpathy-guidelines` will auto-load on every `hermes` invocation
-
-## Cleanup (optional)
-
-The cloned repo directory can be kept for future `git pull` updates, or deleted:
-
-```bash
-# Keep: cd ~/path/to/jessy-skills && git pull && bash install.sh
-# Delete: rm -rf ~/path/to/jessy-skills
-```
+After install, tell the user:
+- 42 skills installed to `~/.hermes/skills/`
+- Shell function `hermes()` added to `~/.zshrc` (auto-detected)
+- `golang-workflow` + `karpathy-guidelines` will auto-load on every `hermes` invocation
+- Run `source ~/.zshrc` or open a new terminal to activate
