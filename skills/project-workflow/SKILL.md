@@ -102,7 +102,7 @@ Phase 0.3 is MANDATORY for ALL brownfield questions. No "lightweight" bypass. No
 
 ---
 
-## Phase 0.5: Smart Skill Selection (NEW)
+## Phase 0.5: Smart Skill Selection 
 
 **Goal:** Select exactly the right skills for this task — no more, no less. No hardcoded pre-loads.
 
@@ -167,7 +167,7 @@ Phase 0.3 is MANDATORY for ALL brownfield questions. No "lightweight" bypass. No
 
 ---
 
-## Phase 1.5: Skill Re-Check (NEW)
+## Phase 1.5: Skill Re-Check 
 
 **Goal:** Deep interview 可能揭示 Phase 0.5 未捕获的新需求 → 补充遗漏的技能，确保后续 Phase 有完整上下文。
 
@@ -195,7 +195,7 @@ Phase 0.3 is MANDATORY for ALL brownfield questions. No "lightweight" bypass. No
 
 ---
 
-## Phase 2: Write Plan (NEW)
+## Phase 2: Write Plan 
 
 **Goal:** Produce a concrete, written implementation plan for ralplan consensus review. The plan lives in the project repo under `.hermes/plans/` so it persists across sessions and can be referenced by the ralplan critic.
 
@@ -216,7 +216,7 @@ Phase 0.3 is MANDATORY for ALL brownfield questions. No "lightweight" bypass. No
 
 ---
 
-## Phase 2.5: Post-Plan Skill Check (NEW)
+## Phase 2.5: Post-Plan Skill Check 
 
 **Goal:** The written plan contains explicit technical decisions (concurrency primitives, data structures, dependencies, patterns) that Phase 0.5 and Phase 1.5 could not know from the user's short prompt alone. This phase scans the plan for those signals and loads any missing skills before Ralplan review — ensuring the Architect and Critic have complete context.
 
@@ -429,7 +429,6 @@ Parallel execution via `delegate_task(tasks=[...])`. For large-scale parallelism
 - `references/full-skill-routing.md` — Complete 59-skill routing table (Go + Vue + Frontend + Engineering + plan-specific)
 - `references/golang-skill-routing.md` — Go-specific dependency → skill mapping
 - `references/performance-benchmarks.md` — v2.0/v3.0/v4.0 timing data
-- `references/jessy-skills-setup.md` — Installing & syncing the jessy-skills Hermes dotfiles workflow across machines
 
 ---
 
