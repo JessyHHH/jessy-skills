@@ -3,11 +3,11 @@ set -e
 DOTFILES="$(cd "$(dirname "$0")" && pwd)"
 echo "Installing Hermes dotfiles from: $DOTFILES"
 
-# Backup existing skills
-if [ -d ~/.hermes/skills ] && [ "$(ls -A ~/.hermes/skills 2>/dev/null)" ]; then
-    BACKUP="~/.hermes/skills.bak.$(date +%Y%m%d_%H%M%S)"
+# Backup existing skills (non-fatal if fails)
+if [ -d "$HOME/.hermes/skills" ] && [ "$(ls -A "$HOME/.hermes/skills" 2>/dev/null)" ]; then
+    BACKUP="$HOME/.hermes/skills.bak.$(date +%Y%m%d_%H%M%S)"
     echo "→ Backing up existing skills to $BACKUP"
-    cp -r ~/.hermes/skills "$BACKUP"
+    cp -r "$HOME/.hermes/skills" "$BACKUP" 2>/dev/null || echo "  ⚠ Backup failed, continuing anyway"
 fi
 
 # Copy skills
@@ -48,14 +48,22 @@ if [ -z "$SHELL_RC" ]; then
     SHELL_RC=~/.bashrc
 fi
 
-# Add hermes shell function
-if ! grep -q 'hermes()' "$SHELL_RC" 2>/dev/null; then
-    echo "" >> "$SHELL_RC"
-    cat "$DOTFILES/shell/hermes.sh" >> "$SHELL_RC"
-    echo "  ✓ Shell function added to $SHELL_RC"
-else
-    echo "  - Shell function already exists in $SHELL_RC, skipped"
+# Update hermes shell function (replace old version if exists)
+SHELL_FUNC_START=$(grep -n '# Auto-load core skills\|# Bypass:' "$SHELL_RC" 2>/dev/null | head -1 | cut -d: -f1)
+if [ -n "$SHELL_FUNC_START" ]; then
+    # Remove old function (from comment to closing })
+    END_LINE=$(tail -n "+$SHELL_FUNC_START" "$SHELL_RC" | grep -n '^}' | head -1 | cut -d: -f1)
+    if [ -n "$END_LINE" ]; then
+        DELETE_END=$((SHELL_FUNC_START + END_LINE - 1))
+        sed -i '' "${SHELL_FUNC_START},${DELETE_END}d" "$SHELL_RC" 2>/dev/null || \
+        sed -i "${SHELL_FUNC_START},${DELETE_END}d" "$SHELL_RC"
+        echo "  ↻ Old shell function removed from $SHELL_RC"
+    fi
 fi
+# Add new function
+echo "" >> "$SHELL_RC"
+cat "$DOTFILES/shell/hermes.sh" >> "$SHELL_RC"
+echo "  ✓ Shell function installed to $SHELL_RC"
 
 # Reload
 echo "→ Reloading Hermes skills..."
