@@ -1,6 +1,6 @@
 # jessy-skills — Hermes Agent Golang Workflow
 
-一个为 [Hermes Agent](https://github.com/NousResearch/hermes-agent) 定制的 Golang 工作流技能集合。11 阶段自驱动并行流水线，从环境检测到验证交付全自动化。
+一个为 [Hermes Agent](https://github.com/NousResearch/hermes-agent) 定制的 Golang 工作流技能集合。12 阶段自驱动并行流水线，从环境检测到验证交付全自动化。
 
 ## 快速安装
 
@@ -55,7 +55,7 @@ Phase 7    → Verified Completion       build·vet·test·race·vulncheck
 
 ## 工作流内部规则
 
-- **Karpathy Guidelines**：先思考再编码 · 极简主义 · 手术式修改 · 目标驱动
+- **Karpathy Guidelines**：先思考再编码 · 极简主义 · 手术式修改 · 目标驱动 · **先搜再断言**
 - **Phase 0.3 ∥ 0.5**：环境检测后 analyze 和 skill 选择并行启动，完成后 augment 补漏
 - **Phase 0.3 强制**：brownfield 项目任何非问候消息都必须先跑代码分析
 - **Phase 2.5 自动**：plan 写完后扫描技术决策（sync.RWMutex、goroutine、prometheus 等）加载遗漏 skill
@@ -65,7 +65,7 @@ Phase 7    → Verified Completion       build·vet·test·race·vulncheck
 ## 包含的技能（42 个）
 
 ### 工作流
-- `golang-workflow` — 11-Phase 自驱动并行流水线（核心）
+- `golang-workflow` — 12-Phase 自驱动并行流水线（核心）
 - `karpathy-guidelines` — LLM 编码纪律
 - `deep-interview` — 苏格拉底式需求澄清
 - `ralplan` — 多 agent 共识计划
