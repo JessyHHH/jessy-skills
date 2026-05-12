@@ -1,7 +1,7 @@
 # Auto-load core skills into every Hermes session
-# Core: golang-workflow (11-phase pipeline) + karpathy-guidelines (coding discipline)
+# Core: project-workflow (12-phase pipeline) + karpathy-guidelines (coding discipline)
 hermes() {
-    local AUTO_SKILLS="golang-workflow,karpathy-guidelines"
+    local AUTO_SKILLS="project-workflow,karpathy-guidelines"
     local args=("$@")
     local has_skills=0
     local i
@@ -12,7 +12,7 @@ hermes() {
             # Guard: if -s is last arg or next arg is a flag, insert AUTO_SKILLS
             if [[ $next -le $# && "${args[$next]}" != -* ]]; then
                 # Avoid duplicating skills already present
-                if [[ "${args[$next]}" != *"golang-workflow"* ]]; then
+                if [[ "${args[$next]}" != *"project-workflow"* ]]; then
                     args[$next]="${args[$next]},${AUTO_SKILLS}"
                 fi
             else

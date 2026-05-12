@@ -1,7 +1,7 @@
 ---
-name: golang-workflow
-description: "v4.0 Self-driving Golang workflow: environment detection → smart skill selection → deep-interview → write plan → ralplan → parallel impl → mandatory code-review → verified completion. Zero hardcoded skills. Go version auto-detected from go.mod or latest available."
-version: "4.0"
+name: project-workflow
+description: "v5.0 Generic self-driving project workflow: environment detection → smart skill selection → deep-interview → write plan → ralplan → parallel impl → mandatory code-review → verified completion. Zero hardcoded skills. Project type auto-detected from go.mod or latest available."
+version: "5.0"
 author: "jessyhuang"
 metadata:
   hermes:
@@ -9,7 +9,7 @@ metadata:
     auto_load: true
 ---
 
-# Golang Workflow v4.0 — Intelligent Self-Driving Pipeline
+# Project Workflow v5.0 — Intelligent Self-Driving Pipeline
 
 **Core design:** Zero pre-loaded skills (except `karpathy-guidelines`). Everything is context-detected: Go version, project type, codebase patterns, task signals. The agent adapts to the project, not the other way around.
 
@@ -27,62 +27,43 @@ metadata:
 
 ---
 
-## Phase 0: Environment Detection (NEW — always first)
+## Phase 0: Environment Detection (always first)
 
-**Goal:** Know the project's Go version, dependency patterns, and available tooling before making any decisions.
+**Goal:** Detect project type, language version, dependency patterns, and available tooling.
 
 **Procedure:**
 
-1. **Go version detection:**
-   - Check for `go.mod` → read `go` directive (e.g., `go 1.23`)
-   - If `go.mod` exists: Docker image = `golang:<version>-alpine` (matches project)
-   - If no `go.mod` (greenfield): `docker run --rm golang:alpine go version` → extract latest → use it
-   - If no Go toolchain at all (not a Go project): skip all Go-specific phases, announce "Not a Go project — workflow inactive.", and answer normally with karpathy-guidelines only.
-   - NEVER hardcode a Go version. Always detect.
+1. **Project type detection** (check in order, first match wins):
+   - `search_files(pattern='go.mod', target='files')` → **Go project**
+   - `search_files(pattern='package.json', target='files')` → check for Vue/React/Node:
+     - `search_files(pattern='"vue"', target='content', file_glob='package.json')` → **Vue project**
+     - `search_files(pattern='"react"', target='content', file_glob='package.json')` → **React project**
+     - Otherwise → **Node/JavaScript project**
+   - None of the above → **Unknown** (answer with karpathy-guidelines only)
 
-2. **Project type detection:**
-   - `search_files(pattern='go.mod', target='files')` → exists = brownfield, absent = greenfield
-   - For brownfield: `search_files(pattern='*.go', target='files')` → map the codebase
-   - Read key files to understand architecture: `read_file('go.mod')`, `read_file('main.go')` if exists
+2. **Language version detection:**
+   - **Go:** read `go` directive from `go.mod`
+   - **Vue/Node:** read `"vue"` or engines from `package.json`, check `tsconfig.json` for TypeScript
 
-3. **Dependency pattern scanning** (brownfield only):
-   ```
-   search_files(pattern='github.com/samber/lo', target='content', file_glob='go.mod')  → samber/lo detected
-   search_files(pattern='google.golang.org/grpc', target='content', file_glob='go.mod') → gRPC detected
-   search_files(pattern='github.com/prometheus', target='content', file_glob='go.mod')  → Prometheus detected
-   ```
-   These signals feed Phase 0.5 skill selection.
+3. **Tooling check** (per project type):
+   - **Go:** `which golangci-lint`, `which go`
+   - **Vue/Node:** `which node`, `which npm`, `which pnpm`
 
-4. **Tooling check:**
-   - `which golangci-lint` → available or not
-   - `which govulncheck` → available or not
-   - If missing in Docker: `go install` them on demand
+4. **Dependency scanning** (brownfield only, per project type):
+   - **Go:** scan `go.mod` for known patterns (samber, grpc, testify, etc.)
+   - **Vue:** scan `package.json` for vue/pinia/vitest/vue-router
 
-5. **Modernize Freshness Check** — ensure golang-modernize skill covers the detected Go version:
-   a. Load golang-modernize via `skill_view(name='golang-modernize')`
-   b. Extract the highest Go version from its "Go Version Changelogs" table (e.g., `Go 1.26`)
-   c. Compare major.minor: if detected project Go version (e.g., `1.27`) > modernize's latest covered major.minor (e.g., `1.26`):
-      - `web_search("Go <version> release notes new features standard library changes")`
-      - `web_fetch("https://go.dev/doc/go<version>")` (e.g., `https://go.dev/doc/go1.27`)
-      - Extract: new builtins, new packages, deprecated APIs, language changes, standard library additions
-      - Update golang-modernize via `skill_manage(action='patch', name='golang-modernize', ...)`:
-        - Append row to Go Version Changelogs table: `| Go 1.27 | August 2026 | https://go.dev/doc/go1.27 |`
-        - Append relevant entries to Deprecated Packages Migration table
-        - Append new high/medium/low priority items to Migration Priority Guide
-        - Update Scope line: `...through Go 1.27...`
-      - Announce: `"Updated golang-modernize with Go <version> features (N new entries)"`
-   d. If detected version <= covered version: silent skip
-   e. Pass any newly discovered features to Phase 0.5 baseline and Phase 6 modernization audit
-
-6. **Announce findings:**
+5. **Announce findings:**
    ```
    "Phase 0: Environment
-   - Go: <version> (from go.mod / latest)
-   - Modernize coverage: Go <latest covered> ✓ (up to date)
-   - Docker: golang:<version>-alpine
-   - Project: brownfield (go.mod found, N Go files)
-   - Linter: golangci-lint available
-   ```\n   **Auto-transition: Launch Phase 0.3 and Phase 0.5 in parallel.**\n   - Phase 0.3: `delegate_task(analyze)` — runs in background\n   - Phase 0.5: task signal matching + skill loading — runs concurrently\n   - When both complete: Phase 0.5 augments from Phase 0.3 findings → Phase 1
+   - Type: Go (go 1.25.3) / Vue (3.x + TypeScript) / Node
+   - Skill pool: skills/go/ / skills/vue/
+   - Tooling: go available / node available"
+   ```
+   **Auto-transition: Launch Phase 0.3 and Phase 0.5 in parallel.**
+   - Phase 0.3: `delegate_task(analyze)` — runs in background
+   - Phase 0.5: task signal matching + skill loading — runs concurrently
+   - When both complete: Phase 0.5 augments from Phase 0.3 findings → Phase 1
 
 ---
 
@@ -388,44 +369,36 @@ Parallel execution via `delegate_task(tasks=[...])`. For large-scale parallelism
 
 ---
 
-## Phase 7: Verified Completion (Enhanced)
+## Phase 7: Verified Completion
 
-Unchanged core: go mod tidy → go build → go vet → go test -race → benchmark.
+**Goal:** Language-appropriate build, test, lint, and security verification.
 
-**Verification steps:**
+**Verification routing (by project type detected in Phase 0):**
 
-1. **go mod tidy** — ensures go.sum is clean, dependencies resolved
-2. **go build ./...** — must exit 0
-3. **go vet ./...** — no warnings
-4. **go test -race -count=1 ./...** — ALL PASS
-5. **govulncheck** (if available):
-   ```
-   go run golang.org/x/vuln/cmd/govulncheck@latest ./...
-   ```
-   Must show no known vulnerabilities.
+### Go
+1. `go mod tidy` — clean go.sum
+2. `go build ./...` — must exit 0
+3. `go vet ./...` — no warnings
+4. `go test -race -count=1 ./...` — ALL PASS
+5. `go run golang.org/x/vuln/cmd/govulncheck@latest ./...` — 0 vulnerabilities
+6. `golangci-lint run --enable-only modernize ./...` — 0 warnings
 
-6. **modernize linter** (if golangci-lint >= v2.6.0 and go.mod >= 1.21):
-   ```
-   golangci-lint run --enable-only modernize ./...
-   ```
-   Must show zero modernization warnings.
+### Vue / Node
+1. `npm ci` (or `pnpm install`) — clean deps
+2. `npx tsc --noEmit` (if TypeScript) — no type errors
+3. `npm test` (or `npx vitest run`) — ALL PASS
+4. `npm run lint` (if configured) — 0 warnings
+5. `npm audit` — 0 critical vulnerabilities
 
-7. **Go version consistency check:**
-   - Verify `go.mod` version matches the Docker image used
-   - If greenfield: verify go.mod uses the latest detected version
+**Ralph loop:** On any failure → fix → re-verify. Loop until ALL pass.
 
-8. **Ralph loop:** On any failure → fix → re-verify. Loop until ALL pass.
-
-9. **Completion declaration** with evidence:
-   ```
-   "Verification complete:
-   - go build: ✓
-   - go vet: ✓
-   - go test -race: ✓  (23/23 PASS)
-   - govulncheck: ✓  (0 vulnerabilities)
-   - modernize lint: ✓  (0 warnings)
-   - benchmarks: ✓  (<1µs/op)"
-   ```
+**Completion declaration:**
+```
+"Verification complete:
+- <lang> build: ✓
+- <lang> test: ✓  (N/N PASS)
+- lint: ✓  (0 warnings)
+- security: ✓  (0 vulnerabilities)"
 
 ---
 
@@ -462,7 +435,7 @@ Unchanged core: go mod tidy → go build → go vet → go test -race → benchm
 ## References
 
 - `references/golang-skill-routing.md` — Full routing table (task signals + codebase signals + common combos)
-- `references/performance-benchmarks.md` — v2.0/v3.0/v4.0 timing data, delegate_task concurrency model, bottleneck findings
+- `references/performance-benchmarks.md` — v2.0/v3.0/v5.0 timing data, delegate_task concurrency model, bottleneck findings
 - `references/jessy-skills-setup.md` — Installing & syncing the jessy-skills Hermes dotfiles workflow across machines
 
 ---

@@ -1,6 +1,6 @@
 # Golang Skill Routing Table
 
-Auto-selection rules for Phase 0.5 of golang-workflow v4.0.
+Auto-selection rules for Phase 0.5 of project-workflow v5.0.
 
 ## Task Signal Matching
 

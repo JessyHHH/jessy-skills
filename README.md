@@ -14,7 +14,7 @@ bash install.sh          # 自动检测 bash/zsh
 source ~/.bashrc         # Linux · macOS 用 ~/.zshrc
 ```
 
-安装后每次启动 `hermes` 自动加载 `golang-workflow` + `karpathy-guidelines`。
+安装后每次启动 `hermes` 自动加载 `project-workflow` + `karpathy-guidelines`（自动识别 Go/Vue/Node 项目）。
 
 ## 工作流概览
 
@@ -65,7 +65,7 @@ Phase 7    → Verified Completion       build·vet·test·race·vulncheck
 ## 包含的技能（42 个）
 
 ### 工作流
-- `golang-workflow` — 12-Phase 自驱动并行流水线（核心）
+- `project-workflow` — 12-Phase 自驱动并行流水线（核心）
 - `karpathy-guidelines` — LLM 编码纪律
 - `deep-interview` — 苏格拉底式需求澄清
 - `ralplan` — 多 agent 共识计划
@@ -113,7 +113,7 @@ Phase 7    → Verified Completion       build·vet·test·race·vulncheck
 
 ## Shell 集成
 
-`shell/hermes.sh` 提供 `hermes()` 函数，自动追加 `-s golang-workflow,karpathy-guidelines`。
+`shell/hermes.sh` 提供 `hermes()` 函数，自动追加 `-s project-workflow,karpathy-guidelines`。
 
 ## 更新
 
@@ -133,7 +133,7 @@ jessy-skills/
 ├── shell/
 │   └── hermes.sh           # Shell 函数
 └── skills/
-    ├── golang-workflow/    # 核心工作流
+    ├── project-workflow/    # 核心工作流
     ├── karpathy-guidelines/
     ├── deep-interview/
     ├── ralplan/
@@ -141,5 +141,6 @@ jessy-skills/
     ├── ultrawork/
     ├── analyze/
     ├── code-review/
-    └── golang-*/           # 30+ Go 专项技能
+    └── go/golang-*/         # 30+ Go 专项技能
+    └── vue/               # 8 Vue 前端技能
 ```
