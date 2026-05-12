@@ -16,8 +16,6 @@ source ~/.bashrc         # Linux · macOS 用 ~/.zshrc
 
 安装后每次启动 `hermes` 自动加载 `golang-workflow` + `karpathy-guidelines`。
 
-跳过自动加载：`HERMES_NO_AUTO_SKILL=1 hermes`
-
 ## 工作流概览
 
 ```
@@ -116,9 +114,6 @@ Phase 7    → Verified Completion       build·vet·test·race·vulncheck
 ## Shell 集成
 
 `shell/hermes.sh` 提供 `hermes()` 函数，自动追加 `-s golang-workflow,karpathy-guidelines`。
-
-环境变量：
-- `HERMES_NO_AUTO_SKILL=1` — 临时关闭自动 skill 加载
 
 ## 更新
 
