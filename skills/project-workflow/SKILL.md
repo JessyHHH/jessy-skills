@@ -407,7 +407,57 @@ The workflow monitors itself and adapts:
 | User corrects same pattern twice | Save to `memory` as durable preference |
 | Plan misses a relevant skill | Phase 2.5 catches. If same pattern missed twice, update routing table |
 | Performance degradation detected | Load `golang-benchmark` or relevant performance skill |
+
 ---
+
+## Phase 9: Retrospective & Learn (always last)
+
+**Goal:** After every session, reflect on what happened, extract lessons, save to durable memory, and suggest skill improvements — so the agent gets smarter every run.
+
+**Trigger:** Phase 7 (or Phase 8 on test branch) completed.
+
+**Procedure:**
+
+1. **Session scan:** Review key events from this workflow run:
+   - How many times did Phase 7 fail before passing?
+   - What did Phase 6 flag? Any patterns?
+   - User corrections — what did the user say "no, do it this way" about?
+   - Which skills were loaded by routing vs missed and loaded later?
+   - Total tool calls, total time, bottlenecks.
+
+2. **Lesson extraction:**
+   | Pattern | Action |
+   |---------|--------|
+   | Same error ≥2 times | Save correction to `memory` |
+   | User preference expressed | Save to `memory(action='add', target='user')` |
+   | New project convention discovered | Save to `memory(action='add', target='memory')` |
+   | Tool quirk encountered | Save to `memory(action='add', target='memory')` |
+   | Complex task succeeded (5+ calls) | Suggest saving as skill |
+   | Routing table missed a skill | Patch `full-skill-routing.md` |
+
+3. **Memory persistence:** Use `memory()` tool to save durable facts. Prioritize:
+   - User corrections (prevents repeating mistakes)
+   - Environment quirks (saves discovery time next session)
+   - Stable conventions (reduces steering)
+
+4. **Skill suggestion:** If a non-trivial workflow was discovered, offer to save it:
+   ```
+   clarify("本次发现了一个新模式：... 要保存为 skill 吗？", choices=["保存","跳过"])
+   ```
+
+5. **Retrospective output:**
+   ```
+   "Phase 9: Retrospective
+   - Phases: N completed, M skipped
+   - Tool calls: X total, Y sec
+   - Corrections: Z user corrections → saved to memory
+   - Skills: A loaded (B new this session)
+   - Learnings: C memories saved, D skill suggestions
+   - Next session will: [concrete improvement]"
+   ```
+
+6. **Auto-transition to Done.**
+
 
 ## Self-Driving Transition Rules
 
@@ -423,8 +473,9 @@ The workflow monitors itself and adapts:
 | 4 (Consolidate) | 5 (Implement) | Skills loaded |
 | 5 (Implement) | 6 (Review) | All tasks done |
 | 6 (Review) | 7 (Verify) | Issues fixed |
-| 7 (Verify) | 8 (Iterate) or Done | ALL checks PASS. If `test` branch → Phase 8, else → Done |
-| 8 (Iterate) | 7 (re-test) or Done | Issues fixed → re-test. No more issues → merge to main → Done |
+| 7 (Verify) | 8 (Iterate) or 9 (Retro) | ALL checks PASS. If `test` branch → Phase 8, else → Phase 9 |
+| 8 (Iterate) | 7 (re-test) or 9 (Retro) | Issues fixed → re-test. No more issues → merge to main → Phase 9 |
+| 9 (Retro) | Done | Learnings saved |
 
 ---
 
