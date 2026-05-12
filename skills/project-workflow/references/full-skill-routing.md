@@ -6,7 +6,7 @@ Complete task-signal → skill mapping covering all 59 skills across 5 categorie
 
 | Signal | Skill |
 |--------|-------|
-| goroutine, channel, select, mutex, sync, race, concurrency, worker pool, 并发 | `golang-concurrencYYY` |
+| goroutine, channel, select, mutex, sync, race, concurrency, worker pool, 并发 | `golang-concurrency` |
 | test, 测试, tdd, unit, integration, testify, mock, -race, 单元测试, 集成测试 | `golang-testing` + `golang-stretchr-testify` |
 | error, panic, recover, oops, fmt.Errorf, errors.Is, 错误处理 | `golang-error-handling` |
 | refactor, 重构, rewrite, restructure, clean, 重写 | `golang-code-style` + `golang-modernize` |
@@ -56,9 +56,9 @@ Complete task-signal → skill mapping covering all 59 skills across 5 categorie
 
 | Signal | Skill |
 |--------|-------|
-| design, UI, landing page, dashboard, component, styling, CSS, Tailwind, 设计, 样式 | `frontend-design` |
-| artifact, shadcn, claude.ai artifact, multi-component, 复杂组件 | `web-artifacts-builder` |
-| playwright, browser test, e2e, screenshot, UI automation, 浏览器测试 | `webapp-testing` |
+| design, UI, landing page, dashboard, component, styling, CSS, Tailwind, 设计, 样式 | `anthropic-frontend-design` |
+| artifact, shadcn, claude.ai artifact, multi-component, 复杂组件 | `anthropic-web-artifacts-builder` |
+| playwright, browser test, e2e, screenshot, UI automation, 浏览器测试 | `anthropic-webapp-testing` |
 
 ## Engineering Process (skills/engineering/)
 
@@ -84,7 +84,7 @@ These keyword patterns appear in written plans, not in user prompts:
 
 | Plan Pattern | Skill |
 |-------------|-------|
-| sync.Mutex, sync.RWMutex, sync.WaitGroup, sync.Once, atomic | `golang-concurrencYYY` |
+| sync.Mutex, sync.RWMutex, sync.WaitGroup, sync.Once, atomic | `golang-concurrency` |
 | context.Context, WithTimeout, WithCancel | `golang-context` |
 | fmt.Errorf, %w, errors.Is, errors.As | `golang-error-handling` |
 | t.Run, mock, stub, table-driven, testdata | `golang-testing` |
@@ -95,8 +95,8 @@ These keyword patterns appear in written plans, not in user prompts:
 | createRouter, useRouter, <router-view> | `vue-router-best-practices` |
 | defineStore, useStore, storeToRefs | `vue-pinia-best-practices` |
 | describe, it, expect, vi.mock, mount | `vue-testing-best-practices` |
-| Playwright, page.goto, locator, expect | `webapp-testing` |
-| React, JSX, Tailwind, shadcn/ui | `web-artifacts-builder` |
+| Playwright, page.goto, locator, expect | `anthropic-webapp-testing` |
+| React, JSX, Tailwind, shadcn/ui | `anthropic-web-artifacts-builder` |
 | TDD cycle, red phase, green phase, refactor phase | `tdd` |
 | Issue #, GitHub issue, ticket | `to-issues` / `triage` |
 | Architecture decision, ADR, module boundary | `improve-codebase-architecture` |
