@@ -50,6 +50,7 @@ Phase 8    → Finish Branch ★ NEW      验证→环境→选项→执行→�
 | `skip design` | 跳到 Phase 2（保留 Phase 0/0.5） |
 | `skip plan` | 跳到 Phase 5 实现（保留 Phase 6+7） |
 | `no review` | 跳过 Phase 6 代码审查 |
+| `skip branch` | 跳过 Phase 8（Finish Branch）|
 | `FULL` | 所有 Phase 深深度 |
 
 ## 工作流内部规则

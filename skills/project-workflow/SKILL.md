@@ -708,6 +708,7 @@ Only for Options 1 and 4. Options 2 and 3 preserve workspace.
 | "skip plan" | Jump to Phase 4 (keep Phase 5+6) |
 | "no review" | Skip Phase 6 (DANGEROUS — use only for trivial changes) |
 | "I'll test" | Skip Phase 6 verification |
+| "skip branch" | Skip Phase 8 (Finish Branch) |
 | "FULL" | All phases with deep depth |
 
 - `references/full-skill-routing.md` — Complete 59-skill routing table (Go + Vue + Frontend + Engineering + plan-specific)
