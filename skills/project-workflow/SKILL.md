@@ -1,7 +1,7 @@
 ---
 name: project-workflow
 description: "v5.0 Generic self-driving project workflow: environment detection → smart skill selection → deep-interview → write plan → ralplan → parallel impl → mandatory code-review → verified completion. Zero hardcoded skills. Project type auto-detected from go.mod or latest available."
-version: "5.2"
+version: "6.0"
 author: "jessyhuang"
 metadata:
   hermes:
@@ -9,7 +9,7 @@ metadata:
     auto_load: true
 ---
 
-# Project Workflow v5.2 — Intelligent Self-Driving Pipeline
+# Project Workflow v6.0 — Intelligent Self-Driving Pipeline with Hard Gates
 
 **Core design:** Zero pre-loaded skills (except `karpathy-guidelines`). Everything is context-detected: Go version, project type, codebase patterns, task signals. The agent adapts to the project, not the other way around.
 
@@ -150,31 +150,57 @@ Phase 0.3 is MANDATORY for ALL brownfield questions. No "lightweight" bypass. No
 
 ---
 
-## Phase 1: Deep Interview (Mandatory)
+## Phase 1: Design First (HARD-GATE)
 
-**Goal:** Clarify intent, scope, non-goals, constraints, and acceptance criteria before any planning or coding.
+<HARD-GATE>
+在用户批准设计方案之前，禁止调用任何 implementation skill、写任何代码、创建任何项目脚手架。
+适用于所有项目，不论多简单。简单项目的设计可以很短（几句话），但必须呈现并获批准。
+</HARD-GATE>
+
+**Goal:** Turn ideas into fully formed designs through collaborative dialogue. Present 2-3 approaches with tradeoffs, write a design spec, and get user approval before any planning or coding.
+
+**Anti-pattern:** "太简单不需要设计" — 简单项目才是未经审视的假设浪费最多工作量的时候。
 
 **Procedure:**
 
-1. Load the deep-interview skill: `skill_view(name='deep-interview')`
-2. Announce: "**Phase 1: Deep Interview** — clarifying requirements."
-3. Run a minimum of 3 `clarify()` rounds covering:
+1. Announce: "**Phase 1: Design First** — exploring approaches before implementation."
+
+2. **Explore project context** — check files, docs, recent commits (Phase 0/0.3 already covered this)
+
+3. **Ask clarifying questions** — one at a time, understand purpose/constraints/success criteria:
    - **Intent**: What are we actually trying to achieve? What problem does this solve?
    - **Scope**: What files/packages/modules are in scope? What's explicitly out of scope?
-   - **Non-goals**: What are we deliberately NOT doing? (prevents scope creep)
+   - **Non-goals**: What are we deliberately NOT doing?
    - **Constraints**: Go version, dependency versions, performance targets, compatibility requirements
    - **Acceptance**: How do we know it's done? Concrete, verifiable success criteria.
-4. **Depth auto-selection** (from deep-interview skill):
-   - **quick**: concrete files + function names + acceptance criteria already provided by user
-   - **standard** (default): clear intent, medium complexity, some ambiguity to resolve
-   - **deep**: auth/security, data migration, new architecture, breaking changes, multi-service coordination
-5. Save key decisions to memory for cross-session persistence.
-6. **Skill Re-Check** (runs after interview completes):
+   - Prefer multiple choice questions when possible. Only one question per message.
+
+4. **Propose 2-3 approaches** — with trade-offs and your recommendation:
+   - Lead with your recommended option and explain why
+   - Present tradeoffs honestly: what each approach gains and costs
+
+5. **Present design** — in sections scaled to their complexity:
+   - Cover: architecture, components, data flow, error handling, testing
+   - Get user approval after each section
+   - Simple project: a few sentences. Complex project: 200-300 words per section.
+
+6. **Write design spec** — save to `.hermes/specs/YYYY-MM-DD-<topic>-design.md` and commit
+
+7. **Spec self-review** — check for placeholders, contradictions, ambiguity, scope:
+   - Any "TBD", "TODO", incomplete sections? Fix them.
+   - Do any sections contradict each other?
+   - Is the scope focused enough for a single implementation plan?
+   - Could any requirement be interpreted two different ways? Pick one and make it explicit.
+
+8. **User reviews written spec** — ask user to review the spec file before proceeding:
+   > "Spec written to `.hermes/specs/<file>`. Please review and let me know if changes needed before we write the implementation plan."
+
+9. **Skill Re-Check** (runs after design approved):
    - **Re-scan codebase signals** against `references/full-skill-routing.md`
    - **Re-scan task signals** from all `clarify()` results + conversation context
    - **Diff** against Phase 0.5 loaded skills. Load missing via `skill_view()`.
-   - **Announce** additions (silent skip if nothing new).
-7. **Auto-transition to Phase 2.**
+
+10. **Auto-transition to Phase 2** — invoke `skill_view(name='plan')` and write implementation plan.
 
 ---
 
@@ -232,9 +258,31 @@ Parallel execution via `delegate_task(tasks=[...])`. For large-scale parallelism
 
 ---
 
-## Phase 5: Mandatory Code Review (ALWAYS RUNS)
+## Phase 5: Two-Stage Review (ALWAYS RUNS)
 
-**This phase now ALWAYS executes.** Depth only affects scope, not whether it runs.
+**This phase now ALWAYS executes.** Two stages in fixed order: spec compliance first, then code quality.
+
+**Core principle:** Spec compliance review MUST complete with ✅ before code quality review begins. Never skip stages or reverse order.
+
+### Stage 1: Spec Compliance Review
+
+Check code against the plan/spec from Phase 2-3. Does the implementation match what was designed?
+
+1. `terminal('git diff --name-only')` → list changed files
+2. Re-read the plan file from `.hermes/plans/` (saved in Phase 2)
+3. Run spec compliance via `delegate_task`:
+   ```
+   delegate_task(
+     goal="Spec compliance review. Compare implementation against plan. Check: all planned tasks done? extra work not in plan? requirements all met?",
+     context="Plan: <summary>. Changed files: <list>.",
+     toolsets=["terminal","file"]
+   )
+   ```
+4. **Gate:** Only proceed to Stage 2 when spec compliance is ✅
+   - ❌ Issues found → fix → re-review → repeat until ✅
+   - Never accept "close enough" — spec reviewer found issues = not done
+
+### Stage 2: Code Quality Review
 
 | Depth | Review Scope |
 |-------|-------------|
@@ -242,34 +290,86 @@ Parallel execution via `delegate_task(tasks=[...])`. For large-scale parallelism
 | **standard** | quick scope + security scan + test coverage check |
 | **deep** | standard scope + modernization audit + architecture consistency |
 
-### Procedure:
+**Procedure:**
 
-1. `terminal('git diff --name-only')` → list changed files
-2. `delegate_task(code-review)` with scope appropriate to depth
-3. **Concurrency safety checklist** (always checked):
+1. `delegate_task(code-review)` with scope appropriate to depth
+2. **Concurrency safety checklist** (always checked):
    - goroutine lifecycle: every goroutine has clear exit?
    - shared state: all protected by mutex/channel/atomic?
    - TOCTOU: gaps between check and action? (see `references/toctou-shutdown.md`)
    - channels: only sender closes? direction specified?
    - WaitGroup: Add() before go? sync.Once for shutdown?
-4. **Modernization audit** (deep depth, or if go.mod >= 1.21):
+3. **Modernization audit** (deep depth, or if go.mod >= 1.21):
    - Load `golang-modernize` via `skill_view(name='golang-modernize')` — use the version already loaded by Phase 0 freshness check or Phase 0.5; only reload if not in context
    - Run through golang-modernize's **Migration Priority Guide** (HIGH → MEDIUM → LOW) against ALL changed files
    - If Phase 0 freshness check discovered features for a Go version newer than golang-modernize's table, those items take priority
    - Flag every missed modernization opportunity with severity: `[HIGH]`, `[MEDIUM]`, `[LOW]`
    - Do NOT re-suggest items listed in the project's `.modernize` ignore file
-5. Fix CRITICAL and HIGH before Phase 6. Re-review after fixes if substantial.
+4. Fix CRITICAL and HIGH before Phase 6. Re-review after fixes if substantial.
+
+**Red Flags (NEVER):**
+- Start code quality review before spec compliance is ✅ (wrong order)
+- Skip either stage
+- Move to next task while either review has open issues
+- Accept "close enough" on spec compliance
+
 6. **Auto-transition to Phase 6.**
 
 ---
 
-## Phase 6: Verified Completion
+## Phase 6: Verified Completion (Iron Law)
 
-**Goal:** Language-appropriate build, test, lint, and security verification.
+### The Iron Law
 
-**Verification routing (by project type detected in Phase 0):**
+```
+NO COMPLETION CLAIMS WITHOUT FRESH VERIFICATION EVIDENCE
+```
 
-### Go
+Claiming work is complete without verification is dishonesty, not efficiency.
+
+**Core principle:** Evidence before claims, always. If you haven't run the verification command in this message, you cannot claim it passes.
+
+### The Gate Function
+
+```
+BEFORE claiming any status or expressing satisfaction:
+
+1. IDENTIFY: What command proves this claim?
+2. RUN: Execute the FULL command (fresh, complete)
+3. READ: Full output, check exit code, count failures
+4. VERIFY: Does output confirm the claim?
+   - If NO: State actual status with evidence
+   - If YES: State claim WITH evidence
+5. ONLY THEN: Make the claim
+
+Skip any step = lying, not verifying
+```
+
+### Red Flags — STOP
+
+- Using "should", "probably", "seems to"
+- Expressing satisfaction before verification ("Great!", "Perfect!", "Done!")
+- About to commit/push/PR without verification
+- Trusting subagent success reports
+- Relying on partial verification
+- Thinking "just this once"
+- **ANY wording implying success without having run verification**
+
+### Rationalization Prevention
+
+| Excuse | Reality |
+|--------|---------|
+| "Should work now" | RUN the verification |
+| "I'm confident" | Confidence ≠ evidence |
+| "Just this once" | No exceptions |
+| "Linter passed" | Linter ≠ compiler |
+| "Subagent said success" | Verify independently |
+| "Partial check is enough" | Partial proves nothing |
+| "Different words so rule doesn't apply" | Spirit over letter |
+
+### Verification Routing (by project type detected in Phase 0)
+
+**Go**
 1. `go mod tidy` — clean go.sum
 2. `go build ./...` — must exit 0
 3. `go vet ./...` — no warnings
@@ -277,7 +377,7 @@ Parallel execution via `delegate_task(tasks=[...])`. For large-scale parallelism
 5. `go run golang.org/x/vuln/cmd/govulncheck@latest ./...` — 0 vulnerabilities
 6. `golangci-lint run --enable-only modernize ./...` — 0 warnings
 
-### Vue / Node
+**Vue / Node**
 1. `npm ci` (or `pnpm install`) — clean deps
 2. `npx tsc --noEmit` (if TypeScript) — no type errors
 3. `npm test` (or `npx vitest run`) — ALL PASS
@@ -286,13 +386,15 @@ Parallel execution via `delegate_task(tasks=[...])`. For large-scale parallelism
 
 **Ralph loop:** On any failure → fix → re-verify. Loop until ALL pass.
 
-**Completion declaration:**
+### Completion Declaration (with evidence)
+
 ```
 "Verification complete:
-- <lang> build: ✓
+- <lang> build: ✓  (exit 0)
 - <lang> test: ✓  (N/N PASS)
 - lint: ✓  (0 warnings)
-- security: ✓  (0 vulnerabilities)"
+- security: ✓  (0 vulnerabilities)
+- requirements: ✓  (N/N checklist items verified)"
 ```
 
 ---
@@ -450,19 +552,149 @@ Auto-generated from compressed agent memory. Loaded automatically by Phase 0.5 t
 
 ---
 
+## Phase 8: Finish Branch ★ NEW v6.0
+
+**Goal:** Structured completion of development work. Verify tests → detect environment → present options → execute choice → clean up.
+
+**Core principle:** Verify tests → Detect environment → Present options → Execute choice → Clean up.
+
+**Announce at start:** "**Phase 8: Finish Branch** — completing development work."
+
+### Step 1: Final Verification
+
+Before presenting options, run the project's test suite one final time:
+
+```bash
+# Go
+go test -race -count=1 ./...
+
+# Vue/Node
+npm test  # or npx vitest run
+```
+
+**If tests fail:** Stop. Fix before proceeding. Cannot complete with failing tests.
+
+**If tests pass:** Continue to Step 2.
+
+### Step 2: Detect Environment
+
+```bash
+GIT_DIR=$(cd "$(git rev-parse --git-dir)" 2>/dev/null && pwd -P)
+GIT_COMMON=$(cd "$(git rev-parse --git-common-dir)" 2>/dev/null && pwd -P)
+```
+
+| State | Menu | Cleanup |
+|-------|------|---------|
+| `GIT_DIR == GIT_COMMON` (normal repo) | Standard 4 options | No worktree |
+| `GIT_DIR != GIT_COMMON`, named branch | Standard 4 options | Provenance-based |
+| `GIT_DIR != GIT_COMMON`, detached HEAD | Reduced 3 options (no merge) | Externally managed |
+
+### Step 3: Determine Base Branch
+
+```bash
+git merge-base HEAD main 2>/dev/null || git merge-base HEAD master 2>/dev/null
+```
+
+Or ask: "This branch split from main — is that correct?"
+
+### Step 4: Present Options
+
+**Normal repo and named-branch: exactly 4 options:**
+
+```
+Implementation complete. Verified:
+- Tests: N/N PASS
+- Lint: clean
+- Build: ✓
+
+What would you like to do?
+
+1. Merge to <base> locally
+2. Push and create a Pull Request
+3. Keep the branch as-is
+4. Discard this work
+
+Which option?
+```
+
+**Detached HEAD: exactly 3 options (no local merge):**
+
+```
+Implementation complete. You're on a detached HEAD (externally managed).
+
+1. Push as new branch and create a Pull Request
+2. Keep as-is
+3. Discard this work
+
+Which option?
+```
+
+### Step 5: Execute Choice
+
+#### Option 1: Merge Locally
+```bash
+git checkout <base-branch>
+git pull
+git merge <feature-branch>
+<test command>  # verify merged result
+git branch -d <feature-branch>
+```
+
+#### Option 2: Push and Create PR
+```bash
+git push -u origin <feature-branch>
+gh pr create --title "<title>" --body "<summary>"
+```
+Do NOT clean up worktree — user needs it for PR iteration.
+
+#### Option 3: Keep As-Is
+Report: "Keeping branch <name>. Worktree preserved."
+
+#### Option 4: Discard
+Require typed confirmation ("discard"). Then:
+```bash
+git branch -D <feature-branch>
+```
+
+### Step 6: Cleanup
+
+Only for Options 1 and 4. Options 2 and 3 preserve workspace.
+
+- Normal repo: no worktree to clean
+- Worktree-owned: `git worktree remove <path> && git worktree prune`
+
+### Quick Reference
+
+| Option | Merge | Push | Keep Worktree | Cleanup Branch |
+|--------|-------|------|---------------|----------------|
+| 1. Merge locally | yes | - | - | yes |
+| 2. Create PR | - | yes | yes | - |
+| 3. Keep as-is | - | - | yes | - |
+| 4. Discard | - | - | - | yes (force) |
+
+### Red Flags (NEVER)
+- Proceed with failing tests
+- Merge without verifying tests on result
+- Delete work without typed "discard" confirmation
+- Clean up worktrees for Options 2 or 3
+- Skip test verification before offering options
+
+---
+
 ## Self-Driving Transition Rules
 
 | Phase | Auto-transition to | Condition |
 |-------|-------------------|-----------|
 | 0 (Environment) | 0.3 + 0.5 (parallel) | Detection complete — launch both simultaneously |
-| 0.3 + 0.5 (done) | 1 (Interview) | 0.3 analysis complete + 0.5 skills loaded + augment done |
-| 1 (Interview) | 2 (Write Plan) | Clarity reached + skill re-check done |
+| 0.3 + 0.5 (done) | 1 (Design First) | 0.3 analysis complete + 0.5 skills loaded + augment done |
+| 1 (Design First) | 2 (Write Plan) | Design approved + spec written + user reviewed |
 | 2 (Write Plan) | 3 (Ralplan) | Plan saved + post-plan skill check done |
 | 3 (Ralplan) | 4 (Implement) | Plan approved |
-| 4 (Implement) | 5 (Review) | All tasks done |
-| 5 (Review) | 6 (Verify) | Issues fixed |
-| 6 (Verify) | 7 (Retro) | ALL checks PASS → Phase 7 background |
-| 7 (Retro + Cron) | Done | 7.1 + 7.2 dispatched. 7.3 cron runs independently every 2h. |
+| 4 (Implement) | 5 (Two-Stage Review) | All tasks done |
+| 5 (Two-Stage Review) | 6 (Verify) | Both stages pass — spec ✅ then code ✅ |
+| 6 (Verify) | 7 (Retro + Cron) | ALL checks PASS with fresh evidence |
+| 7 (Retro + Cron) | 8 (Finish Branch) | 7.1 + 7.2 dispatched; 7.3 cron runs independently |
+| 8 (Finish Branch) | Done | Branch merged/PR created/kept/discarded per user choice |
 
 ---
 
@@ -472,7 +704,7 @@ Auto-generated from compressed agent memory. Loaded automatically by Phase 0.5 t
 |---------|--------|
 | "quick" / "fast" | Force quick depth (lightweight interview + review) |
 | "deep" / "careful" | Force deep depth (full review + modernization audit) |
-| "skip interview" | Jump to Phase 2 (keep Phase 0/0.5) |
+| "skip design" | Jump to Phase 2 (keep Phase 0/0.5) |
 | "skip plan" | Jump to Phase 4 (keep Phase 5+6) |
 | "no review" | Skip Phase 6 (DANGEROUS — use only for trivial changes) |
 | "I'll test" | Skip Phase 6 verification |
