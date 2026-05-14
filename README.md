@@ -29,7 +29,7 @@ Phase 3    → Ralplan Consensus         多 agent 审查计划
 Phase 4    → Implement                 并行实现（delegate_task tasks=[]）
 Phase 5    → Code Review               安全 + 并发 + 现代化审计（始终执行）
 Phase 6    → Verified Completion       Go: build/vet/test · Vue: vitest/lint
-Phase 7    → Retro & Learn + Cron   7.1 session 反思 · 7.2 自学习表 · 7.3 2h cron 跨 session 反思 + memory 自动压缩
+Phase 7    → Retro + Learn + Mem Cron  7.1 session反思 │ 7.2 自学习 │ 7.3 2h cron+压缩
 ```
 
 ## 核心设计
