@@ -29,14 +29,14 @@ Phase 3    → Ralplan Consensus         多 agent 审查计划
 Phase 4    → Implement                 并行实现（delegate_task tasks=[]）
 Phase 5    → Code Review               安全 + 并发 + 现代化审计（始终执行）
 Phase 6    → Verified Completion       Go: build/vet/test · Vue: vitest/lint
-Phase 7    → Retrospective & Learn     后台子进程反省 → 保存 memory → 建议 skill
+Phase 7    → Retro & Learn + Cron   7.1 session 反思 · 7.2 自学习表 · 7.3 2h cron 跨 session 反思 + memory 自动压缩
 ```
 
 ## 核心设计
 
 - **零硬编码**：项目类型从 go.mod/package.json 自动检测，skill 自动路由
 - **自驱动并行**：Phase 0.3 + 0.5 并行启动，Phase 5 delegate_task 并发实现
-- **自学习**：Phase 7 后台反省 → 保存 memory → 越用越聪明
+- **自学习**：Phase 7.1 后台反省 → 保存 memory；7.3 cron 每 2h 跨 session 反思，memory ≥90% 自动压缩为 skill
 - **Ralph 循环**：任何验证失败 → 自动修复 → 重新验证，直到全部通过
 
 ## 逃逸命令
@@ -57,7 +57,8 @@ Phase 7    → Retrospective & Learn     后台子进程反省 → 保存 memory
 - **Phase 0.3 强制**：brownfield 项目任何非问候消息都必须先跑代码分析
 - **Phase 2 自动**：plan 写完后全量路由表扫描技术信号，补漏 skill
 - **Phase 6 强制**：代码审查始终执行，深度只影响审查范围
-- **Phase 7 后台**：反省学习跑在子进程，主 agent 继续干活不阻塞
+- **Phase 7.1 后台**：反省学习跑在子进程，主 agent 继续干活不阻塞
+- **Phase 7.3 后台 cron**：每 2h 跨 session 模式提取；memory ≥90% 自动压缩为 skill，memory 保留触发器自动加载
 
 ## 包含的技能（59 个）
 
@@ -150,7 +151,7 @@ jessy-skills/
 ├── shell/
 │   └── hermes.sh           # Shell 函数
 └── skills/
-    ├── project-workflow/   # 核心工作流 (13 Phase)
+    ├── project-workflow/   # 核心工作流 (10 Phase)
     ├── karpathy-guidelines/
     ├── go/                 # 34 Go 后端技能
     ├── vue/                #  8 Vue 前端技能

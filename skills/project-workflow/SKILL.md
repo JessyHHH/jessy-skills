@@ -1,7 +1,7 @@
 ---
 name: project-workflow
 description: "v5.0 Generic self-driving project workflow: environment detection → smart skill selection → deep-interview → write plan → ralplan → parallel impl → mandatory code-review → verified completion. Zero hardcoded skills. Project type auto-detected from go.mod or latest available."
-version: "5.1"
+version: "5.2"
 author: "jessyhuang"
 metadata:
   hermes:
@@ -9,7 +9,7 @@ metadata:
     auto_load: true
 ---
 
-# Project Workflow v5.1 — Intelligent Self-Driving Pipeline
+# Project Workflow v5.2 — Intelligent Self-Driving Pipeline
 
 **Core design:** Zero pre-loaded skills (except `karpathy-guidelines`). Everything is context-detected: Go version, project type, codebase patterns, task signals. The agent adapts to the project, not the other way around.
 
@@ -124,6 +124,12 @@ Phase 0.3 is MANDATORY for ALL brownfield questions. No "lightweight" bypass. No
    - `golang-modernize` principles: use `min`/`max`, `slog`, `t.Context()`, `b.Loop()`, `any`. Check `go.mod` version (Go projects only).
 
 5. **Load selected skills:** For each skill identified in steps 1-2, call `skill_view(name='<skill>')` to load its full content. Announce each loaded skill. Skip skills already internalized in baseline.
+
+5.5. **Memory trigger detection:**
+   - Scan current `memory` for trigger entries matching the pattern: `→ 加载 skill <name>` or `→ load skill <name>`
+   - For each matched skill name, call `skill_view(name='<name>')` to load the compressed knowledge back into context
+   - This ensures knowledge archived by Phase 7.3's compression cycle is automatically available in new sessions
+   - Skip skills already loaded in step 5
 
 6. **Announce selection:**
    ```
@@ -291,34 +297,151 @@ Parallel execution via `delegate_task(tasks=[...])`. For large-scale parallelism
 
 ---
 
-## Phase 7: Retrospective & Learn (always last, runs in background)
+## Phase 7: Retrospective & Learn + Memory Cron (always last, runs in background)
 
-**Goal:** After every session, launch a subprocess to reflect, extract lessons, save to durable memory, and suggest skill improvements — while the main agent stays responsive.
+**Goal:** Three-layer learning system: session-end reflection (7.1), inline self-learning (7.2), and persistent cross-session memory cron with auto-compression (7.3).
 
-**Trigger:** Phase 7 completed.
+**Trigger:** Phase 6 completed.
 
-**Procedure:**
+---
 
-1. **Launch retrospective in subprocess:**
-   ```
-   delegate_task(
-     goal="Phase 7 Retrospective. Scan this session: errors, user corrections, skill misses, patterns. Extract lessons. Save to memory(). Output retrospective report.",
-     context="Session summary: <key events, failures, corrections, skills loaded>",
-     toolsets=["terminal","file","skills"]
-   )
-   ```
-   The subprocess runs asynchronously. Main agent continues immediately.
+### 7.1 Session-End Retrospective
 
-2. **Self-Learning (inline checks, runs before delegate_task dispatch):**
-   | Trigger | Action |
-   |---------|--------|
-   | Phase 6 failed >3 times on same issue | Auto-load `diagnose` + relevant debug skill |
-   | Phase 6 found >5 modernization warnings | Force-load `golang-modernize` for next cycle |
-   | User corrected same pattern ≥2 times | Save to `memory` as durable preference |
-   | Plan missed a relevant skill | Phase 2 post-plan check catches. Update routing table if repeated |
-   | Performance degradation detected | Load relevant performance/benchmark skill |
+Launch a subprocess to reflect on the current session, extract lessons, save to durable memory, and suggest skill improvements — while the main agent stays responsive.
 
-3. **Transition:** Done immediately. Retrospective completes in background.
+```
+delegate_task(
+  goal="Phase 7.1 Retrospective. Scan this session: errors, user corrections, skill misses, patterns. Extract lessons. Save to memory(). Output retrospective report.",
+  context="Session summary: <key events, failures, corrections, skills loaded>",
+  toolsets=["terminal","file","skills"]
+)
+```
+
+The subprocess runs asynchronously. Main agent continues immediately.
+
+---
+
+### 7.2 Self-Learning (inline checks)
+
+Runs inline before 7.1 dispatch:
+
+| Trigger | Action |
+|---------|--------|
+| Phase 6 failed >3 times on same issue | Auto-load `diagnose` + relevant debug skill |
+| Phase 6 found >5 modernization warnings | Force-load `golang-modernize` for next cycle |
+| User corrected same pattern ≥2 times | Save to `memory` as durable preference |
+| Plan missed a relevant skill | Phase 2 post-plan check catches. Update routing table if repeated |
+| Performance degradation detected | Load relevant performance/benchmark skill |
+
+---
+
+### 7.3 Background Memory Cron ★ NEW v5.2
+
+**Goal:** A persistent cron job (every 2 hours) that does cross-session pattern extraction and, when memory is ≥90% full, auto-compresses memory into topic-based skills.
+
+**Cron job creation** (runs once when workflow loads, idempotent):
+
+```
+cronjob(
+  action='create',
+  name='hermes-phase7-memory-cron',
+  schedule='every 2h',
+  prompt="Phase 7.3 Memory Cron. Run the COMPRESS_OR_EXTRACT algorithm below. Use session_search to scan recent sessions. Use memory to check usage and read/write entries. Use skill_manage to create/patch memory-backup skills.",
+  skills=['project-workflow'],
+  toolsets=['session_search', 'skills']
+)
+```
+
+#### COMPRESS_OR_EXTRACT Algorithm
+
+```
+1. session_search(query='', limit=5) → get recent session summaries
+2. Read current memory usage (injected by cron at each tick)
+3. IF memory ≥ 90%:
+     RUN COMPRESSION CYCLE
+   ELSE:
+     RUN CROSS-SESSION EXTRACTION
+```
+
+#### COMPRESSION CYCLE (memory ≥ 90%)
+
+```
+1. Read ALL memory entries (both 'memory' and 'user' stores)
+2. Classify by topic using LLM:
+   - Group related entries (e.g., all yunuop conventions, all mixgo constraints, all Go patterns)
+   - Each group becomes a candidate skill
+3. FOR EACH topic group:
+   a. Summarize into 3-5 concise, impactful rules
+   b. Name: memory-<topic-slug> (e.g., memory-yunuop, memory-mixgo, memory-golang)
+   c. Category: project/memory-backup/
+   d. Check if skill already exists:
+      - EXISTS → skill_manage(action='patch') — append new rules without duplicating
+      - NOT EXISTS → skill_manage(action='create') — full SKILL.md with frontmatter
+   e. If skill exceeds 300 lines → split: create memory-<topic>-part2, etc.
+4. REPLACE memory entries:
+   - Remove all detailed entries that were classified into skills
+   - Write compact trigger entries:
+     "<topic>: 加载 skill memory-<topic-slug>"
+   - Trigger format MUST be machine-parseable by Phase 0.5 step 5.5
+5. Verify: memory usage dropped by ≥30% from pre-compression level
+6. If still ≥90% after first pass → run a second pass with more aggressive summarization
+```
+
+#### CROSS-SESSION EXTRACTION (memory < 90%)
+
+```
+1. session_search() → scan recent sessions for recurring patterns
+2. Identify patterns that appear across ≥2 sessions
+3. IF new durable convention found:
+     memory(action='add', target='memory', content='<convention>')
+4. IF existing convention contradicted:
+     memory(action='replace', old_text='<old>', content='<new>')
+5. IF stale convention (not referenced in last 10 sessions):
+     memory(action='remove', old_text='<stale>')
+```
+
+#### Trigger Format Specification
+
+Compressed memory triggers must follow this exact format so Phase 0.5 can parse them:
+
+```
+<topic>: 加载 skill <skill-name>
+```
+
+Example:
+```
+yunuop: 加载 skill memory-yunuop
+mixgo: 加载 skill memory-mixgo
+golang: 加载 skill memory-golang
+```
+
+Phase 0.5 step 5.5 scans for `加载 skill <name>` pattern and auto-loads the referenced skill.
+
+#### Generated Skill Format
+
+```yaml
+---
+name: memory-<topic-slug>
+description: "Compressed memory backup — <topic> conventions and lessons. Auto-generated by Phase 7.3 Memory Cron."
+version: "1.0"
+category: project/memory-backup/
+---
+
+# Memory Backup: <Topic>
+
+Auto-generated from compressed agent memory. Loaded automatically by Phase 0.5 trigger detection.
+
+## Key Rules
+
+1. <rule 1>
+2. <rule 2>
+3. <rule 3>
+...
+```
+
+---
+
+3. **Transition:** 7.1 + 7.2 dispatched immediately. 7.3 cron runs independently every 2h.
 
 ---
 
@@ -334,7 +457,7 @@ Parallel execution via `delegate_task(tasks=[...])`. For large-scale parallelism
 | 4 (Implement) | 5 (Review) | All tasks done |
 | 5 (Review) | 6 (Verify) | Issues fixed |
 | 6 (Verify) | 7 (Retro) | ALL checks PASS → Phase 7 background |
-| 7 (Retro) | Done | Retrospective dispatched. Main agent free. |
+| 7 (Retro + Cron) | Done | 7.1 + 7.2 dispatched. 7.3 cron runs independently every 2h. |
 
 ---
 
