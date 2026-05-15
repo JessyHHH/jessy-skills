@@ -39,15 +39,18 @@ metadata:
      - `search_files(pattern='"vue"', target='content', file_glob='package.json')` → **Vue project**
      - `search_files(pattern='"react"', target='content', file_glob='package.json')` → **React project**
      - Otherwise → **Node/JavaScript project**
+   - `search_files(pattern='SKILL.md', target='files', path='skills/')` returns matches → **Skills Repository** (text-only meta project)
    - None of the above → **Unknown** (answer with karpathy-guidelines only)
 
 2. **Language version detection:**
    - **Go:** read `go` directive from `go.mod`
    - **Vue/Node:** read `"vue"` or engines from `package.json`, check `tsconfig.json` for TypeScript
+   - **Skills Repository:** no language version — text-only project
 
 3. **Tooling check** (per project type):
    - **Go:** `which golangci-lint`, `which go`
    - **Vue/Node:** `which node`, `which npm`, `which pnpm`
+   - **Skills Repository:** no build tooling needed — `which git` only
 
 4. **Dependency scanning** (brownfield only, per project type):
    - **Go:** scan `go.mod` for known patterns (samber, grpc, testify, etc.)
@@ -168,6 +171,15 @@ Phase 0.3 is MANDATORY for ALL brownfield questions. No "lightweight" bypass. No
 2. **Explore project context** — check files, docs, recent commits (Phase 0/0.3 already covered this)
 
 3. **Ask clarifying questions** — one at a time, understand purpose/constraints/success criteria:
+
+   <BOUNDARY-CHECK>
+   第一轮 clarify 必须确认项目边界。在问其他问题之前，必须先明确：
+   - 涉及哪些文件/包/模块/服务？
+   - 明确 NOT 涉及哪些？（防止 scope creep）
+   - 如果有任何歧义：向用户确认边界后再继续。
+   未经边界确认，禁止进入步骤 4（方案设计）。
+   </BOUNDARY-CHECK>
+
    - **Intent**: What are we actually trying to achieve? What problem does this solve?
    - **Scope**: What files/packages/modules are in scope? What's explicitly out of scope?
    - **Non-goals**: What are we deliberately NOT doing?
@@ -383,6 +395,13 @@ Skip any step = lying, not verifying
 3. `npm test` (or `npx vitest run`) — ALL PASS
 4. `npm run lint` (if configured) — 0 warnings
 5. `npm audit` — 0 critical vulnerabilities
+
+**Skills Repository**
+1. `grep -c "^## Phase" skills/project-workflow/SKILL.md` → Phase 数一致
+2. `head -15 skills/*/SKILL.md` (抽查) → YAML frontmatter 合法
+3. `grep -rn "MISSING\|✗\|TODO\|FIXME" skills/` → 0 未解决的问题
+4. `git diff --check` → 无 whitespace 错误
+5. `for ref in $(grep -oP 'references/[a-z0-9-]+\.md' SKILL.md); do test -f "$ref" && echo "✓" || echo "✗"; done` → 所有引用文件存在
 
 **Ralph loop:** On any failure → fix → re-verify. Loop until ALL pass.
 
