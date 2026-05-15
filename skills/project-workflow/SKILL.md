@@ -113,11 +113,18 @@ Phase 0.3 is MANDATORY for ALL brownfield questions. No "lightweight" bypass. No
 
 **Procedure:**
 
-1. **Codebase signal matching** (from Phase 0 dependency scan):
-   - **Go:** scan `go.mod` for known patterns (samber, grpc, testify, etc.) → see `references/full-skill-routing.md`
-   - **Vue:** scan `package.json` for vue/pinia/vitest/vue-router → see `references/full-skill-routing.md`
+1. **Codebase signal matching + mandatory skill loading** (from Phase 0 dependency scan):
 
-2. **Task signal matching** (from user's initial request):
+   <MUST-LOAD>
+   扫描依赖后，必须通过路由表查找并调用 `skill_view()` 加载所有匹配的 skill。
+   只扫描不加载 = 跳过本步骤，不可接受。
+   </MUST-LOAD>
+
+   - **Go:** scan `go.mod` for known patterns (samber, grpc, testify, etc.) → look up `references/full-skill-routing.md` → `skill_view(name='<skill>')` for EVERY match
+   - **Vue:** scan `package.json` for vue/pinia/vitest/vue-router → look up `references/full-skill-routing.md` → `skill_view(name='<skill>')` for EVERY match
+   - Announce each loaded skill. Skip skills already internalized in baseline.
+
+2. **Task signal matching + mandatory skill loading:**
    - Match keywords against `references/full-skill-routing.md` — covers all 59 skills across Go, Vue, Frontend, and Engineering categories.
    - Also scan for self-learning triggers: if the user mentions "performance" with an error tone, preload `golang-benchmark`; if they mention repeated failures, preload `diagnose`.
 
@@ -126,13 +133,11 @@ Phase 0.3 is MANDATORY for ALL brownfield questions. No "lightweight" bypass. No
 4. **Always-loaded baseline** (zero skill_view calls, just internalized rules):
    - `golang-modernize` principles: use `min`/`max`, `slog`, `t.Context()`, `b.Loop()`, `any`. Check `go.mod` version (Go projects only).
 
-5. **Load selected skills:** For each skill identified in steps 1-2, call `skill_view(name='<skill>')` to load its full content. Announce each loaded skill. Skip skills already internalized in baseline.
-
-5.5. **Memory trigger detection:**
+5. **Memory trigger detection:**
    - Scan current `memory` for trigger entries matching the pattern: `→ 加载 skill <name>`
    - For each matched skill name, call `skill_view(name='<name>')` to load the compressed knowledge back into context
    - This ensures knowledge archived by Phase 7.3's compression cycle is automatically available in new sessions
-   - Skip skills already loaded in step 5
+   - Skip skills already loaded in steps 1-2
 
 6. **Announce selection:**
    ```
@@ -208,9 +213,15 @@ Phase 0.3 is MANDATORY for ALL brownfield questions. No "lightweight" bypass. No
    > "Spec written to `.hermes/specs/<file>`. Please review and let me know if changes needed before we write the implementation plan."
 
 9. **Skill Re-Check** (runs after design approved):
+
+   <MUST-LOAD>
+   必须重新扫描并加载所有遗漏的 skill。diff 后发现缺失 → 立即调用 skill_view()。
+   只 diff 不加载 = 跳过本步骤，不可接受。
+   </MUST-LOAD>
+
    - **Re-scan codebase signals** against `references/full-skill-routing.md`
    - **Re-scan task signals** from all `clarify()` results + conversation context
-   - **Diff** against Phase 0.5 loaded skills. Load missing via `skill_view()`.
+   - **Diff** against Phase 0.5 loaded skills. For each missing: `skill_view(name='<skill>')`. Announce additions.
 
 10. **Auto-transition to Phase 2** — invoke `skill_view(name='plan')` and write implementation plan.
 
@@ -234,10 +245,16 @@ Phase 0.3 is MANDATORY for ALL brownfield questions. No "lightweight" bypass. No
 4. Save with `write_file` to `.hermes/plans/<timestamp>-<slug>.md`
 5. Announce: "Plan saved to `.hermes/plans/<filename>.md`"
 6. **Post-Plan Skill Check** (runs immediately after plan is written):
+
+   <MUST-LOAD>
+   计划写完后必须扫描技术信号并加载遗漏的 skill。发现缺失 → 立即 skill_view()。
+   只扫描不加载 = 跳过本步骤，不可接受。
+   </MUST-LOAD>
+
    - Read the plan file
    - Scan for technical signals using `references/full-skill-routing.md` (all 59 skills)
    - **Diff** against already-loaded skills (Phase 0.5 + Phase 1 re-check)
-   - **Load missing** via `skill_view()`. Announce additions (silent skip if nothing new)
+   - For each missing: `skill_view(name='<skill>')`. Announce additions (silent skip if nothing new)
 7. **Auto-transition to Phase 3.**
 
 ---
