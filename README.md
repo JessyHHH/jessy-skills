@@ -14,12 +14,12 @@ bash install.sh          # 自动检测 bash/zsh
 source ~/.bashrc         # Linux · macOS 用 ~/.zshrc
 ```
 
-安装后每次启动 `hermes` 自动加载 `project-workflow` + `karpathy-guidelines`（自动识别 Go/Vue/Node 项目）。
+安装后每次启动 `hermes` 自动加载 `project-workflow` + `karpathy-guidelines`（自动识别 Go/Vue/Node/Skills Repository 项目）。
 
 ## 工作流概览
 
 ```
-Phase 0    → Environment Detection     项目类型、语言版本、依赖扫描
+Phase 0    → Environment Detection     项目类型（Go/Vue/Node/Skills Repo）、语言版本、依赖扫描
 Phase 0.3  ∥  Codebase Analysis +      并行执行：delegate_task 分析代码库
 Phase 0.5  ∥  Smart Skill Selection    同时匹配 59-skill 路由表加载技能
               ↓ 两者完成后 augment      0.3 成果补全遗漏的代码库模式 skill
@@ -35,7 +35,7 @@ Phase 8    → Finish Branch ★ NEW      验证→环境→选项→执行→�
 
 ## 核心设计
 
-- **零硬编码**：项目类型从 go.mod/package.json 自动检测，skill 自动路由
+- **零硬编码**：项目类型从 go.mod/package.json/skills/SKILL.md 自动检测，skill 自动路由
 - **自驱动并行**：Phase 0.3 + 0.5 并行启动，Phase 4 delegate_task 并发实现
 - **自学习**：Phase 7.1 后台反省 → 保存 memory；7.3 cron 每 2h 跨 session 反思，memory ≥90% 自动压缩为 skill
 - **Hard Gates**：HARD-GATE（设计先于编码）、Iron Law（新鲜证据先于声称）、Two-Stage Review（spec→code）
@@ -61,6 +61,7 @@ Phase 8    → Finish Branch ★ NEW      验证→环境→选项→执行→�
 - **Phase 2 自动**：plan 写完后全量路由表扫描技术信号，补漏 skill
 - **Phase 6 强制**：代码审查始终执行，深度只影响审查范围
 - **HARD-GATE**：在用户批准设计前，禁止写任何代码 — 适用于所有项目
+- **BOUNDARY-CHECK**：第一轮 clarify 必须确认项目边界 — 涉及/不涉及哪些文件模块
 - **Two-Stage Review**：spec compliance review 必须 ✅ 后才能开始 code quality review
 - **Iron Law**：没有新鲜验证证据，不准声称完成 — "should work" = 撒谎
 - **Phase 7.1 后台**：反省学习跑在子进程，主 agent 继续干活不阻塞
