@@ -62,6 +62,7 @@ Phase 8    → Finish Branch ★ NEW      验证→环境→选项→执行→�
 - **Phase 6 强制**：代码审查始终执行，深度只影响审查范围
 - **HARD-GATE**：在用户批准设计前，禁止写任何代码 — 适用于所有项目
 - **BOUNDARY-CHECK**：第一轮 clarify 必须确认项目边界 — 涉及/不涉及哪些文件模块
+- **MUST-LOAD**：Phase 0.5/1/2 三个 skill 补漏点强制加载 — 扫描后必须 skill_view()，只扫不载 = 不可接受
 - **Two-Stage Review**：spec compliance review 必须 ✅ 后才能开始 code quality review
 - **Iron Law**：没有新鲜验证证据，不准声称完成 — "should work" = 撒谎
 - **Phase 7.1 后台**：反省学习跑在子进程，主 agent 继续干活不阻塞
