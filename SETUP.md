@@ -8,6 +8,18 @@ each step autonomously. No human intervention required.
 
 - Hermes Agent installed (`which hermes`)
 - Git (`which git`)
+- Node.js + npm (`which node && which npm`)
+
+### Fix npm global prefix (if permission denied on `npm install -g`)
+
+If `npm install -g` fails with `EACCES`, set a user-local prefix:
+
+```bash
+mkdir -p ~/.npm-global
+npm config set prefix ~/.npm-global
+echo 'export PATH=~/.npm-global/bin:$PATH' >> ~/.zshrc  # or ~/.bashrc
+export PATH=~/.npm-global/bin:$PATH
+```
 
 ## Fresh Install
 
@@ -49,6 +61,30 @@ ls ~/.hermes/skills/project-workflow/SKILL.md  # must exist
 grep "jessy-skills" ~/.zshrc ~/.bashrc         # single source line
 ```
 
+### Step 5: Install Tool CLIs
+
+Install Context7 (real-time library docs) and Firecrawl (web search/scraping):
+
+```bash
+npm install -g ctx7@latest firecrawl-cli@latest
+```
+
+### Step 6: Authenticate Tools
+
+Both tools require browser OAuth. Run each — a browser window will open for authorization:
+
+```bash
+ctx7 login        # opens context7.com — click Authorize
+firecrawl login   # interactive: choose "1" for browser login
+```
+
+Verify:
+
+```bash
+ctx7 whoami       # shows login name + email
+firecrawl --status  # shows credits + auth status
+```
+
 ## Update (repo already cloned)
 
 ```bash
@@ -73,4 +109,5 @@ After install, tell the user:
 - 61 skills installed to `~/.hermes/skills/`
 - Shell integration installed to `~/.jessy-skills/hermes.sh` (sourced from config)
 - `project-workflow` + `karpathy-guidelines` will auto-load on every `hermes` invocation
+- Context7 + Firecrawl CLIs installed and authenticated
 - Run `source ~/.zshrc` (or `~/.bashrc`, or `. $PROFILE`) or open a new terminal to activate

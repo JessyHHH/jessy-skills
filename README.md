@@ -12,6 +12,10 @@ git clone https://github.com/JessyHHH/jessy-skills.git
 cd jessy-skills
 bash install.sh          # 自动检测 bash/zsh
 source ~/.bashrc         # Linux · macOS 用 ~/.zshrc
+
+# 安装工具 CLI（一步）
+npm install -g ctx7@latest firecrawl-cli@latest
+ctx7 login && firecrawl login  # 浏览器授权
 ```
 
 安装后每次启动 `hermes` 自动加载 `project-workflow` + `karpathy-guidelines`（自动识别 Go/Vue/Node/Skills Repository 项目）。
