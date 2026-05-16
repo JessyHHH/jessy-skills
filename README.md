@@ -1,6 +1,6 @@
 # jessy-skills — Multi-Language AI Engineering Skills
 
-一个为 [Hermes Agent](https://github.com/NousResearch/hermes-agent) 定制的多语言工作流技能集合。11 阶段自驱动并行流水线（含 HARD-GATE / Iron Law / Two-Stage Review），59 个技能覆盖 Go/Vue/前端/工程全流程。
+一个为 [Hermes Agent](https://github.com/NousResearch/hermes-agent) 定制的多语言工作流技能集合。11 阶段自驱动并行流水线（含 HARD-GATE / Iron Law / Two-Stage Review），61 个技能覆盖 Go/Vue/前端/工程/工具全流程。
 
 ## 快速安装
 
@@ -69,7 +69,7 @@ Phase 8    → Finish Branch ★ NEW      验证→环境→选项→执行→�
 - **Phase 7.3 后台 cron**：每 2h 跨 session 模式提取；memory ≥90% 自动压缩为 skill，memory 保留触发器自动加载
 - **Phase 8 收尾**：结构化分支完成 — 验证→环境检测→4选项菜单→执行→清理
 
-## 包含的技能（59 个）
+## 包含的技能（61 个）
 
 ### 工作流
 - `project-workflow` — 11-Phase 自驱动并行流水线（核心，v6.0）
@@ -122,6 +122,10 @@ Phase 8    → Finish Branch ★ NEW      验证→环境→选项→执行→�
 - `grill-me` / `grill-with-docs` — 计划拷问
 - `handoff` / `caveman` — 交接 + 简化
 
+### 工具集成（skills/tools/）
+- `context7-docs` — 实时库文档查询（Context7 CLI）
+- `firecrawl-web` — Web 搜索与抓取（Firecrawl CLI）
+
 ### 通用
 - `analyze` — 代码深度分析
 - `code-review` — 代码审查
@@ -166,6 +170,7 @@ jessy-skills/
     ├── vue/                #  8 Vue 前端技能
     ├── frontend/           #  3 前端工具技能
     ├── engineering/        # 14 工程流程技能
+    ├── tools/              #  2 工具集成技能
     ├── project/            #  1 项目自迭代
     ├── deep-interview/
     ├── ralplan/

@@ -1,6 +1,6 @@
-# Full Skill Routing Table — project-workflow v5.1
+# Full Skill Routing Table — project-workflow v6.0
 
-Complete task-signal → skill mapping covering all 59 skills across 5 categories.
+Complete task-signal → skill mapping covering all 61 skills across 6 categories.
 
 ## Go Backend Skills (skills/go/)
 
@@ -100,6 +100,13 @@ These keyword patterns appear in written plans, not in user prompts:
 | TDD cycle, red phase, green phase, refactor phase | `tdd` |
 | Issue #, GitHub issue, ticket | `to-issues` / `triage` |
 | Architecture decision, ADR, module boundary | `improve-codebase-architecture` |
+
+## Tools & Integrations (skills/tools/)
+
+| Signal | Skill |
+|--------|-------|
+| docs, library, API reference, 文档, 怎么配置, setup guide, migration, version-specific, deprecation, 最新API | `context7-docs` |
+| search, scrape, crawl, research, 搜索, 抓取, 调研, look up, find, 找一下, 查一下, content extraction, web page, URL | `firecrawl-web` |
 
 ## Self-Learning Triggers
 

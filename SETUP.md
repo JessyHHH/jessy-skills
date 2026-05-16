@@ -70,7 +70,7 @@ source ~/.zshrc  # or ~/.bashrc
 ## Report to User
 
 After install, tell the user:
-- 59 skills installed to `~/.hermes/skills/`
+- 61 skills installed to `~/.hermes/skills/`
 - Shell integration installed to `~/.jessy-skills/hermes.sh` (sourced from config)
 - `project-workflow` + `karpathy-guidelines` will auto-load on every `hermes` invocation
 - Run `source ~/.zshrc` (or `~/.bashrc`, or `. $PROFILE`) or open a new terminal to activate
