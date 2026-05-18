@@ -10,7 +10,7 @@ author: "jessyhuang"
 metadata:
   hermes:
     tags: [web, scrape, search, research, firecrawl, tool]
-    auto_load: false
+    auto_load: true
 ---
 
 # Firecrawl — Web Search & Scraping via CLI

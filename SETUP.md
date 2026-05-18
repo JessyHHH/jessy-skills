@@ -108,6 +108,6 @@ source ~/.zshrc  # or ~/.bashrc
 After install, tell the user:
 - 61 skills installed to `~/.hermes/skills/`
 - Shell integration installed to `~/.jessy-skills/hermes.sh` (sourced from config)
-- `project-workflow` + `karpathy-guidelines` will auto-load on every `hermes` invocation
+- Auto-loaded on every `hermes` invocation: `project-workflow`, `karpathy-guidelines`, `firecrawl-web`
 - Context7 + Firecrawl CLIs installed and authenticated
 - Run `source ~/.zshrc` (or `~/.bashrc`, or `. $PROFILE`) or open a new terminal to activate

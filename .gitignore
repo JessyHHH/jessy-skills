@@ -3,3 +3,4 @@
 *~
 # Protect against accidental skill overwrites
 *.bak.*
+.firecrawl/

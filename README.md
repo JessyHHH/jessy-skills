@@ -18,7 +18,7 @@ npm install -g ctx7@latest firecrawl-cli@latest
 ctx7 login && firecrawl login  # 浏览器授权
 ```
 
-安装后每次启动 `hermes` 自动加载 `project-workflow` + `karpathy-guidelines`（自动识别 Go/Vue/Node/Skills Repository 项目）。
+安装后每次启动 `hermes` 自动加载 `project-workflow` + `karpathy-guidelines` + `firecrawl-web`（自动识别 Go/Vue/Node/Skills Repository 项目，网页搜索技能常驻）。
 
 ## 工作流概览
 
