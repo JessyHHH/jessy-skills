@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Go Dashboard</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #0d1117;
+    color: #c9d1d9;
+    min-height: 100vh;
+    padding: 2rem;
+  }
+  .container { max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 1.75rem; color: #58a6ff; margin-bottom: 1.5rem; }
+  h2 { font-size: 1.1rem; color: #8b949e; margin-bottom: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+  .card {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 1.25rem;
+  }
+  .card .label { font-size: 0.8rem; color: #8b949e; margin-bottom: 0.25rem; }
+  .card .value { font-size: 1.5rem; font-weight: 600; color: #f0f6fc; word-break: break-all; }
+
+  .status-ok { color: #3fb950; }
+  .status-warn { color: #d29922; }
+  .status-critical { color: #f85149; }
+
+  .activities { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 1.25rem; }
+  .activities table { width: 100%; border-collapse: collapse; }
+  .activities th { text-align: left; color: #8b949e; font-size: 0.8rem; padding: 0.5rem 0.75rem; border-bottom: 1px solid #30363d; }
+  .activities td { padding: 0.5rem 0.75rem; border-bottom: 1px solid #21262d; font-size: 0.85rem; font-family: 'SF Mono', 'Fira Code', monospace; }
+  .activities tr:last-child td { border-bottom: none; }
+  .activities .method { color: #79c0ff; }
+  .activities .path { color: #a5d6ff; }
+  .activities .latency { color: #8b949e; }
+
+  .refresh { font-size: 0.8rem; color: #484f58; margin-top: 1.5rem; text-align: center; }
+
+  @media (prefers-color-scheme: light) {
+    body { background: #ffffff; color: #24292f; }
+    .card, .activities { background: #f6f8fa; border-color: #d0d7de; }
+    h1 { color: #0969da; }
+    h2 { color: #57606a; }
+    .card .label { color: #57606a; }
+    .card .value { color: #1f2328; }
+    .activities th { color: #57606a; border-color: #d0d7de; }
+    .activities td { border-color: #d0d7de; }
+    .activities .method { color: #0550ae; }
+    .activities .path { color: #0a3069; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>&#9881; Go Dashboard</h1>
+
+  <h2>System Status</h2>
+  <div class="grid" id="stats">
+    <div class="card"><div class="label">Status</div><div class="value status-ok">Healthy</div></div>
+    <div class="card"><div class="label">Uptime</div><div class="value" data-key="uptime">—</div></div>
+    <div class="card"><div class="label">Go Version</div><div class="value" data-key="go_version">—</div></div>
+    <div class="card"><div class="label">Goroutines</div><div class="value" data-key="num_goroutine">—</div></div>
+    <div class="card"><div class="label">Memory</div><div class="value" data-key="mem_alloc_mb">—</div></div>
+    <div class="card"><div class="label">Requests</div><div class="value" data-key="req_count">—</div></div>
+  </div>
+
+  <h2>Recent Activities</h2>
+  <div class="activities">
+    <table>
+      <thead><tr><th>Time</th><th>Method</th><th>Path</th><th>Status</th><th>Latency</th></tr></thead>
+      <tbody id="activities-body">
+        <tr><td colspan="5" style="text-align:center;color:#8b949e">Loading...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="refresh">Auto-refresh every 3s</div>
+</div>
+
+<script>
+async function loadStats() {
+  try {
+    const r = await fetch('/api/stats');
+    const data = await r.json();
+    document.querySelectorAll('[data-key]').forEach(el => {
+      const key = el.dataset.key;
+      if (key === 'mem_alloc_mb') el.textContent = data[key].toFixed(1) + ' MB';
+      else el.textContent = data[key];
+    });
+  } catch(e) { console.error('stats fetch error', e); }
+}
+
+async function loadActivities() {
+  try {
+    const r = await fetch('/api/activities');
+    const data = await r.json();
+    const tbody = document.getElementById('activities-body');
+    if (!data.length) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#8b949e">No activity yet</td></tr>';
+      return;
+    }
+    tbody.innerHTML = data.reverse().map(a => {
+      const ts = new Date(a.time).toLocaleTimeString();
+      const statusClass = a.status >= 400 ? 'status-critical' : a.status >= 300 ? 'status-warn' : 'status-ok';
+      return `<tr>
+        <td style="color:#8b949e">${ts}</td>
+        <td class="method">${a.method}</td>
+        <td class="path">${a.path}</td>
+        <td class="${statusClass}">${a.status}</td>
+        <td class="latency">${a.latency}</td>
+      </tr>`;
+    }).join('');
+  } catch(e) { console.error('activities fetch error', e); }
+}
+
+loadStats();
+loadActivities();
+setInterval(() => { loadStats(); loadActivities(); }, 3000);
+</script>
+</body>
+</html>

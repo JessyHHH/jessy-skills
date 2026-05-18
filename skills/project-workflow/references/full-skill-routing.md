@@ -105,8 +105,9 @@ These keyword patterns appear in written plans, not in user prompts:
 
 | Signal | Skill |
 |--------|-------|
-| docs, library, API reference, 文档, 怎么配置, setup guide, migration, version-specific, deprecation, 最新API | `context7-docs` |
-| search, scrape, crawl, research, 搜索, 抓取, 调研, look up, find, 找一下, 查一下, content extraction, web page, URL | `firecrawl-web` |
+| docs, library, API reference, 文档, 怎么配置, setup guide, migration, version-specific, deprecation, 最新API, verify API, check docs, current version | `context7-docs` |
+| search, scrape, crawl, research, 搜索, 抓取, 调研, look up, find, 找一下, 查一下, content extraction, web page, URL, browser, verify latest, external docs, what's new, latest usage, 浏览器, 最新用法 | `firecrawl-web` |
+| dashboard, landing page, UI, design, 设计, 前端, 美化, style, visual, HTML page, frontend, 界面 | `anthropic-frontend-design` |
 
 ## Self-Learning Triggers
 
