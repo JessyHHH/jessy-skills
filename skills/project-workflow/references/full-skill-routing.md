@@ -76,9 +76,9 @@ Complete task-signal → skill mapping covering all 61 skills across 6 categorie
 | grill with docs, domain model, ADR, terminology, 文档拷问 | `grill-with-docs` |
 | handoff, compact, another agent, context switch, 交接 | `handoff` |
 | simplify, caveman, dumb it down, 简化 | `caveman` |
-| write skill, create skill, author skill, 写技能 | `write-a-skill` |
+| write skill, create skill, author skill, 写技能 | `write-pr-description` |
 
-## Plan-Specific Signals (Phase 2.5 only)
+## Plan-Specific Signals (Phase 2 post-plan check)
 
 These keyword patterns appear in written plans, not in user prompts:
 
@@ -117,5 +117,5 @@ The workflow monitors its own effectiveness:
 | Phase 7 fails 3+ times on same issue | Load `diagnose` + `golang-troubleshooting` |
 | Phase 6 finds >5 modernization warnings | Load `golang-modernize` |
 | User repeatedly corrects same type of mistake | Save correction pattern to `.hermes/plans/learned-*.md` |
-| Plan doesn't reference a relevant skill | Phase 2.5 catches and loads it |
+| Plan doesn't reference a relevant skill | Phase 2 post-plan skill check catches and loads it |
 | Build time >30s for small change | Flag for performance optimization |
