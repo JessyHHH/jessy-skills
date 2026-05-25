@@ -24,7 +24,7 @@ ctx7 login && firecrawl login  # 浏览器授权
 
 ```
 Phase 0    → Environment Detection     项目类型（Go/Vue/Node/Skills Repo）、语言版本、依赖扫描
-Phase 0.3  ∥  Codebase Analysis +      并行执行：delegate_task 分析代码库
+Phase 0.3  ∥  Codebase Analysis +      并行执行：delegate_task 分析代码库 + 提取术语 → 自动生成/更新 CONTEXT.md
 Phase 0.5  ∥  Smart Skill Selection    同时匹配 55-skill 路由表加载技能
               ↓ 两者完成后 augment      0.3 成果补全遗漏的代码库模式 skill
 Phase 1    → Design First ⚡ HARD-GATE  设计先于编码：2-3方案/spec文档/自审
@@ -78,7 +78,7 @@ Phase 8    → Finish Branch ★           验证→环境→选项→执行→�
 ## 包含的技能（55+）
 
 ### 工作流
-- `project-workflow` — 11-Phase 自驱动并行流水线（核心，v6.1）
+- `project-workflow` — 11-Phase 自驱动并行流水线（核心，v6.2）
 - `karpathy-guidelines` — LLM 编码五条纪律
 - `deep-interview` — 苏格拉底式需求澄清
 - `ralplan` — 多 agent 共识计划
@@ -180,7 +180,7 @@ jessy-skills/
 ├── shell/
 │   └── hermes.sh           # Shell 函数
 └── skills/
-    ├── project-workflow/   # 核心工作流 (v6.1)
+    ├── project-workflow/   # 核心工作流 (v6.2)
     ├── karpathy-guidelines/
     ├── methodology/        # ★ 方法技能
     │   ├── prior-research/
