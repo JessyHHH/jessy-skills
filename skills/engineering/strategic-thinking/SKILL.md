@@ -41,9 +41,6 @@ Agent 大多数时候在**正常模式**下按 project-workflow 走。只有用�
   │
   ├── 匹配 "grill" / "压力测试" / "方案行不行" / "这个设计" / "这个计划"？
   │   └── YES → Grill 模式
-  │        └── 检查项目有无 CONTEXT.md 或 docs/adr/
-  │             ├── 有 → Grill (with-docs)
-  │             └── 无 → Grill (basic)
   │
   ├── 匹配 "handoff" / "交接" / "换 agent" / "移交"？
   │   └── YES → Handoff 模式（单次，终结性）
@@ -104,19 +101,14 @@ Agent 大多数时候在**正常模式**下按 project-workflow 走。只有用�
 
 **何时用：** 用户提出了设计、计划、方案，需要压力测试。
 
-### 子模式选择
-
-- **Grill (basic)**：项目无 CONTEXT.md 或 docs/adr/
-- **Grill (with-docs)**：项目有 CONTEXT.md 或 docs/adr/
-
-### 通用行为（两种子模式共用）
+### 通用行为
 
 - 逐个决策树分支追问，一次一个问题
 - 每个问题给出推荐答案
 - 等用户反馈后再继续下一个问题
 - 优先探索代码而非追问（如果问题能通过读代码回答）
 
-### Grill (basic) 追问框架
+### 追问框架
 
 ```
 决策树结构：
@@ -127,7 +119,7 @@ Agent 大多数时候在**正常模式**下按 project-workflow 走。只有用�
 5. 风险：最可能出问题的地方？
 ```
 
-### Grill (with-docs) 额外行为
+### 领域文档意识（CONTEXT.md / ADR）
 
 **领域文档意识：**
 
