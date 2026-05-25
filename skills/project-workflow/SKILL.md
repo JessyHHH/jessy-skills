@@ -1,7 +1,7 @@
 ---
 name: project-workflow
 description: "v5.0 Generic self-driving project workflow: environment detection → smart skill selection → deep-interview → write plan → ralplan → parallel impl → mandatory code-review → verified completion. Zero hardcoded skills. Project type auto-detected from go.mod or latest available."
-version: "v6.1"
+version: "v6.2"
 author: "jessyhuang"
 metadata:
   hermes:
@@ -96,16 +96,24 @@ Phase 0.3 is MANDATORY for ALL brownfield questions. No "lightweight" bypass. No
    )
    ```
 
-3. **Use analysis results to:**
+3. **Extract domain terminology → generate/update CONTEXT.md** (after analysis completes):
+   - Scan analysis results for: struct names → entities, method/function names → actions, domain-specific comments
+   - If `CONTEXT.md` already exists: append new entities/terms not yet covered (don't duplicate)
+   - If `CONTEXT.md` does not exist: create it with a baseline glossary from code
+   - Format each entry as: term name, brief definition inferred from code, confidence level
+   - Mark low-confidence entries with `(?)` — these are candidates for Grill mode to refine
+   - Save to project root as `CONTEXT.md`
+
+4. **Use analysis results to:**
    - Inform Phase 0.5 skill selection (e.g., "codebase uses samber/lo patterns" → auto-load golang-samber-lo)
    - Ground Phase 1 deep-interview questions in real code ("I see you have X pattern in Y file — should we follow that?")
    - Provide evidence-backed answers if the user just asked a question (not a change request)
 
-4. If the user only asked a question (not a change request): present findings directly and STOP. Do not proceed to Phase 1.
+5. If the user only asked a question (not a change request): present findings directly and STOP. Do not proceed to Phase 1.
 
-5. If the user asked for changes: **Auto-transition to Phase 0.5.**
+6. If the user asked for changes: **Auto-transition to Phase 0.5.**
 
-   **Exit:** `Phase 0.3 complete. [analyze] codebase analyzed.`
+   **Exit:** `Phase 0.3 complete. [analyze] codebase analyzed. CONTEXT.md updated if new terms found.`
 
 ---
 

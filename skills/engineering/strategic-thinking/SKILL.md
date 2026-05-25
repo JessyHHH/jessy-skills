@@ -121,7 +121,7 @@ Agent 大多数时候在**正常模式**下按 project-workflow 走。只有用�
 
 ### 领域文档意识（CONTEXT.md / ADR）
 
-**领域文档意识：**
+**与 Phase 0.3 互补：** Phase 0.3 从代码推断生成 CONTEXT.md baseline（标记 `(?)` 低置信度条目），Grill 追问时优先精炼这些 `(?)` 条目——代码给框架，对话给精度。
 
 1. **检查术语一致性：** 当用户使用的术语与 CONTEXT.md 冲突时，立即指出。
    > "你的 CONTEXT.md 定义了 'cancellation' 为 X，但你似乎说的是 Y——到底是哪个？"
