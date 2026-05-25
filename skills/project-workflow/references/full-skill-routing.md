@@ -71,11 +71,7 @@ Complete task-signal → skill mapping covering all 61 skills across 6 categorie
 | issues, break down, tickets, implementation tasks, 拆分任务 | `to-issues` |
 | PRD, spec, requirements document, product spec, 需求文档 | `to-prd` |
 | triage, review bug, incoming issue, classify, 分类, 筛选 | `triage` |
-| zoom out, big picture, unfamiliar code, broader context, 全局视角 | `zoom-out` |
-| grill me, stress test plan, challenge design, 拷问计划 | `grill-me` |
-| grill with docs, domain model, ADR, terminology, 文档拷问 | `grill-with-docs` |
-| handoff, compact, another agent, context switch, 交接 | `handoff` |
-| simplify, caveman, dumb it down, 简化 | `caveman` |
+| zoom out, grill, handoff, caveman, 全景, 压力测试, 交接, 省 token, brief, design review, 切换模式, 思维模式, unfamiliar code, broader context, stress test plan, challenge design, context switch, 简化, big picture, 全局视角, grill me, 拷问计划, grill with docs, domain model, ADR, terminology, 文档拷问, compact, another agent, simplify, dumb it down, 换个角度, 靠谱, 省点, 方案行不行 | `strategic-thinking` |
 | write skill, create skill, author skill, 写技能 | `write-pr-description` |
 
 ## Plan-Specific Signals (Phase 2 post-plan check)
@@ -105,8 +101,15 @@ These keyword patterns appear in written plans, not in user prompts:
 
 | Signal | Skill |
 |--------|-------|
-| docs, library, API reference, 文档, 怎么配置, setup guide, migration, version-specific, deprecation, 最新API | `context7-docs` |
-| search, scrape, crawl, research, 搜索, 抓取, 调研, look up, find, 找一下, 查一下, content extraction, web page, URL | `firecrawl-web` |
+| docs, library, API reference, 文档, 怎么配置, setup guide, migration, version-specific, deprecation, 最新API, search, scrape, crawl, research, 搜索, 抓取, 调研, look up, find, 找一下, 查一下, content extraction, web page, URL, 不确定怎么用, how to configure, 最新版API, context7, firecrawl, 搜, 查, 不确定, 最新版 | `prior-research` |
+
+## Methodology Skills (skills/methodology/)
+
+| Signal | Skill |
+|--------|-------|
+| 新增 API, 新增接口, 新增 RPC, API 设计, 接口设计, endpoint, gRPC, proto, new endpoint, REST design | `api-design-first` |
+| 数据模型, 数据库设计, 新增表, 新增存储, 表结构, 建表, entity, model, struct 设计, DDL | `data-model-first` |
+| 错误处理, error handling, 错误码, error code, 错误分类, error classification, 状态码 | `error-taxonomy` |
 
 ## Self-Learning Triggers
 

@@ -1,10 +1,6 @@
 ---
 name: context7-docs
-description: >-
-  Fetch up-to-date library documentation and code examples via Context7 CLI.
-  Use when writing code that depends on libraries, verifying API signatures,
-  or when training data may be outdated. Triggers on docs, library, API,
-  setup, migration, version-specific questions.
+- description: "DEPRECATED → 使用 prior-research。Fetch up-to-date library documentation and code examples via Context7 CLI."
 version: "1.0"
 author: "jessyhuang"
 metadata:

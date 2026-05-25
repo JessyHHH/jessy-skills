@@ -1,6 +1,6 @@
 ---
 name: handoff
-description: Compact the current conversation into a handoff document for another agent to pick up.
+description: "DEPRECATED → 使用 strategic-thinking 的 Handoff 模式。Compact the current conversation into a handoff document for another agent to pick up."
 argument-hint: "What will the next session be used for?"
 ---
 

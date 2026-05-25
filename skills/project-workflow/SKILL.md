@@ -1,7 +1,7 @@
 ---
 name: project-workflow
 description: "v5.0 Generic self-driving project workflow: environment detection → smart skill selection → deep-interview → write plan → ralplan → parallel impl → mandatory code-review → verified completion. Zero hardcoded skills. Project type auto-detected from go.mod or latest available."
-version: "6.0"
+version: "v6.1"
 author: "jessyhuang"
 metadata:
   hermes:
@@ -9,7 +9,7 @@ metadata:
     auto_load: true
 ---
 
-# Project Workflow v6.0 — Intelligent Self-Driving Pipeline with Hard Gates
+# Project Workflow v6.1 — Intelligent Self-Driving Pipeline with Hard Gates
 
 **Core design:** Zero pre-loaded skills (except `karpathy-guidelines`). Everything is context-detected: Go version, project type, codebase patterns, task signals. The agent adapts to the project, not the other way around.
 
@@ -23,7 +23,7 @@ metadata:
 2. **Simplicity First** — Minimum code. No speculative abstractions. Senior engineer would approve.
 3. **Surgical Changes** — Only requested files. Match existing style. Every change traces to request.
 4. **Goal-Driven Execution** — Success criteria defined BEFORE implementation. Verify with fresh evidence.
-5. **Verify Before Asserting** — Search before claiming. For uncertain facts (library APIs, version differences, deprecated features, dependency compatibility), `web_search()` first. Don't guess. If results are ambiguous, state uncertainty explicitly.
+5. **Verify Before Asserting** — Search before claiming. For uncertain facts (library APIs, version differences, deprecated features, dependency compatibility), use the `prior-research` priority chain (curl → context7 → firecrawl → delegate_task). Don't guess. If results are ambiguous, state uncertainty explicitly.
 
 ---
 
@@ -68,6 +68,8 @@ metadata:
    - Phase 0.5: task signal matching + skill loading — runs concurrently
    - When both complete: Phase 0.5 augments from Phase 0.3 findings → Phase 1
 
+   **Exit:** `Phase 0 complete. [Go/Vue/Node/Skills] detected. → Phase 0.3 + 0.5.`
+
 ---
 
 ## Phase 0.3: Pre-Task Codebase Analysis (brownfield only)
@@ -103,6 +105,8 @@ Phase 0.3 is MANDATORY for ALL brownfield questions. No "lightweight" bypass. No
 
 5. If the user asked for changes: **Auto-transition to Phase 0.5.**
 
+   **Exit:** `Phase 0.3 complete. [analyze] codebase analyzed.`
+
 ---
 
 ## Phase 0.5: Smart Skill Selection 
@@ -125,7 +129,7 @@ Phase 0.3 is MANDATORY for ALL brownfield questions. No "lightweight" bypass. No
    - Announce each loaded skill. Skip skills already internalized in baseline.
 
 2. **Task signal matching + mandatory skill loading:**
-   - Match keywords against `references/full-skill-routing.md` — covers all 59 skills across Go, Vue, Frontend, and Engineering categories.
+   - Match keywords against `references/full-skill-routing.md` — covers all 55 skills across Go, Vue, Frontend, Engineering, and Methodology categories.
    - Also scan for self-learning triggers: if the user mentions "performance" with an error tone, preload `golang-benchmark`; if they mention repeated failures, preload `diagnose`.
 
 3. **Modernize freshness trigger:** (Go only) If Phase 0 freshness check discovered features for a Go version newer than the skill's table, **force-load** `golang-modernize`.
@@ -155,6 +159,8 @@ Phase 0.3 is MANDATORY for ALL brownfield questions. No "lightweight" bypass. No
    - Silent skip if nothing new. Announce any additions.
 
 8. **Auto-transition to Phase 1.**
+
+   **Exit:** `Phase 0.5 complete. [routing-table] skills loaded. → Phase 1.`
 
 ---
 
@@ -225,6 +231,10 @@ Phase 0.3 is MANDATORY for ALL brownfield questions. No "lightweight" bypass. No
 
 10. **Auto-transition to Phase 2** — invoke `skill_view(name='plan')` and write implementation plan.
 
+   **Exit:** `Phase 1 complete. [deep-interview] design approved. → Phase 2.`
+
+**Grill mode yield:** If `strategic-thinking` Grill mode is active, yield Phase 1 questioning to Grill. Resume Phase 1 after Grill exits.
+
 ---
 
 ## Phase 2: Write Plan 
@@ -244,18 +254,9 @@ Phase 0.3 is MANDATORY for ALL brownfield questions. No "lightweight" bypass. No
    - **Risks**: Known risks, tradeoffs, open questions
 4. Save with `write_file` to `.hermes/plans/<timestamp>-<slug>.md`
 5. Announce: "Plan saved to `.hermes/plans/<filename>.md`"
-6. **Post-Plan Skill Check** (runs immediately after plan is written):
-
-   <MUST-LOAD>
-   计划写完后必须扫描技术信号并加载遗漏的 skill。发现缺失 → 立即 skill_view()。
-   只扫描不加载 = 跳过本步骤，不可接受。
-   </MUST-LOAD>
-
-   - Read the plan file
-   - Scan for technical signals using `references/full-skill-routing.md` (all 59 skills)
-   - **Diff** against already-loaded skills (Phase 0.5 + Phase 1 re-check)
-   - For each missing: `skill_view(name='<skill>')`. Announce additions (silent skip if nothing new)
 7. **Auto-transition to Phase 3.**
+
+   **Exit:** `Phase 2 complete. [plan] saved. → Phase 3.`
 
 ---
 
@@ -276,6 +277,8 @@ Phase 0.3 is MANDATORY for ALL brownfield questions. No "lightweight" bypass. No
 6. Present the plan for user approval before proceeding.
 7. **Auto-transition to Phase 4.**
 
+   **Exit:** `Phase 3 complete. [ralplan] consensus reached. → Phase 4.`
+
 ---
 
 
@@ -284,6 +287,8 @@ Phase 0.3 is MANDATORY for ALL brownfield questions. No "lightweight" bypass. No
 Parallel execution via `delegate_task(tasks=[...])`. For large-scale parallelism patterns, see `references/delegate-task-parallelism.md`.
 
 **Auto-transition to Phase 5.**
+
+**Exit:** `Phase 4 complete. [ultrawork] tasks executed. → Phase 5.`
 
 ---
 
@@ -343,6 +348,8 @@ Check code against the plan/spec from Phase 2-3. Does the implementation match w
 - Accept "close enough" on spec compliance
 
 6. **Auto-transition to Phase 6.**
+
+**Exit:** `Phase 5 complete. [code-review] passed. → Phase 6.`
 
 ---
 
@@ -421,6 +428,8 @@ Skip any step = lying, not verifying
 5. `for ref in $(grep -oP 'references/[a-z0-9-]+\.md' SKILL.md); do test -f "$ref" && echo "✓" || echo "✗"; done` → 所有引用文件存在
 
 **Ralph loop:** On any failure → fix → re-verify. Loop until ALL pass.
+
+**Exit:** `Phase 6 complete. All verifications passed. → Phase 7.`
 
 ### Completion Declaration (with evidence)
 
@@ -525,7 +534,7 @@ IF found and schedule differs:
    - Remove all detailed entries that were classified into skills
    - Write compact trigger entries:
      "<topic>: 加载 skill memory-<topic-slug>"
-   - Trigger format MUST be machine-parseable by Phase 0.5 step 5.5
+   - Trigger format MUST be machine-parseable by Phase 0.5 step 5
 5. Verify: memory usage dropped by ≥30% from pre-compression level
 6. If still ≥90% after first pass → run a second pass with more aggressive summarization
 ```
@@ -558,7 +567,7 @@ mixgo: 加载 skill memory-mixgo
 golang: 加载 skill memory-golang
 ```
 
-Phase 0.5 step 5.5 scans for `加载 skill <name>` pattern and auto-loads the referenced skill.
+Phase 0.5 step 5 scans for `加载 skill <name>` pattern and auto-loads the referenced skill.
 
 #### Generated Skill Format
 
@@ -586,6 +595,8 @@ Auto-generated from compressed agent memory. Loaded automatically by Phase 0.5 t
 
 3. **Transition:** 7.1 + 7.2 dispatched immediately. 7.3 cron runs independently every 2h.
 
+**Exit:** `Phase 7 complete. [retrospective] dispatched. → Phase 8.`
+
 ---
 
 ## Phase 8: Finish Branch ★ NEW v6.0
@@ -596,21 +607,9 @@ Auto-generated from compressed agent memory. Loaded automatically by Phase 0.5 t
 
 **Announce at start:** "**Phase 8: Finish Branch** — completing development work."
 
-### Step 1: Final Verification
+### Step 1: Verify Phase 6 Results Still Hold
 
-Before presenting options, run the project's test suite one final time:
-
-```bash
-# Go
-go test -race -count=1 ./...
-
-# Vue/Node
-npm test  # or npx vitest run
-```
-
-**If tests fail:** Stop. Fix before proceeding. Cannot complete with failing tests.
-
-**If tests pass:** Continue to Step 2.
+Confirm the Phase 6 verification suite still passes — no new code was written between Phase 6 and Phase 8.
 
 ### Step 2: Detect Environment
 
@@ -719,18 +718,18 @@ Only for Options 1 and 4. Options 2 and 3 preserve workspace.
 
 ## Self-Driving Transition Rules
 
-| Phase | Auto-transition to | Condition |
-|-------|-------------------|-----------|
-| 0 (Environment) | 0.3 + 0.5 (parallel) | Detection complete — launch both simultaneously |
-| 0.3 + 0.5 (done) | 1 (Design First) | 0.3 analysis complete + 0.5 skills loaded + augment done |
-| 1 (Design First) | 2 (Write Plan) | Design approved + spec written + user reviewed |
-| 2 (Write Plan) | 3 (Ralplan) | Plan saved + post-plan skill check done |
-| 3 (Ralplan) | 4 (Implement) | Plan approved |
-| 4 (Implement) | 5 (Two-Stage Review) | All tasks done |
-| 5 (Two-Stage Review) | 6 (Verify) | Both stages pass — spec ✅ then code ✅ |
-| 6 (Verify) | 7 (Retro + Cron) | ALL checks PASS with fresh evidence |
-| 7 (Retro + Cron) | 8 (Finish Branch) | 7.1 + 7.2 dispatched; 7.3 cron runs independently |
-| 8 (Finish Branch) | Done | Branch merged/PR created/kept/discarded per user choice |
+| Phase | Auto-transition to | Skills Expected | Condition |
+|-------|-------------------|-----------------|-----------|
+| 0 (Environment) | 0.3 + 0.5 (parallel) | — | Detection complete — launch both simultaneously |
+| 0.5 (Skills) | 1 (Design First) | `routing-table` | 0.3 analysis complete + skills loaded + augment done |
+| 1 (Design First) | 2 (Write Plan) | `deep-interview` | Design approved + spec written + user reviewed |
+| 2 (Write Plan) | 3 (Ralplan) | `plan` | Plan saved |
+| 3 (Ralplan) | 4 (Implement) | `ralplan` | Plan approved |
+| 4 (Implement) | 5 (Two-Stage Review) | `ultrawork` | All tasks done |
+| 5 (Two-Stage Review) | 6 (Verify) | `code-review` | Both stages pass — spec ✅ then code ✅ |
+| 6 (Verify) | 7 (Retro + Cron) | — | ALL checks PASS with fresh evidence |
+| 7 (Retro + Cron) | 8 (Finish Branch) | — | 7.1 + 7.2 dispatched; 7.3 cron runs independently |
+| 8 (Finish Branch) | Done | — | Branch merged/PR created/kept/discarded per user choice |
 
 ---
 
@@ -747,8 +746,7 @@ Only for Options 1 and 4. Options 2 and 3 preserve workspace.
 | "skip branch" | Skip Phase 8 (Finish Branch) |
 | "FULL" | All phases with deep depth |
 
-- `references/full-skill-routing.md` — Complete 59-skill routing table (Go + Vue + Frontend + Engineering + plan-specific)
-- `references/full-skill-routing.md` — 
+- `references/full-skill-routing.md` — Complete 55-skill routing table (Go + Vue + Frontend + Engineering + Methodology + plan-specific)
 - `references/performance-benchmarks.md` — v2.0/v3.0/v4.0 timing data
 
 ---

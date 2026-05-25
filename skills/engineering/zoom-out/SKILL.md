@@ -1,6 +1,6 @@
 ---
 name: zoom-out
-description: Tell the agent to zoom out and give broader context or a higher-level perspective. Use when you're unfamiliar with a section of code or need to understand how it fits into the bigger picture.
+description: "DEPRECATED → 使用 strategic-thinking 的 Zoom-Out 模式。Tell the agent to zoom out and give broader context or a higher-level perspective."
 disable-model-invocation: true
 ---
 

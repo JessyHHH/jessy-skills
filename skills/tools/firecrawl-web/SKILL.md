@@ -1,10 +1,6 @@
 ---
 name: firecrawl-web
-description: >-
-  Search, scrape, and crawl the web via Firecrawl CLI. Use when the user wants
-  to search the web, research a topic, scrape a webpage, extract content from
-  URLs, crawl documentation sites, or interact with browser-based pages.
-  Provides real-time web access with clean Markdown output.
+- description: "DEPRECATED → 使用 prior-research。Search, scrape, and crawl the web via Firecrawl CLI."
 version: "1.0"
 author: "jessyhuang"
 metadata:
