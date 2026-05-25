@@ -38,7 +38,7 @@ bash install.sh
 
 This single command handles everything:
 - Backs up existing skills to `~/.hermes/skills.bak.*`
-- Copies all 59 skills to `~/.hermes/skills/`
+- Copies all 55+ skills to `~/.hermes/skills/`
 - Cleans stale skills removed from the repo
 - Installs `hermes.sh` to `~/.jessy-skills/` (clean source-based, not inline)
 - Configures shell: zsh/bash/pwsh auto-detected
@@ -106,8 +106,8 @@ source ~/.zshrc  # or ~/.bashrc
 ## Report to User
 
 After install, tell the user:
-- 61 skills installed to `~/.hermes/skills/`
+- 55+ skills installed to `~/.hermes/skills/`
 - Shell integration installed to `~/.jessy-skills/hermes.sh` (sourced from config)
-- Auto-loaded on every `hermes` invocation: `project-workflow`, `karpathy-guidelines`, `firecrawl-web`
+- Auto-loaded on every `hermes` invocation: `project-workflow`, `karpathy-guidelines`
 - Context7 + Firecrawl CLIs installed and authenticated
 - Run `source ~/.zshrc` (or `~/.bashrc`, or `. $PROFILE`) or open a new terminal to activate

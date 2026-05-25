@@ -1,5 +1,5 @@
 # Auto-load core skills into every Hermes session
-# Core: project-workflow (12-phase pipeline) + karpathy-guidelines (coding discipline)
+# Core: project-workflow (9-phase pipeline) + karpathy-guidelines (coding discipline)
 hermes() {
     local AUTO_SKILLS="project-workflow,karpathy-guidelines"
     local args=("$@")
