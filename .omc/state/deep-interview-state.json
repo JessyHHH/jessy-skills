@@ -1,0 +1,16 @@
+{
+  "active": true,
+  "current_phase": "deep-interview",
+  "state": {
+    "interview_id": "d5f3a8e1-2b4c-4f9d-a7e6-1c3d5f8a9b2e",
+    "type": "brownfield",
+    "initial_idea": "My Go service is getting slow and I need to make it faster.",
+    "initial_context_summary": null,
+    "rounds": [],
+    "current_ambiguity": 1.0,
+    "threshold": 0.2,
+    "codebase_context": null,
+    "challenge_modes_used": [],
+    "ontology_snapshots": []
+  }
+}

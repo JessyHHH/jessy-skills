@@ -144,6 +144,7 @@ Agent 大多数时候在**正常模式**下按 project-workflow 走。只有用�
    > "你的代码对整个 Order 做取消，但你刚说支持部分取消——哪个是对的？"
 
 5. **即时更新 CONTEXT.md：** 术语确定后立刻更新，不攒到后面批量改。
+   - If no `CONTEXT.md` exists, create one when the first term is resolved（懒创建）
 
 6. **ADR 创建条件（三条全满足才创建）：**
    - 难以逆转 — 改主意的代价有意义
