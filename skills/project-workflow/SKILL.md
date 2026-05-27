@@ -1,7 +1,7 @@
 ---
 name: project-workflow
 description: "v5.0 Generic self-driving project workflow: environment detection → smart skill selection → deep-interview → write plan → ralplan → parallel impl → mandatory code-review → verified completion. Zero hardcoded skills. Project type auto-detected from go.mod or latest available."
-version: "v6.2"
+version: "v6.3"
 author: "jessyhuang"
 metadata:
   hermes:
@@ -90,19 +90,35 @@ Phase 0.3 is MANDATORY for ALL brownfield questions. No "lightweight" bypass. No
 2. Run analyze via `delegate_task`:
    ```
    delegate_task(
-     goal="Deep read-only analysis of this Go codebase. Understand: architecture, key abstractions, data flow, error handling patterns, concurrency patterns, testing patterns. Identify confidence levels for each finding.",
+     goal="Deep read-only analysis of this Go codebase.
+
+Part A — Architecture: key abstractions, data flow, error handling patterns,
+  concurrency patterns, testing patterns. Identify confidence levels for each finding.
+
+Part B — Domain entities: scan all main structs (models, entities, domain types),
+  list with inferred meanings. Rules:
+  1. ALL inferred meanings marked (?) — NEVER claim certainty from code alone
+  2. Only struct-level entities (user, order, product...), skip helper/utility types
+  3. Max 15 entities — sparsity > noise
+  4. Comment citations as evidence where available
+  5. Output as structured 3-section format:
+     ## Entities
+     - EntityName (?): Brief definition. Source: path/to/file.go:line
+     ## Actions
+     - KeyMethod (on Entity): What it does. Source: path/to/file.go:line
+     ## Confidence Note
+     ⚠️ Auto-generated from code — verify with `grill` before trusting.
+     All items marked (?) need human confirmation.",
      context="Project: <path from Phase 0>. Files: <list from Phase 0 file scan>. Task the user is asking about: <summary>. Produce: ranked synthesis with file references, evidence-vs-inference boundaries, confidence scores.",
      toolsets=["terminal", "file"]
    )
    ```
 
-3. **Extract domain terminology → generate/update CONTEXT.md** (after analysis completes):
-   - Scan analysis results for: struct names → entities, method/function names → actions, domain-specific comments
-   - If `CONTEXT.md` already exists: append new entities/terms not yet covered (don't duplicate)
-   - If `CONTEXT.md` does not exist: create it with a baseline glossary from code
-   - Format each entry as: term name, brief definition inferred from code, confidence level
-   - Mark low-confidence entries with `(?)` — these are candidates for Grill mode to refine
-   - Save to project root as `CONTEXT.md`
+3. **Generate/update CONTEXT.md from Step 2 Part B output:**
+   - Read the Entities + Actions + Confidence Note from analysis output
+   - If `CONTEXT.md` already exists: merge new entities (skip duplicates by name)
+   - If `CONTEXT.md` does not exist: create from Part B output verbatim
+   - Keep the ⚠️ header at top of file
 
 4. **Use analysis results to:**
    - Inform Phase 0.5 skill selection (e.g., "codebase uses samber/lo patterns" → auto-load golang-samber-lo)
