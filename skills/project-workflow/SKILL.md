@@ -1,7 +1,7 @@
 ---
 name: project-workflow
 description: "v5.0 Generic self-driving project workflow: environment detection → smart skill selection → deep-interview → write plan → ralplan → parallel impl → mandatory code-review → verified completion. Zero hardcoded skills. Project type auto-detected from go.mod or latest available."
-version: "v6.3"
+version: "v7.0"
 author: "jessyhuang"
 metadata:
   hermes:
@@ -9,7 +9,7 @@ metadata:
     auto_load: true
 ---
 
-# Project Workflow v6.1 — Intelligent Self-Driving Pipeline with Hard Gates
+# Project Workflow v7.0 — Intelligent Self-Driving Pipeline with Hard Gates
 
 **Core design:** Zero pre-loaded skills (except `karpathy-guidelines`). Everything is context-detected: Go version, project type, codebase patterns, task signals. The agent adapts to the project, not the other way around.
 
@@ -59,77 +59,152 @@ metadata:
 5. **Announce findings:**
    ```
    "Phase 0: Environment
-   - Type: Go (go 1.25.3) / Vue (3.x + TypeScript) / Node
-   - Skill pool: skills/go/ / skills/vue/
-   - Tooling: go available / node available"
+   - Type: Go (go 1.25.3) / Vue (3.x + TypeScript) / Node / Skills Repository
+   - Skill pool: skills/go/ / skills/vue/ / (Skills: in-repo skills/)
+   - Tooling: go available / node available / git available"
    ```
-   **Auto-transition: Launch Phase 0.3 and Phase 0.5 in parallel.**
-   - Phase 0.3: `delegate_task(analyze)` — runs in background
-   - Phase 0.5: task signal matching + skill loading — runs concurrently
-   - When both complete: Phase 0.5 augments from Phase 0.3 findings → Phase 1
+   **Auto-transition: Launch Phase 0.3 and Phase 0.5.**
+   - Phase 0.3: analysis + CONTEXT.md generation — runs first (HARD-GATE)
+   - Phase 0.5: task signal matching + skill loading — runs after 0.3 completes
+   - Phase 0.5 augments from Phase 0.3 findings → Phase 1
 
-   **Exit:** `Phase 0 complete. [Go/Vue/Node/Skills] detected. → Phase 0.3 + 0.5.`
+   **Exit:** `Phase 0 complete. [type] detected. → Phase 0.3.`
 
 ---
 
-## Phase 0.3: Pre-Task Codebase Analysis (brownfield only)
+## Phase 0.3: Codebase Analysis + CONTEXT.md Generation
 
-**Goal:** Deeply understand the codebase before asking the user questions or planning changes. Ground all subsequent phases in real code, not assumptions.
+<HARD-GATE>
+CONTEXT.md missing OR commit SHA ≠ HEAD → MUST run Phase 0.3.
+Skip ONLY when CONTEXT.md exists AND commit matches AND announced with reason.
+适用于全部项目类型（Go / Vue / Node / Skills Repository），无例外。
+</HARD-GATE>
 
-**Trigger:** ALL of the following:
-- Project is brownfield (has go.mod + Go files from Phase 0)
-- The user sent a message requiring a response (not just a bare greeting like "hi"/"hello")
-- Skip if: greenfield only — NO OTHER EXCEPTIONS
-
-Phase 0.3 is MANDATORY for ALL brownfield questions. No "lightweight" bypass. No "general Go question" bypass. No "external topic" bypass. The agent cannot judge relevance without reading the codebase first — what looks like a general question may have project-specific context that completely changes the answer. This trigger fires for EVERY non-greeting message in a brownfield project.
+**Goal:** Analyze codebase → generate/refresh CONTEXT.md (Knowledge Layer + Instruction Layer skeleton). Ground all subsequent phases in real code, not assumptions.
 
 **Procedure:**
 
-1. Announce: "**Phase 0.3: Codebase Analysis** — understanding the project before proceeding."
+1. **Check CONTEXT.md freshness:**
+   - If `CONTEXT.md` exists: read commit SHA from header → compare with `git rev-parse HEAD`
+   - Match → announce "CONTEXT.md fresh (commit <sha>), skipping analysis." → skip to Phase 0.5
+   - No match or no CONTEXT.md → proceed to step 2
 
-2. Run analyze via `delegate_task`:
+2. **Announce:** "**Phase 0.3: Codebase Analysis** — understanding the project before proceeding."
+
+3. **Branch by project type** (detected in Phase 0):
+
+   ```
+   Phase 0.3: Codebase Analysis
+     │
+     ├── Go 项目（有 go.mod + .go 文件）
+     │   └── delegate_task(go-analysis) → Knowledge + Instruction 骨架
+     │
+     ├── Vue/Node 项目（有 package.json）
+     │   └── delegate_task(fe-analysis) → 组件树 + 路由 + 状态管理
+     │
+     └── Skills Repository（有 skills/*/SKILL.md）
+         └── delegate_task(skills-analysis) → SKILL.md 结构 + 引用完整性
+   ```
+
+4. **For Go projects:** Run `delegate_task`:
    ```
    delegate_task(
-     goal="Deep read-only analysis of this Go codebase.
+     goal="Deep read-only analysis.
 
-Part A — Architecture: key abstractions, data flow, error handling patterns,
-  concurrency patterns, testing patterns. Identify confidence levels for each finding.
+   Part A — Architecture: error handling patterns, DI approach, concurrency model,
+     testing conventions, file organization. Confidence level per finding.
 
-Part B — Domain entities: scan all main structs (models, entities, domain types),
-  list with inferred meanings. Rules:
-  1. ALL inferred meanings marked (?) — NEVER claim certainty from code alone
-  2. Only struct-level entities (user, order, product...), skip helper/utility types
-  3. Max 15 entities — sparsity > noise
-  4. Comment citations as evidence where available
-  5. Output as structured 3-section format:
-     ## Entities
-     - EntityName (?): Brief definition. Source: path/to/file.go:line
-     ## Actions
-     - KeyMethod (on Entity): What it does. Source: path/to/file.go:line
-     ## Confidence Note
-     ⚠️ Auto-generated from code — verify with `grill` before trusting.
-     All items marked (?) need human confirmation.",
-     context="Project: <path from Phase 0>. Files: <list from Phase 0 file scan>. Task the user is asking about: <summary>. Produce: ranked synthesis with file references, evidence-vs-inference boundaries, confidence scores.",
+   Part B — Entity Map: all main structs with relationships.
+     Format: Name ★★★/★★/★ (CONFIDENCE). Source: path/to/file.go:line.
+     Rules: mark all inferred meanings, skip helper types, max 15 entities.
+
+   Part C — Key Interfaces: abstracts that define system boundaries.
+     Include source path, implementations, invariants.
+
+   Part D — Package Map: directory → responsibility (1 line each).
+
+   Part E — Instruction Layer skeleton: build/test/lint commands from Phase 0 detection,
+     coding conventions inferred from code patterns.
+
+   Output: full CONTEXT.md with BOTH Knowledge Layer and Instruction Layer
+   (using <!-- KNOWLEDGE_START --> / <!-- KNOWLEDGE_END --> wrappers).
+   Header MUST include: Commit: <sha> | Date: <iso> | Go <version>.
+   Follow format spec in references/context-md-spec.md.",
+     context="Project: <path>. Go version: <version>. Task: <summary>.",
      toolsets=["terminal", "file"]
    )
    ```
 
-3. **Generate/update CONTEXT.md from Step 2 Part B output:**
-   - Read the Entities + Actions + Confidence Note from analysis output
-   - If `CONTEXT.md` already exists: merge new entities (skip duplicates by name)
-   - If `CONTEXT.md` does not exist: create from Part B output verbatim
-   - Keep the ⚠️ header at top of file
+5. **For Skills Repository:** Run `delegate_task`:
+   ```
+   delegate_task(
+     goal="Analyze this Skills Repository.
 
-4. **Use analysis results to:**
-   - Inform Phase 0.5 skill selection (e.g., "codebase uses samber/lo patterns" → auto-load golang-samber-lo)
-   - Ground Phase 1 deep-interview questions in real code ("I see you have X pattern in Y file — should we follow that?")
-   - Provide evidence-backed answers if the user just asked a question (not a change request)
+   Part A — SKILL.md inventory: count total skills, categorize by directory,
+     list auto_load skills, detect version mismatches (frontmatter vs directory name).
 
-5. If the user only asked a question (not a change request): present findings directly and STOP. Do not proceed to Phase 1.
+   Part B — Reference integrity: for each skill, verify referenced files in
+     references/ exist. Flag broken references with [BROKEN] marker.
 
-6. If the user asked for changes: **Auto-transition to Phase 0.5.**
+   Part C — Structure map: directory tree showing skill categories and nesting.
 
-   **Exit:** `Phase 0.3 complete. [analyze] codebase analyzed. CONTEXT.md updated if new terms found.`
+   Part D — Instruction Layer skeleton: extract common patterns from skill
+     references (build commands, testing conventions, naming rules).
+     Suggest invariants from repeated patterns across skills.
+
+   Output: full CONTEXT.md with Knowledge Layer (inventory + structure) and
+   Instruction Layer (common patterns as conventions).
+   Follow format spec in references/context-md-spec.md.
+   Header MUST include: Commit: <sha> | Date: <iso> | Skills Repository.",
+     context="Project: <path>. Skill count: <N>. Task: <summary>.",
+     toolsets=["terminal", "file"]
+   )
+   ```
+
+6. **Write/overwrite CONTEXT.md** from delegate_task output:
+   - `write_file(path='CONTEXT.md', content=<output>)`
+   - Full overwrite — no merge. The analysis is the source of truth.
+   - If subdirectory CONTEXT.md files exist, leave them untouched (hand-merge if conflicts found in cross-validation).
+
+7. **Generate Instruction Layer skeleton** (if delegate_task didn't already):
+   - Insert build/test/lint commands detected in Phase 0
+   - Mark all entries with `[auto]` tag
+   - Template sections: `## Build & Test Commands`, `## Code Conventions`, `## Invariants`
+
+8. **Cross-validation** (lightweight, inline):
+   - Sample 5 entity Source paths → `search_files` verify existence
+   - Architecture claims vs go.mod: if "uses samber/oops" → grep go.mod for samber/oops
+   - If subdirectory CONTEXT.md exists → diff for conflicting declarations
+   - Log failures but don't block
+
+9. **Announce results to user** (MUST be visible):
+   ```
+   "Phase 0.3: Codebase Analysis — [project-type], commit <sha>
+
+   Knowledge Layer: generated
+     - Architecture: <N> patterns (error handling, DI, ...)
+     - Entity Map: <N> entities, <N> relationships, <N> interfaces
+     - Confidence: HIGH <N> / MEDIUM <N> / LOW <N>
+     - Package structure: <N> directories mapped
+
+   Instruction Layer: skeleton ready
+     - Commands: build, test, lint, security
+     - Conventions: <N> patterns detected [auto]
+     - Invariants: template (fill during Phase 1 Grill)
+
+   Cross-validation: 5/5 paths exist ✓ | go.mod consistency ✓ | subdirectory conflicts 0
+
+   → CONTEXT.md written."
+   ```
+
+10. **Use analysis results to:**
+    - Inform Phase 0.5 skill selection (auto-load skills detected from codebase patterns)
+    - Ground Phase 1 design questions in real code
+    - If user only asked a question (not a change request): answer from analysis directly. STOP.
+
+11. **Auto-transition to Phase 0.5.**
+
+    **Exit:** `Phase 0.3 complete. [project-type] analyzed. CONTEXT.md written (commit <sha>). → Phase 0.5.`
 
 ---
 
@@ -178,7 +253,7 @@ Part B — Domain entities: scan all main structs (models, entities, domain type
    ```
 
 7. **Augment from Phase 0.3 findings** (runs after Phase 0.3 completes):
-   - Phase 0.3 runs in parallel with the selection above. When it finishes, scan its analysis output for codebase patterns not yet covered (samber, gRPC, database, concurrency patterns).
+   - Phase 0.3 already completed. Scan its analysis output for codebase patterns not yet covered (samber, gRPC, database, concurrency patterns).
    - Diff against already-loaded skills. Load missing ones via `skill_view(name='...')`.
    - Silent skip if nothing new. Announce any additions.
 

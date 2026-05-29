@@ -24,9 +24,9 @@ ctx7 login && firecrawl login  # 浏览器授权
 
 ```
 Phase 0    → Environment Detection     项目类型（Go/Vue/Node/Skills Repo）、语言版本、依赖扫描
-Phase 0.3  ∥  Codebase Analysis +      并行执行：delegate_task 分析代码库 + 提取术语 → 自动生成/更新 CONTEXT.md
-Phase 0.5  ∥  Smart Skill Selection    同时匹配 55-skill 路由表加载技能
-              ↓ 两者完成后 augment      0.3 成果补全遗漏的代码库模式 skill
+Phase 0.3  →  Codebase Analysis +      delegate_task 分析代码库 → 自动生成/更新 CONTEXT.md（双层：Knowledge + Instruction）
+Phase 0.5  →  Smart Skill Selection      匹配 55-skill 路由表加载技能
+              ↓ 0.3 完成后 augment         0.3 成果补全遗漏的代码库模式 skill
 Phase 1    → Design First ⚡ HARD-GATE  设计先于编码：2-3方案/spec文档/自审
 Phase 2    → Write Plan                写计划到 .hermes/plans/
 Phase 3    → Ralplan Consensus         多 agent 审查计划
@@ -42,7 +42,8 @@ Phase 8    → Finish Branch ★           验证→环境→选项→执行→�
 ## 核心设计
 
 - **零硬编码**：项目类型从 go.mod/package.json/skills/SKILL.md 自动检测，skill 自动路由
-- **自驱动并行**：Phase 0.3 + 0.5 并行启动，Phase 4 delegate_task 并发实现
+- **自驱动顺序**：Phase 0.3 先分析代码库生成 CONTEXT.md（支持 Go/Vue/Node/Skills Repository），Phase 0.5 再加载技能并 augment
+- **CONTEXT.md 双层结构**：Knowledge Layer（机器生成，全量覆盖）+ Instruction Layer（命令/约定/不变量，人工维护）
 - **自学习**：Phase 7.1 后台反省 → 保存 memory；7.3 cron 每 2h 跨 session 反思，memory ≥90% 自动压缩为 skill
 - **Hard Gates**：HARD-GATE（设计先于编码）、Iron Law（新鲜证据先于声称）、Two-Stage Review（spec→code）
 - **Ralph 循环**：任何验证失败 → 自动修复 → 重新验证，直到全部通过
@@ -63,8 +64,9 @@ Phase 8    → Finish Branch ★           验证→环境→选项→执行→�
 ## 工作流内部规则
 
 - **Karpathy 五条**：先思考再编码 · 极简主义 · 手术式修改 · 目标驱动 · **prior-research 优先级链先搜再断言**
-- **Phase 0.3 ∥ 0.5**：环境检测后 analyze 和 skill 选择并行启动
-- **Phase 0.3 强制**：brownfield 项目任何非问候消息都必须先跑代码分析
+- **Phase 0.3 先行**：环境检测后先跑代码分析 → 生成 CONTEXT.md；0.5 在 0.3 完成后执行并 augment
+- **Phase 0.3 HARD-GATE 强制**：CONTEXT.md 缺失或 commit SHA 不匹配时必须执行，全项目类型适用
+- **Phase 0.3 全量覆盖**：CONTEXT.md 每次重新分析全量覆盖，不 merge 追加
 - **Phase 1 Grill yield**：若 `strategic-thinking` Grill 模式激活，Phase 1 追问让路给 Grill
 - **HARD-GATE**：在用户批准设计前，禁止写任何代码 — 适用于所有项目
 - **BOUNDARY-CHECK**：第一轮 clarify 必须确认项目边界 — 涉及/不涉及哪些文件模块
@@ -78,7 +80,7 @@ Phase 8    → Finish Branch ★           验证→环境→选项→执行→�
 ## 包含的技能（55+）
 
 ### 工作流
-- `project-workflow` — 11-Phase 自驱动并行流水线（核心，v6.2）
+- `project-workflow` — 11-Phase 自驱动流水线（核心，v7.0）
 - `karpathy-guidelines` — LLM 编码五条纪律
 - `deep-interview` — 苏格拉底式需求澄清
 - `ralplan` — 多 agent 共识计划
@@ -180,7 +182,7 @@ jessy-skills/
 ├── shell/
 │   └── hermes.sh           # Shell 函数
 └── skills/
-    ├── project-workflow/   # 核心工作流 (v6.2)
+    ├── project-workflow/   # 核心工作流 (v7.0)
     ├── karpathy-guidelines/
     ├── methodology/        # ★ 方法技能
     │   ├── prior-research/

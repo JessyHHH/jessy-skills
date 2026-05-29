@@ -1,4 +1,4 @@
-# Full Skill Routing Table — project-workflow v6.0
+# Full Skill Routing Table — project-workflow v7.0
 
 Complete task-signal → skill mapping covering all 61 skills across 6 categories.
 
