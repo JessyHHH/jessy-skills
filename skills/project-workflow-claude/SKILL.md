@@ -18,6 +18,26 @@ metadata:
 
 ---
 
+## OMC Compliance — Delegation Rules (MANDATORY)
+
+Under OMC, the master agent CANNOT directly Write/Edit files in the working project. The PreToolUse hook WILL block these operations. ALL file modifications MUST be delegated to subagents.
+
+| Operation | Who | Tool |
+|-----------|-----|------|
+| Read, search, plan, design | Master agent | Read, Glob, Grep, AskUserQuestion |
+| Skill loading | Master agent | Skill |
+| Shell commands (Bash) | Master agent | Bash |
+| CRITICAL: File writing | Subagent ONLY | Agent(general-purpose) |
+| Multi-file implementation | Subagent pipeline | Workflow or Agent |
+| Knowledge/spec/plan file write | Subagent | Agent(general-purpose) |
+
+SELF-CHECK before EVERY Write/Edit call:
+"If I am the master agent → STOP. Delegate to Agent subagent instead."
+
+NEVER use Bash(sed -i) to edit files — it bypasses the hook but causes silent errors. If Write/Edit is needed, use Agent subagent.
+
+---
+
 ## Karpathy Enforcement (ALL phases, ALWAYS)
 
 1. **Think Before Coding** — Assumptions stated. Tradeoffs surfaced. Confusion named.
@@ -83,28 +103,19 @@ Skip ONLY when knowledge.md exists AND commit matches AND announced with reason.
 
 2. **Announce:** "**Phase 0.3: Codebase Analysis** — understanding the project before proceeding."
 
-3. **Branch by project type** (detected in Phase 0):
-   - **Go project:** `Agent(description='Analyze Go codebase architecture', prompt='Deep read-only analysis...', subagent_type='Explore')`
-   - **Vue/Node project:** `Agent(description='Analyze frontend codebase', prompt='Component tree, routing, state management...', subagent_type='Explore')`
-   - **Skills Repository:** `Agent(description='Analyze skills repository structure', prompt='SKILL.md inventory, reference integrity...', subagent_type='Explore')`
-
-4. **Agent analysis prompt MUST request:**
-   - Architecture patterns with confidence levels (HIGH/MEDIUM/LOW)
-   - Key entities/interfaces with source file references (path:line)
-   - Package/directory responsibility map (1 line each)
-   - Instruction Layer skeleton: build/test/lint commands from Phase 0
-
-5. **Write output:**
-   - `Write('.claude/context/knowledge.md', agent_output)`
-   - Header MUST include: `<!-- ⚠️ Auto-generated | Commit: <sha> | Date: <iso> | <project-type> -->`
+3. **Analyze AND write** (single Agent, analysis + file write):
+   - **Go project:** `Agent(description='Analyze Go codebase and write knowledge.md', prompt='Analyze this Go codebase architecture: error handling patterns, DI approach, concurrency model, testing conventions. Map key entities with source paths. Then Write the full analysis to .claude/context/knowledge.md. Header: <!-- ⚠️ Auto-generated | Commit: <sha> | Date: <iso> | Go <version> -->.', subagent_type='general-purpose')`
+   - **Vue/Node project:** `Agent(description='Analyze frontend codebase and write knowledge.md', prompt='Analyze this frontend codebase: component tree, routing, state management, testing setup. Map key components with source paths. Then Write the full analysis to .claude/context/knowledge.md. Header: <!-- ⚠️ Auto-generated | Commit: <sha> | Date: <iso> | <type> -->.', subagent_type='general-purpose')`
+   - **Skills Repository:** `Agent(description='Analyze skills repository and write knowledge.md', prompt='Analyze this Skills Repository: SKILL.md inventory by category, reference integrity, directory structure. Map key patterns. Then Write the full analysis to .claude/context/knowledge.md. Header: <!-- ⚠️ Auto-generated | Commit: <sha> | Date: <iso> | Skills Repository -->.', subagent_type='general-purpose')`
+   - Header MUST include commit SHA + date + project type
    - Full overwrite — no merge
 
-6. **Cross-validation** (lightweight):
+4. **Cross-validation** (lightweight):
    - Sample 3-5 source paths from analysis → `Read()` verify existence
    - For Go: architecture claims vs `Grep` in `go.mod`
    - Log failures but don't block
 
-7. **Announce results:**
+5. **Announce results:**
    ```
    "Phase 0.3: Codebase Analysis — [project-type], commit <sha>
    Knowledge Layer: generated — N patterns, N entities, N interfaces
@@ -173,7 +184,7 @@ Simple projects = shorter design, but still present it first.
 4. **Propose 2-3 approaches** with trade-offs and recommendation.
 
 5. **Write design spec:**
-   - `Write('.claude/specs/YYYY-MM-DD-<topic>-design.md', spec_content)`
+   - `Agent(description='Write design spec', prompt='Write the design spec to .claude/specs/YYYY-MM-DD-<topic>-design.md. Content: [spec_content].', subagent_type='general-purpose')`
 
 6. **Spec self-review:**
    - Check for TBD/TODO, contradictions, ambiguous scope
@@ -204,7 +215,7 @@ Simple projects = shorter design, but still present it first.
    - **Verification**: How we'll test each step
    - **Risks**: Known risks, tradeoffs, open questions
 
-3. `Write('.claude/plans/<timestamp>-<slug>.md', plan_content)`
+3. `Agent(description='Write implementation plan', prompt='Write the implementation plan to .claude/plans/<timestamp>-<slug>.md with Goal, Context, Approach, Files, Verification, Risks sections.', subagent_type='general-purpose')`
 
 4. Auto-transition to Phase 3.
 
