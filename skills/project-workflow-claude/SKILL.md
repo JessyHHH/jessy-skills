@@ -28,7 +28,7 @@ Under OMC, the master agent CANNOT directly Write/Edit files in the working proj
 | Skill loading | Master agent | Skill |
 | Shell commands (Bash) | Master agent | Bash |
 | CRITICAL: File writing | Subagent ONLY | Agent(general-purpose) |
-| Multi-file implementation | Subagent pipeline | Workflow or Agent |
+| Multi-file implementation | Subagent pipeline | Agent(general-purpose, model='sonnet' default) |
 | Knowledge/spec/plan file write | Subagent | Agent(general-purpose) |
 
 SELF-CHECK before EVERY Write/Edit call:
@@ -309,59 +309,50 @@ Simple projects = shorter design, but still present it first.
 
 ---
 
-## Phase 4: Implement (Workflow Parallel)
+## Phase 4: Implement (Ultrawork Parallel)
 
-**Goal:** Execute the plan using Claude Code's Workflow tool for precise pipeline orchestration.
+**Goal:** Execute all implementation tasks simultaneously using ultrawork's parallel pattern. Phase 5 handles review, Phase 6 handles verification. Phase 4 only implements.
+
+**Source:** Adapted from OMC ultrawork parallel execution engine.
 
 **Procedure:**
 
-1. Announce: "**Phase 4: Implement** — executing via Workflow orchestration."
+1. **ANNOUNCE:** "**Phase 4: Implement** — parallel execution via ultrawork pattern."
 
-2. **Workflow pre-flight check:**
-   - Confirm Workflow tool is available in current session schema
-   - If absent → fall back to sequential `Agent()` calls with manual coordination
+2. **CLASSIFY** tasks by complexity and dependency:
+   - Simple (typo, config, one-liner) → model='haiku'
+   - Standard (feature, refactor) → model='sonnet' (default)
+   - Complex (architecture, debug race condition) → model='opus'
+   - Group into waves: independent tasks fire together; tasks with file dependencies on prior wave results are deferred to the next wave. No two tasks touching the same file fire in the same wave.
 
-3. **Build the Workflow script:**
-   ```javascript
-   export const meta = {
-     name: 'phase4-implement',
-     description: 'Implement tasks from plan with review-verify pipeline',
-     phases: [{ title: 'Implement' }, { title: 'Review' }, { title: 'Verify' }],
-   }
+3. **FIRE ALL** — never serialize independent work:
+   ```
+   // Wave 1: independent tasks (no overlapping files)
+   Agent(description='Implement: <task1>', prompt='...',
+         subagent_type='general-purpose', model='sonnet', run_in_background=true)
+   Agent(description='Implement: <task2>', prompt='...',
+         subagent_type='general-purpose', model='haiku', run_in_background=true)
 
-   const TASKS = [/* extracted from Phase 3 plan */]
+   // Wave 2: tasks depending on wave-1 file changes (await wave 1 first)
+   Agent(description='Implement: <task3>', prompt='...',
+         subagent_type='general-purpose', model='sonnet', run_in_background=true)
+   ```
+   Within each wave, fire all agents in ONE message. Between waves, await wave completion before firing next.
 
-   phase('Implement')
-   const results = await pipeline(
-     TASKS,
-     // Stage 1: Implement
-     task => agent(`Implement: ${task.description}. Files: ${task.files.join(', ')}`, {
-       label: `impl:${task.id}`,
-       schema: { type: 'object', properties: { files: {}, summary: {}, errors: {} } }
-     }),
-     // Stage 2: Self-review (per-task, no barrier)
-     impl => agent(`Review implementation of ${impl.summary}. Check: spec compliance, style, tests.`, {
-       label: `review:${impl.files?.[0]}`,
-     }),
-     // Stage 3: Verify (per-task, no barrier)
-     review => agent(`Verify: run build+test for ${review}. Report pass/fail.`, {
-       label: `verify:${review}`,
-     })
-   )
+4. **COLLECT** results as they complete:
+   - Success → mark done
+   - Failure → immediately spawn a retry Agent(..., run_in_background=true) — do NOT wait for other tasks to finish before retrying. The retry runs concurrently with still-running wave agents. After 3 failed attempts, mark as blocked.
+   - `Bash(command='git diff --stat')` to summarize changes
 
-   log(`Implemented ${results.filter(Boolean).length}/${TASKS.length} tasks`)
+5. **REPORT** — auto-transition to Phase 5:
+   ```
+   "Phase 4: Implemented
+   - Tasks: N/N completed (M retried, B blocked)
+   - Files: <count> changed
+   → Phase 5."
    ```
 
-4. **Workflow execution pattern:**
-   - `pipeline()` over tasks — each task flows through implement→review→verify independently
-   - Results that fail verification → re-queued for next iteration
-   - Max 3 retries per task
-
-5. **Post-implementation:**
-   - `Bash(command='git diff --stat')` → summarize changes
-   - Report: tasks completed, files changed, any failures
-
-6. Auto-transition to Phase 5.
+6. **Auto-transition** to Phase 5.
 
 ---
 
