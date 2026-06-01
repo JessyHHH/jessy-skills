@@ -1,11 +1,10 @@
 ---
 name: project-workflow-claude
-description: "v1.0 Self-driving 11-phase pipeline for Claude Code. Auto-detect project type → load matching skills → design→plan→implement→review→verify. Hard Gates + Iron Law. Requires OMC for ralph/ralplan."
+description: "v1.0 Self-driving 11-phase pipeline for Claude Code. Auto-detect project type → load matching skills → design→plan→implement→review→verify. Hard Gates + Iron Law."
 version: "v1.0"
 author: "jessyhuang"
 metadata:
-  requires: [oh-my-claudecode]
-  fallback: "Phase 3 uses simplified inline consensus review. Phase 6 uses manual verify-fix loop."
+  standalone: true
 ---
 
 # Project Workflow Claude v1.0 — Self-Driving Pipeline with Hard Gates
@@ -14,13 +13,13 @@ metadata:
 
 **Self-driving:** Announce phases → execute → auto-transition. Never wait for user to say "next".
 
-**Platform:** Claude Code v2.1+ with OMC (oh-my-claudecode) v4.14+. Phases 3/6 use OMC's `ralplan`/`ralph`. Fallback available without OMC.
+**Platform:** Claude Code v2.1+. Standalone — no external dependencies.
 
 ---
 
-## OMC Compliance — Delegation Rules (MANDATORY)
+## Delegation Rules (MANDATORY)
 
-Under OMC, the master agent CANNOT directly Write/Edit files in the working project. The PreToolUse hook WILL block these operations. ALL file modifications MUST be delegated to subagents.
+The master agent is a SUPERVISOR, not an implementer. ALL file modifications MUST be delegated to subagents.
 
 | Operation | Who | Tool |
 |-----------|-----|------|
@@ -292,14 +291,13 @@ Simple projects = shorter design, but still present it first.
 
 1. Announce: "**Phase 3: Ralplan Consensus** — reviewing the plan."
 
-2. **OMC prerequisite check:**
-   - Try `Skill(skill='ralplan')` with the plan as context
-   - If ralplan succeeds → Planner→Architect→Critic consensus loop runs automatically
-   - If ralplan unavailable → **Fallback**: Run simplified inline consensus:
-     a. Present plan summary + RALPLAN-DR (Principles, Decision Drivers, Options)
-     b. `Agent(description='Architect review', prompt='Review for architectural soundness...')`
-     c. After Architect completes: `Agent(description='Critic review', prompt='Evaluate quality criteria...')`
-     d. Address feedback, re-review until APPROVE or 3 iterations
+2. **Inline Consensus Review:**
+   a. Present plan summary + RALPLAN-DR (Principles, Decision Drivers, Options)
+   b. `Agent(description='Architect review', prompt='Review the plan for architectural soundness. Provide strongest steelman antithesis, at least one real tradeoff tension, and synthesis. Return APPROVE/ITERATE/REJECT with specific findings.', subagent_type='general-purpose')`
+   c. AFTER Architect completes: `Agent(description='Critic review', prompt='Evaluate the plan against quality criteria. Check: principle-option consistency, fair alternatives, risk mitigation clarity, testable acceptance criteria, concrete verification steps. Return APPROVE/ITERATE/REJECT with specific findings.', subagent_type='general-purpose')`
+   d. If APPROVE → proceed to step 3
+   e. If ITERATE → address feedback → return to step 2b. Max 3 iterations.
+   f. If REJECT → present to user with reasons.
 
 3. **Output:** Bite-sized task list with file paths, expected changes, verification criteria.
 
@@ -311,7 +309,7 @@ Simple projects = shorter design, but still present it first.
 
 ## Phase 4: Implement (Ultrawork Parallel)
 
-**Goal:** Execute all implementation tasks in parallel using OMC's ultrawork protocol. Phase 5 handles review, Phase 6 handles full verification.
+**Goal:** Execute all implementation tasks in parallel using the ultrawork pattern. Phase 5 handles review, Phase 6 handles full verification.
 
 **Procedure:**
 
@@ -396,8 +394,10 @@ NO COMPLETION CLAIMS WITHOUT FRESH VERIFICATION EVIDENCE
 4. `Bash(command='git diff --check', description='No whitespace errors')`
 
 **On ANY failure:**
-- OMC available: `Skill(skill='ralph')` → fix → re-verify loop
-- OMC unavailable: Manual fix → re-run verification → repeat until ALL pass
+1. Identify the failing check
+2. `Agent(description='Fix verification failure', prompt='Fix this verification failure: [error details]. Make minimal changes. Do NOT redesign or refactor.', subagent_type='general-purpose')`
+3. Re-run verification
+4. Loop until ALL pass (max 5 iterations, then report to user)
 
 **Completion Declaration:**
 ```
