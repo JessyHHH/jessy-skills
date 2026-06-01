@@ -97,7 +97,11 @@ Skip ONLY when knowledge.md exists AND commit matches AND announced with reason.
 
 1. **Freshness check:**
    - `Read('.claude/context/knowledge.md')` → read header commit SHA
+   - `Read('CLAUDE.md')` → read header commit SHA (if file exists)
    - `Bash(command='git rev-parse HEAD')` → current SHA
+   - Both files independently compared against HEAD
+   - Stale knowledge.md → regenerate knowledge.md
+   - Stale CLAUDE.md → update CLAUDE.md AUTO blocks
    - Match → announce "Knowledge Layer fresh (commit <sha>), skipping analysis."
    - No match or no file → proceed to step 2
 
@@ -106,7 +110,55 @@ Skip ONLY when knowledge.md exists AND commit matches AND announced with reason.
 3. **Analyze AND write** (single Agent, analysis + file write):
    - **Go project:** `Agent(description='Analyze Go codebase and write knowledge.md', prompt='Analyze this Go codebase architecture: error handling patterns, DI approach, concurrency model, testing conventions. Map key entities with source paths. Then Write the full analysis to .claude/context/knowledge.md. Header: <!-- ⚠️ Auto-generated | Commit: <sha> | Date: <iso> | Go <version> -->.', subagent_type='general-purpose')`
    - **Vue/Node project:** `Agent(description='Analyze frontend codebase and write knowledge.md', prompt='Analyze this frontend codebase: component tree, routing, state management, testing setup. Map key components with source paths. Then Write the full analysis to .claude/context/knowledge.md. Header: <!-- ⚠️ Auto-generated | Commit: <sha> | Date: <iso> | <type> -->.', subagent_type='general-purpose')`
-   - **Skills Repository:** `Agent(description='Analyze skills repository and write knowledge.md', prompt='Analyze this Skills Repository: SKILL.md inventory by category, reference integrity, directory structure. Map key patterns. Then Write the full analysis to .claude/context/knowledge.md. Header: <!-- ⚠️ Auto-generated | Commit: <sha> | Date: <iso> | Skills Repository -->.', subagent_type='general-purpose')`
+   - **Skills Repository:** `Agent(description='Analyze skills repository and write knowledge.md + CLAUDE.md', prompt='
+     1. Analyze this Skills Repository: SKILL.md inventory by category, reference integrity,
+        directory structure. Map key patterns.
+     2. Write full analysis to .claude/context/knowledge.md.
+        Header: <!-- ⚠️ Auto-generated | Commit: <sha> | Date: <iso> | Skills Repository -->
+     3. Check CLAUDE.md:
+        a. If CLAUDE.md does NOT exist:
+           Write full skeleton:
+           Line 1: <!-- ⚠️ Auto-generated | Commit: <sha> | Date: <iso> | Skills Repository -->
+           Then template:
+
+           # <project-name> — Claude Code Configuration
+
+           ## Project
+           <!-- AUTO_START: Project -->
+           <project type and version from Phase 0>
+           Core workflow: `project-workflow-claude` + `karpathy-guidelines`
+           <!-- AUTO_END: Project -->
+           
+           ## Essential Commands
+           <!-- AUTO_START: Commands -->
+           <build/test/lint commands from Phase 0>
+           <!-- AUTO_END: Commands -->
+           
+           ## Conventions
+           (Human-editable — machine never touches this section)
+           <inferred from codebase, 2-3 items>
+           
+           ## Project Knowledge
+           Architecture analysis: [.claude/context/knowledge.md](.claude/context/knowledge.md)
+           Full workflow: load `project-workflow-claude` skill
+           
+        b. If CLAUDE.md exists:
+           i. Read it. Check for AUTO_START/AUTO_END markers.
+           ii. If zero AUTO markers present (legacy file):
+               Wrap existing project summary + core workflow line under ## Project
+               in AUTO_START:Project/AUTO_END:Project.
+               Wrap existing ## Essential Commands content in
+               AUTO_START:Commands/AUTO_END:Commands.
+               Add SHA header as line 1.
+               Do NOT touch Conventions or Project Knowledge content.
+           iii. If AUTO markers present and well-formed:
+               Update content between AUTO_START/AUTO_END pairs (Project + Commands).
+               Update SHA header date/commit.
+               Preserve ALL content outside AUTO markers.
+           iv. If AUTO markers present but malformed:
+               Emit warning: "CLAUDE.md has malformed AUTO markers. Please fix manually.
+               Skipping CLAUDE.md update." Do NOT touch the file.
+     ', subagent_type='general-purpose')`
    - Header MUST include commit SHA + date + project type
    - Full overwrite — no merge
 
@@ -119,8 +171,9 @@ Skip ONLY when knowledge.md exists AND commit matches AND announced with reason.
    ```
    "Phase 0.3: Codebase Analysis — [project-type], commit <sha>
    Knowledge Layer: generated — N patterns, N entities, N interfaces
+   CLAUDE.md: [fresh | generated | updated (N blocks) | skipped (malformed markers — fix manually) | upgraded (first-touch AUTO markers added)]
    Cross-validation: [pass/fail details]
-   → knowledge.md written. → Phase 0.5."
+   → knowledge.md + CLAUDE.md ready. → Phase 0.5."
    ```
 
 ---
