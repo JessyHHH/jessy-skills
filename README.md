@@ -52,6 +52,20 @@ ctx7 login && firecrawl login  # 浏览器授权
 - **Ralph 循环**：任何验证失败 → 自动修复 → 重新验证，直到全部通过
 - **Phase 出口可见**：每个 Phase 宣告用了什么 skill（`Phase X complete. [skill] verified. → Phase Y`）
 
+## OMC Compliance
+
+project-workflow-claude follows OMC's delegation architecture:
+
+| Role | Responsibility | Tools |
+|------|---------------|-------|
+| **Master Agent** | Environment detection, skill loading, design dialogue, planning, Bash commands, git operations | Glob, Grep, Read, Bash, Skill, AskUserQuestion |
+| **Subagent (Agent)** | File writing (specs, plans, knowledge.md, source code) | Write, Edit, Read, Glob, Grep |
+| **Workflow** | Multi-file parallel implementation pipelines | pipeline(implement→review→verify) |
+| **OMC ralplan** | Consensus-based plan review (Planner→Architect→Critic) | ralplan skill |
+| **OMC ralph** | Verification-fix loop until all checks pass | ralph skill |
+
+Core rule: Master agent NEVER directly Write/Edit files outside trusted paths. All file modifications are delegated to Agent subagents. This is enforced by OMC's PreToolUse hook.
+
 ## 逃逸命令
 
 | 命令 | 效果 |

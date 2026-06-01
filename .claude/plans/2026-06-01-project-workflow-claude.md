@@ -2,7 +2,7 @@
 
 **Date:** 2026-06-01  
 **Spec:** `.claude/specs/2026-06-01-project-workflow-claude-design.md`  
-**Status:** Final — implemented (Phase 4-6 complete, all verifications passed)  
+**Status:** Final — all phases completed, OMC compliance verified  
 **Reviewers:** Architect (ITERATE) + Critic (ITERATE) → feedback incorporated
 
 ---

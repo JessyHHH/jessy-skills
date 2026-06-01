@@ -97,10 +97,10 @@ source ~/.zshrc  # or ~/.bashrc
 
 ## Platform Support
 
-| Platform | Workflow Skill | Shell Integration | Skill Dir |
-|----------|---------------|-------------------|-----------|
-| Hermes | `project-workflow` (v7.0) | `~/.jessy-skills/hermes.sh` | `~/.hermes/skills/` |
-| Claude Code | `project-workflow-claude` (v1.0) | `CLAUDE.md` auto-load | `~/.claude/skills/` |
+| Platform | Workflow Skill | Shell Integration | Skill Dir | OMC Required |
+|----------|---------------|-------------------|-----------|-------------|
+| Hermes | `project-workflow` (v7.0) | `~/.jessy-skills/hermes.sh` | `~/.hermes/skills/` | No |
+| Claude Code | `project-workflow-claude` (v1.0) | `CLAUDE.md` auto-load | `~/.claude/skills/` | Yes (ralph/ralplan for Phases 3/6) |
 
 | Shell | Config File | Status |
 |-------|-------------|--------|

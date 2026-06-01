@@ -1,7 +1,7 @@
 # Design Spec: project-workflow-claude
 
 **Date:** 2026-06-01  
-**Status:** Final — implemented  
+**Status:** Final — implemented with OMC compliance (dfde45b)  
 **Decision:** Independent Claude Code implementation, 3-layer shared architecture
 
 ---

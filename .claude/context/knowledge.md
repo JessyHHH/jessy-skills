@@ -1,32 +1,26 @@
-<!-- ⚠️ Auto-generated | Commit: 0d3c35b | Date: 2026-06-01 | Skills Repository -->
-<!-- Phase 0.3: Agent(Explore) analysis — full overwrite on change -->
+<!-- ⚠️ Auto-generated | Commit: a2f9fd0 | Date: 2026-06-01 | Skills Repository -->
+<!-- Phase 0.3: Agent analysis — full overwrite on change -->
 
 # Knowledge Layer: jessy-skills
 
 ## Architecture
-Skills Repository — 76 SKILL.md files across 4 platform layers:
-- **Orchestration**: project-workflow (Hermes), project-workflow-claude (Claude Code)
-- **Methodology**: prior-research, api-design-first, data-model-first, error-taxonomy
-- **Domain (Go, 21)**: concurrency, testing, error-handling, security, performance, design-patterns, …
-- **Domain (Vue, 8)**: best-practices, router, pinia, testing, debug, jsx, options-api, composable
-- **Engineering (10)**: strategic-thinking, diagnose, tdd, prototype, triage, …
+Skills Repository — 77 SKILL.md files, dual-platform (Hermes + Claude Code).
+- Hermes: project-workflow v7.0 (delegate_task, skill_view)
+- Claude Code: project-workflow-claude v1.0 (Workflow, Agent, Skill)
+- Shared: 72 domain skills (Go 34, Vue 8, Engineering 15, Methodology 4, Frontend 3)
+- Enforcement: HARD-GATE, Iron Law, Two-Stage Review
 
-## Key Interfaces
-- `skills/*/SKILL.md` — each skill is a self-contained YAML+Markdown file
-- `references/` — shared routing tables, format specs, benchmarks
-- `shell/` — platform CLI wrappers (hermes.sh)
-
-## Package Map
-| Directory | Responsibility |
-|-----------|---------------|
-| `skills/project-workflow/` | Hermes 9-phase self-driving pipeline |
-| `skills/project-workflow-claude/` | Claude Code 9-phase pipeline |
-| `skills/go/` | Go language patterns and best practices |
-| `skills/vue/` | Vue 3 Composition API patterns |
-| `skills/engineering/` | Engineering process and methodology |
-| `skills/methodology/` | Research and design methods |
-| `shell/` | CLI integration scripts |
-| `tests/` | Workflow verification scripts |
+## Key Directories
+| Path | Responsibility |
+|------|---------------|
+| skills/project-workflow/ | Hermes 9-phase pipeline (v7.0) |
+| skills/project-workflow-claude/ | Claude Code 11-phase pipeline (v1.0, OMC compliant) |
+| skills/go/ | 34 Go domain skills |
+| skills/vue/ | 8 Vue 3 skills |
+| skills/engineering/ | 15 engineering process skills |
+| skills/methodology/ | 4 methodology skills |
+| shell/ | Hermes CLI wrapper |
+| tests/ | 3 verification scripts |
 
 ## Generated
-Commit: 0d3c35b | 2026-06-01 | Skills Repository | 76 skills
+Commit: a2f9fd0 | 2026-06-01 | Skills Repository | 77 skills
