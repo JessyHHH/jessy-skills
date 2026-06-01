@@ -68,7 +68,7 @@ project-workflow-claude follows OMC's delegation architecture:
 
 Core rule: Master agent NEVER directly Write/Edit files outside trusted paths. All file modifications are delegated to Agent subagents. This is enforced by OMC's PreToolUse hook.
 
-**Setup requirement:** OMC's PreToolUse hook must be disabled. Add `"OMC_SKIP_HOOKS": "PreToolUse"` to `~/.claude/settings.json` env section. See SETUP.md for details.
+**Launch mode:** Use `DISABLE_OMC=1 claude` (or `pwf` alias). OMC hooks are redundant with the skill's own delegation rules. OMC skills remain available. See SETUP.md.
 
 ## 逃逸命令
 

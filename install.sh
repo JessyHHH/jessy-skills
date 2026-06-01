@@ -189,18 +189,12 @@ if [ $HAS_CLAUDE -eq 1 ]; then
 
     echo "  ✓ Claude Code integration ready"
 
-    # Configure OMC PreToolUse hook skip (required for project-workflow-claude)
-    if [ -f "$HOME/.claude/settings.json" ]; then
-        if ! grep -q "OMC_SKIP_HOOKS" "$HOME/.claude/settings.json" 2>/dev/null; then
-            echo "  ℹ OMC PreToolUse hook not configured."
-            echo "  → Add \"OMC_SKIP_HOOKS\": \"PreToolUse\" to ~/.claude/settings.json env section"
-            echo "  → See SETUP.md for details"
-        else
-            echo "  ✓ OMC PreToolUse hook already configured"
-        fi
-    else
-        echo "  ℹ ~/.claude/settings.json not found. Create it with:"
-        echo '    echo '"'"'{"env":{"OMC_SKIP_HOOKS":"PreToolUse"}}'"'"' > ~/.claude/settings.json'
+    # project-workflow-claude launch mode
+    echo "  ℹ Recommended: DISABLE_OMC=1 claude for project-workflow-claude"
+    echo "  → OMC hooks redundant with skill's own delegation rules"
+    echo "  → OMC skills (ralph/ralplan/ultrawork) remain available"
+    if [ -f "$DOTFILES/shell/claude.sh" ]; then
+        echo "  → Shell alias 'pwf' available: source $DOTFILES/shell/claude.sh"
     fi
 
     echo "  ℹ Restart Claude Code or run /reload-skills to activate"

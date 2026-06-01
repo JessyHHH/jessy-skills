@@ -113,31 +113,31 @@ source ~/.zshrc  # or ~/.bashrc
 
 After install, restart Claude Code or run `/reload-skills` to activate skills. The project's `CLAUDE.md` boot layer auto-loads each session. The `project-workflow-claude` skill uses OMC's `ralplan`/`ralph` for Phases 3/6 (recommended: install OMC plugin). Without OMC, simplified fallback review/retry loops are used.
 
-## OMC Configuration
+## Launch Mode
 
-project-workflow-claude requires OMC's PreToolUse hook to be disabled. The hook blocks master-agent file edits, but project-workflow-claude already enforces its own delegation rules (all file writes go through subagents). The hook is redundant and causes workflow interruptions.
+project-workflow-claude runs best without OMC's hooks. OMC skills (ralph/ralplan/ultrawork) remain available.
 
-### Disable PreToolUse Hook (required)
+### Quick setup
 
-Add to `~/.claude/settings.json` in the `"env"` section:
-
-```json
-"OMC_SKIP_HOOKS": "PreToolUse"
+Add to `~/.bashrc` or `~/.zshrc`:
+```bash
+alias pwf='DISABLE_OMC=1 claude'
 ```
 
-If the `"env"` section doesn't exist, create it:
-
-```json
-{
-  "env": {
-    "OMC_SKIP_HOOKS": "PreToolUse"
-  }
-}
+Or source the project's shell integration:
+```bash
+source ~/path/to/jessy-skills/shell/claude.sh
 ```
 
-If the file doesn't exist, create it with the above content.
+Then:
+```bash
+pwf                          # Start Claude Code without OMC hooks
+/project-workflow-claude     # Run the workflow
+```
 
-Verify: `grep OMC_SKIP_HOOKS ~/.claude/settings.json`
+### Why
+
+OMC's PreToolUse hook blocks master-agent file edits -- but project-workflow-claude already enforces its own delegation rules (all file writes go through subagents). Running without OMC hooks eliminates this redundancy while keeping OMC skills available.
 
 ## Report to User
 
