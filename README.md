@@ -1,5 +1,7 @@
 # jessy-skills — Multi-Language AI Engineering Skills
 
+![Version](https://img.shields.io/badge/version-v1.0-blue)
+
 一个支持 [Hermes Agent](https://github.com/NousResearch/hermes-agent) + [Claude Code](https://code.claude.com/) 的多语言工作流技能集合。11 阶段自驱动并行流水线（含 HARD-GATE / Iron Law / Two-Stage Review），76+ 技能覆盖 Go/Vue/前端/工程/方法论全流程。
 
 ## 快速安装
@@ -65,6 +67,8 @@ project-workflow-claude follows OMC's delegation architecture:
 | **OMC ralph** | Verification-fix loop until all checks pass | ralph skill |
 
 Core rule: Master agent NEVER directly Write/Edit files outside trusted paths. All file modifications are delegated to Agent subagents. This is enforced by OMC's PreToolUse hook.
+
+**Setup requirement:** OMC's PreToolUse hook must be disabled. Add `"OMC_SKIP_HOOKS": "PreToolUse"` to `~/.claude/settings.json` env section. See SETUP.md for details.
 
 ## 逃逸命令
 

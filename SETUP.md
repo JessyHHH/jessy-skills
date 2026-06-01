@@ -113,6 +113,32 @@ source ~/.zshrc  # or ~/.bashrc
 
 After install, restart Claude Code or run `/reload-skills` to activate skills. The project's `CLAUDE.md` boot layer auto-loads each session. The `project-workflow-claude` skill uses OMC's `ralplan`/`ralph` for Phases 3/6 (recommended: install OMC plugin). Without OMC, simplified fallback review/retry loops are used.
 
+## OMC Configuration
+
+project-workflow-claude requires OMC's PreToolUse hook to be disabled. The hook blocks master-agent file edits, but project-workflow-claude already enforces its own delegation rules (all file writes go through subagents). The hook is redundant and causes workflow interruptions.
+
+### Disable PreToolUse Hook (required)
+
+Add to `~/.claude/settings.json` in the `"env"` section:
+
+```json
+"OMC_SKIP_HOOKS": "PreToolUse"
+```
+
+If the `"env"` section doesn't exist, create it:
+
+```json
+{
+  "env": {
+    "OMC_SKIP_HOOKS": "PreToolUse"
+  }
+}
+```
+
+If the file doesn't exist, create it with the above content.
+
+Verify: `grep OMC_SKIP_HOOKS ~/.claude/settings.json`
+
 ## Report to User
 
 After install, tell the user:

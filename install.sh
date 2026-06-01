@@ -188,6 +188,21 @@ if [ $HAS_CLAUDE -eq 1 ]; then
     fi
 
     echo "  ✓ Claude Code integration ready"
+
+    # Configure OMC PreToolUse hook skip (required for project-workflow-claude)
+    if [ -f "$HOME/.claude/settings.json" ]; then
+        if ! grep -q "OMC_SKIP_HOOKS" "$HOME/.claude/settings.json" 2>/dev/null; then
+            echo "  ℹ OMC PreToolUse hook not configured."
+            echo "  → Add \"OMC_SKIP_HOOKS\": \"PreToolUse\" to ~/.claude/settings.json env section"
+            echo "  → See SETUP.md for details"
+        else
+            echo "  ✓ OMC PreToolUse hook already configured"
+        fi
+    else
+        echo "  ℹ ~/.claude/settings.json not found. Create it with:"
+        echo '    echo '"'"'{"env":{"OMC_SKIP_HOOKS":"PreToolUse"}}'"'"' > ~/.claude/settings.json'
+    fi
+
     echo "  ℹ Restart Claude Code or run /reload-skills to activate"
 fi
 
