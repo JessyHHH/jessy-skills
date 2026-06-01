@@ -166,36 +166,46 @@ Before writing or editing any file, present approach → get user approval.
 Simple projects = shorter design, but still present it first.
 </HARD-GATE>
 
-**Goal:** Turn ideas into fully formed designs through collaborative dialogue.
+**Goal:** Turn ideas into fully formed designs through collaborative dialogue. Explore codebase first, then Grill (one question at a time with recommended answers), exit when all 4 clarity dimensions are clear.
+
+**Source:** Adapted from obra/superpowers brainstorming pattern, Karpathy 5 principles.
 
 **Procedure:**
 
-1. **Announce:** "**Phase 1: Design First** — exploring approaches before implementation."
+1. **EXPLORE FIRST** (timebox 60 seconds):
+   - Read top-level files matching task keywords.
+   - `Bash(command='git log --oneline -5', description='Recent changes context')`
+   - If the codebase already answers a question, skip that question — never re-ask what's in the repo.
+   - Hard limit: 60 seconds. Move on when the timer expires.
 
-2. **Boundary check** (MUST run first):
-   - `AskUserQuestion(questions=[{question: "What files/packages are in scope? What is explicitly OUT of scope?", ...}])`
-   - Do NOT proceed to design without confirmed boundaries
+2. **GRILL** (one question at a time):
+   - **Mandatory first question:** Confirm scope boundary — "Here's what I think is in/out of scope based on exploration. Is this correct?" Ask nothing else until boundary is pinned.
+   - Then proceed through remaining clarity dimensions: intent (why, root cause), constraints (versions, deps, non-negotiables), success criteria (concrete, verifiable, how to prove done).
+   - **Each question MUST embed a recommended answer:** "I think X because Y — does that work?" This reduces decision fatigue. Explain reasoning and explicitly invite disagreement to avoid anchoring bias.
+   - **Exit condition:** Self-check all 4 clarity dimensions (intent, boundary, constraints, success) before asking the next question. When all 4 hold, announce:
+     ```
+     "Grill mode complete — all 4 dimensions clear:
+      1. Intent: [statement]
+      2. Boundary: [statement]
+      3. Constraints: [statement]
+      4. Success criteria: [statement]
+      → Moving to approach design."
+     ```
+     Then auto-transition to PROPOSE.
 
-3. **Clarify intent, constraints, acceptance criteria** (one question at a time):
-   - What problem are we solving? What are non-goals?
-   - Go version, dependency constraints, performance targets?
-   - How do we know it's done? Concrete, verifiable criteria.
+3. **PROPOSE** — 2-3 approaches with trade-offs and recommendation.
 
-4. **Propose 2-3 approaches** with trade-offs and recommendation.
+4. **WRITE SPEC** — `Agent(description='Write design spec', prompt='Write the design spec to .claude/specs/YYYY-MM-DD-<topic>-design.md. Content: [spec_content].', subagent_type='general-purpose')`
 
-5. **Write design spec:**
-   - `Agent(description='Write design spec', prompt='Write the design spec to .claude/specs/YYYY-MM-DD-<topic>-design.md. Content: [spec_content].', subagent_type='general-purpose')`
+5. **SELF-REVIEW** — Check for TBD/TODO, contradictions, ambiguous scope.
 
-6. **Spec self-review:**
-   - Check for TBD/TODO, contradictions, ambiguous scope
+6. **SKILL RE-CHECK** (after design approved):
+   - Re-scan codebase + task signals against routing table.
+   - Diff against Phase 0.5 loaded skills → load missing ones via `Skill(skill='<name>')`.
+   - Post-design codebase context may surface additional needed skills.
 
-7. **Present to user:** "Spec written to `.claude/specs/<file>`. Please review."
-
-8. **Skill Re-Check** (after design approved):
-   - Re-scan codebase + task signals against routing table
-   - Diff against Phase 0.5 loaded skills → load missing ones via `Skill(skill='<name>')`
-
-9. **Auto-transition to Phase 2.**
+7. **APPROVAL** — Present spec to user for confirmation.
+   - On approval: **Auto-transition to Phase 2.**
 
 ---
 

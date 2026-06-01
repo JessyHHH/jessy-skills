@@ -1,4 +1,4 @@
-<!-- ⚠️ Auto-generated | Commit: a2f9fd0 | Date: 2026-06-01 | Skills Repository -->
+<!-- ⚠️ Auto-generated | Commit: bc47cc3 | Date: 2026-06-01 | Skills Repository -->
 <!-- Phase 0.3: Agent analysis — full overwrite on change -->
 
 # Knowledge Layer: jessy-skills
