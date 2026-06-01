@@ -25,17 +25,30 @@ mkdir -p ~/.hermes/skills
 cp -r "$DOTFILES/skills/"* ~/.hermes/skills/
 echo "  ✓ Skills installed ($(ls "$DOTFILES/skills" | wc -l | tr -d ' ') skill dirs)"
 
-# === Copy skills to Claude Code ===
+# === Install skills to Claude Code (symlink-based) ===
 if [ $HAS_CLAUDE -eq 1 ]; then
-    echo "→ Copying skills to Claude Code..."
-    if [ -d "$HOME/.claude/skills" ] && [ "$(ls -A "$HOME/.claude/skills" 2>/dev/null)" ]; then
-        CC_BACKUP="$HOME/.claude/skills.bak.$(date +%Y%m%d_%H%M%S)"
-        echo "→ Backing up existing Claude Code skills to $CC_BACKUP"
-        cp -r "$HOME/.claude/skills" "$CC_BACKUP" 2>/dev/null || echo "  ⚠ Backup failed, continuing anyway"
-    fi
+    echo "→ Installing skills to Claude Code..."
     mkdir -p ~/.claude/skills
-    cp -r "$DOTFILES/skills/"* ~/.claude/skills/
-    echo "  ✓ Claude Code skills installed ($(ls "$DOTFILES/skills" | wc -l | tr -d ' ') skill dirs)"
+    CC_INSTALLED=0
+    for skill_dir in "$DOTFILES/skills/"*/; do
+        skill_name=$(basename "$skill_dir")
+        target="$HOME/.claude/skills/$skill_name"
+
+        # Skip if already a symlink to the same location
+        if [ -L "$target" ] && [ "$(readlink "$target")" = "$skill_dir" ]; then
+            continue
+        fi
+
+        # Remove existing non-symlink entry if present
+        if [ -e "$target" ] && [ ! -L "$target" ]; then
+            rm -rf "$target"
+        fi
+
+        # Create symlink
+        ln -sfn "$skill_dir" "$target"
+        CC_INSTALLED=$((CC_INSTALLED + 1))
+    done
+    echo "  ✓ Claude Code skills installed ($CC_INSTALLED symlinks)"
 fi
 
 # === Clean stale skills ===
