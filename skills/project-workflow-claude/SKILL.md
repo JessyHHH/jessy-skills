@@ -337,6 +337,12 @@ Simple projects = shorter design, but still present it first.
    Agent(description='Implement: <task3>', prompt='...',
          subagent_type='general-purpose', model='sonnet', run_in_background=true)
    ```
+
+   All Agent prompts are taken VERBATIM from the Phase 3 plan (.claude/plans/).
+   Do NOT reinterpret, expand, rewrite, or add design steps.
+   The plan already contains exact implementation instructions 
+   reviewed by Architect + Critic. Pass them through unchanged.
+
    Within each wave, fire all agents in ONE message. Between waves, await wave completion before firing next.
 
 4. **COLLECT** results as they complete:
