@@ -1,16 +1,16 @@
 # jessy-skills — Multi-Language AI Engineering Skills
 
-一个为 [Hermes Agent](https://github.com/NousResearch/hermes-agent) 定制的多语言工作流技能集合。11 阶段自驱动并行流水线（含 HARD-GATE / Iron Law / Two-Stage Review），55+ 技能覆盖 Go/Vue/前端/工程/方法论全流程。
+一个支持 [Hermes Agent](https://github.com/NousResearch/hermes-agent) + [Claude Code](https://code.claude.com/) 的多语言工作流技能集合。11 阶段自驱动并行流水线（含 HARD-GATE / Iron Law / Two-Stage Review），76+ 技能覆盖 Go/Vue/前端/工程/方法论全流程。
 
 ## 快速安装
 
-**AI 自安装（推荐）：** 克隆后在 Hermes 里说 "读 SETUP.md 并安装"
+**AI 自安装（推荐）：** 克隆后在 Hermes 或 Claude Code 里说 "读 SETUP.md 并安装"
 
 **手动安装：**
 ```bash
 git clone https://github.com/JessyHHH/jessy-skills.git
 cd jessy-skills
-bash install.sh          # 自动检测 bash/zsh
+bash install.sh          # 自动检测 Hermes / Claude Code / 两者
 source ~/.bashrc         # Linux · macOS 用 ~/.zshrc
 
 # 安装工具 CLI（一步）
@@ -18,33 +18,36 @@ npm install -g ctx7@latest firecrawl-cli@latest
 ctx7 login && firecrawl login  # 浏览器授权
 ```
 
-安装后每次启动 `hermes` 自动加载 `project-workflow` + `karpathy-guidelines`（自动识别 Go/Vue/Node/Skills Repository 项目）。
+安装后：
+- **Hermes** 每次启动自动加载 `project-workflow` + `karpathy-guidelines`
+- **Claude Code** 每次启动自动加载 CLAUDE.md，`/reload-skills` 激活技能
+- 自动识别 Go/Vue/Node/Skills Repository 项目
 
 ## 工作流概览
 
-```
-Phase 0    → Environment Detection     项目类型（Go/Vue/Node/Skills Repo）、语言版本、依赖扫描
-Phase 0.3  →  Codebase Analysis +      delegate_task 分析代码库 → 自动生成/更新 CONTEXT.md（双层：Knowledge + Instruction）
-Phase 0.5  →  Smart Skill Selection      匹配 55-skill 路由表加载技能
-              ↓ 0.3 完成后 augment         0.3 成果补全遗漏的代码库模式 skill
-Phase 1    → Design First ⚡ HARD-GATE  设计先于编码：2-3方案/spec文档/自审
-Phase 2    → Write Plan                写计划到 .hermes/plans/
-Phase 3    → Ralplan Consensus         多 agent 审查计划
-Phase 4    → Implement                 并行实现（delegate_task tasks=[]）
-Phase 5    → Two-Stage Review ⚡       spec compliance → code quality（顺序不可逆）
-Phase 6    → Verified ⚡ Iron Law      NO COMPLETION CLAIMS WITHOUT FRESH EVIDENCE
-Phase 7    → Retro + Learn + Mem Cron  7.1 反思 │ 7.2 自学习 │ 7.3 2h cron+压缩
-Phase 8    → Finish Branch ★           验证→环境→选项→执行→清理
-```
+| Phase | Hermes (`project-workflow`) | Claude Code (`project-workflow-claude`) |
+|-------|---------------------------|----------------------------------------|
+| 0 | `search_files` 检测项目类型 | `Glob` + `Grep` 检测项目类型 |
+| 0.3 | `delegate_task` 分析 → CONTEXT.md | `Agent(Explore)` 分析 → `.claude/context/knowledge.md` |
+| 0.5 | `skill_view()` 加载技能 | `Skill()` 加载技能 |
+| 1 | `clarify()` 设计对话 ⚡ | `AskUserQuestion()` 设计对话 ⚡ |
+| 2 | `write_file(.hermes/plans/)` | `Write(.claude/plans/)` |
+| 3 | `skill_view(ralplan)` → delegate_task | `Skill(ralplan)` [OMC 原生] |
+| 4 | `delegate_task(tasks=[])` 并行 | **`Workflow(pipeline)`** 流水线编排 |
+| 5 | `delegate_task` 审查 ⚡ | `Agent` + `Workflow(parallel)` 审查 ⚡ |
+| 6 | `terminal()` 验证 ⚡ | `Bash()` + `Skill(ralph)` 验证 ⚡ |
+| 7 | `memory()` + `cronjob()` | `CronCreate()` + 文件记忆 |
+| 8 | 4-option 收尾菜单 ★ | 4-option 收尾菜单 ★ |
 
 **出口可见性：** 每个 Phase 结束时输出 `Phase X complete. [skill] verified. → Phase Y`，Skill Expected 列在转换规则表中。
 
 ## 核心设计
 
+- **双平台支持**：`project-workflow`（Hermes）+ `project-workflow-claude`（Claude Code），共享 72 个 domain skills
 - **零硬编码**：项目类型从 go.mod/package.json/skills/SKILL.md 自动检测，skill 自动路由
-- **自驱动顺序**：Phase 0.3 先分析代码库生成 CONTEXT.md（支持 Go/Vue/Node/Skills Repository），Phase 0.5 再加载技能并 augment
-- **CONTEXT.md 双层结构**：Knowledge Layer（机器生成，全量覆盖）+ Instruction Layer（命令/约定/不变量，人工维护）
-- **自学习**：Phase 7.1 后台反省 → 保存 memory；7.3 cron 每 2h 跨 session 反思，memory ≥90% 自动压缩为 skill
+- **自驱动顺序**：Phase 0.3 先分析代码库生成项目知识，Phase 0.5 再加载技能
+- **Hermes**: CONTEXT.md 双层结构（Knowledge + Instruction）；**Claude Code**: CLAUDE.md Boot Layer + `.claude/context/knowledge.md`
+- **自学习**：Phase 7.1 后台反省 → 保存 memory；7.3 cron 每 2h 跨 session 反思
 - **Hard Gates**：HARD-GATE（设计先于编码）、Iron Law（新鲜证据先于声称）、Two-Stage Review（spec→code）
 - **Ralph 循环**：任何验证失败 → 自动修复 → 重新验证，直到全部通过
 - **Phase 出口可见**：每个 Phase 宣告用了什么 skill（`Phase X complete. [skill] verified. → Phase Y`）
@@ -80,7 +83,8 @@ Phase 8    → Finish Branch ★           验证→环境→选项→执行→�
 ## 包含的技能（55+）
 
 ### 工作流
-- `project-workflow` — 11-Phase 自驱动流水线（核心，v7.0）
+- `project-workflow` — 11-Phase 自驱动流水线（核心，v7.0，Hermes）
+- `project-workflow-claude` — 11-Phase 流水线（v1.0，Claude Code，Workflow 编排 + OMC 集成）
 - `karpathy-guidelines` — LLM 编码五条纪律
 - `deep-interview` — 苏格拉底式需求澄清
 - `ralplan` — 多 agent 共识计划

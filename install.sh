@@ -1,7 +1,16 @@
 #!/bin/bash
 set -e
 DOTFILES="$(cd "$(dirname "$0")" && pwd)"
-echo "Installing Hermes dotfiles from: $DOTFILES"
+echo "Installing jessy-skills from: $DOTFILES"
+echo ""
+
+# === Platform detection ===
+HAS_HERMES=0
+HAS_CLAUDE=0
+command -v hermes >/dev/null 2>&1 && HAS_HERMES=1
+command -v claude >/dev/null 2>&1 && HAS_CLAUDE=1
+echo "→ Platform detection: Hermes=$([ $HAS_HERMES -eq 1 ] && echo 'yes' || echo 'no'), Claude Code=$([ $HAS_CLAUDE -eq 1 ] && echo 'yes' || echo 'no')"
+echo ""
 
 # === Backup ===
 if [ -d "$HOME/.hermes/skills" ] && [ "$(ls -A "$HOME/.hermes/skills" 2>/dev/null)" ]; then
@@ -15,6 +24,19 @@ echo "→ Copying skills..."
 mkdir -p ~/.hermes/skills
 cp -r "$DOTFILES/skills/"* ~/.hermes/skills/
 echo "  ✓ Skills installed ($(ls "$DOTFILES/skills" | wc -l | tr -d ' ') skill dirs)"
+
+# === Copy skills to Claude Code ===
+if [ $HAS_CLAUDE -eq 1 ]; then
+    echo "→ Copying skills to Claude Code..."
+    if [ -d "$HOME/.claude/skills" ] && [ "$(ls -A "$HOME/.claude/skills" 2>/dev/null)" ]; then
+        CC_BACKUP="$HOME/.claude/skills.bak.$(date +%Y%m%d_%H%M%S)"
+        echo "→ Backing up existing Claude Code skills to $CC_BACKUP"
+        cp -r "$HOME/.claude/skills" "$CC_BACKUP" 2>/dev/null || echo "  ⚠ Backup failed, continuing anyway"
+    fi
+    mkdir -p ~/.claude/skills
+    cp -r "$DOTFILES/skills/"* ~/.claude/skills/
+    echo "  ✓ Claude Code skills installed ($(ls "$DOTFILES/skills" | wc -l | tr -d ' ') skill dirs)"
+fi
 
 # === Clean stale skills ===
 echo "→ Checking for stale skills..."
@@ -134,12 +156,43 @@ if [ $SHELLS_CONFIGURED -eq 0 ]; then
     install_shell_config ~/.bashrc "bash (fallback)"
 fi
 
+# === Claude Code setup ===
+if [ $HAS_CLAUDE -eq 1 ]; then
+    echo ""
+    echo "→ Setting up Claude Code integration..."
+
+    # Create .claude/skills symlink in the repo if running from within it
+    if [ -d "$DOTFILES/skills" ] && [ ! -L "$DOTFILES/.claude/skills" ]; then
+        mkdir -p "$DOTFILES/.claude"
+        ln -sfn ../skills "$DOTFILES/.claude/skills" 2>/dev/null || true
+        echo "  ✓ .claude/skills → ../skills symlink created"
+    fi
+
+    # Copy project CLAUDE.md if not already present
+    if [ -f "$DOTFILES/CLAUDE.md" ] && [ ! -f "$HOME/.claude/CLAUDE.md" ]; then
+        # Don't auto-overwrite user's global CLAUDE.md; just inform
+        echo "  ℹ Project CLAUDE.md available at $DOTFILES/CLAUDE.md"
+    fi
+
+    echo "  ✓ Claude Code integration ready"
+    echo "  ℹ Restart Claude Code or run /reload-skills to activate"
+fi
+
 # === Reload ===
-echo "→ Reloading Hermes skills..."
-hermes skills list > /dev/null 2>&1 || true
+if [ $HAS_HERMES -eq 1 ]; then
+    echo "→ Reloading Hermes skills..."
+    hermes skills list > /dev/null 2>&1 || true
+fi
 
 echo ""
 echo "Done."
-echo "  zsh:  source ~/.zshrc"
-echo "  bash: source ~/.bashrc"
+if [ $HAS_HERMES -eq 1 ]; then
+    echo "  Hermes: skills installed to ~/.hermes/skills/"
+    echo "  zsh:  source ~/.zshrc"
+    echo "  bash: source ~/.bashrc"
+fi
+if [ $HAS_CLAUDE -eq 1 ]; then
+    echo "  Claude Code: skills installed to ~/.claude/skills/"
+    echo "  Run /reload-skills in Claude Code to activate"
+fi
 echo "  pwsh: . \$PROFILE"

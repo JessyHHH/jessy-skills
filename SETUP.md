@@ -6,9 +6,10 @@ each step autonomously. No human intervention required.
 
 ## Prerequisites
 
-- Hermes Agent installed (`which hermes`)
+- Hermes Agent installed (`which hermes`) and/or Claude Code installed (`which claude`)
 - Git (`which git`)
 - Node.js + npm (`which node && which npm`)
+- (Claude Code only) OMC plugin recommended: `claude plugin install oh-my-claudecode@omc`
 
 ### Fix npm global prefix (if permission denied on `npm install -g`)
 
@@ -96,6 +97,11 @@ source ~/.zshrc  # or ~/.bashrc
 
 ## Platform Support
 
+| Platform | Workflow Skill | Shell Integration | Skill Dir |
+|----------|---------------|-------------------|-----------|
+| Hermes | `project-workflow` (v7.0) | `~/.jessy-skills/hermes.sh` | `~/.hermes/skills/` |
+| Claude Code | `project-workflow-claude` (v1.0) | `CLAUDE.md` auto-load | `~/.claude/skills/` |
+
 | Shell | Config File | Status |
 |-------|-------------|--------|
 | zsh | `~/.zshrc` | ✅ |
@@ -103,11 +109,16 @@ source ~/.zshrc  # or ~/.bashrc
 | PowerShell / pwsh | `$PROFILE` | ✅ |
 | fish | manual | ⚠️ |
 
+### Claude Code Specific
+
+After install, restart Claude Code or run `/reload-skills` to activate skills. The project's `CLAUDE.md` boot layer auto-loads each session. The `project-workflow-claude` skill uses OMC's `ralplan`/`ralph` for Phases 3/6 (recommended: install OMC plugin). Without OMC, simplified fallback review/retry loops are used.
+
 ## Report to User
 
 After install, tell the user:
-- 76+ skills installed to `~/.hermes/skills/`
-- Shell integration installed to `~/.jessy-skills/hermes.sh` (sourced from config)
-- Auto-loaded on every `hermes` invocation: `project-workflow`, `karpathy-guidelines`
+- 76+ skills installed to `~/.hermes/skills/` and/or `~/.claude/skills/`
+- Hermes: Shell integration at `~/.jessy-skills/hermes.sh` (sourced from config)
+- Claude Code: CLAUDE.md auto-loads; run `/reload-skills` to activate
+- Auto-loaded on every session: `project-workflow` (Hermes) / `project-workflow-claude` (Claude Code) + `karpathy-guidelines`
 - Context7 + Firecrawl CLIs installed and authenticated
 - Run `source ~/.zshrc` (or `~/.bashrc`, or `. $PROFILE`) or open a new terminal to activate
