@@ -311,54 +311,33 @@ Simple projects = shorter design, but still present it first.
 
 ## Phase 4: Implement (Ultrawork Parallel)
 
-**Goal:** Execute all implementation tasks simultaneously using ultrawork's parallel pattern. Phase 5 handles review, Phase 6 handles verification. Phase 4 only implements.
-
-**Source:** Adapted from OMC ultrawork parallel execution engine.
+**Goal:** Execute all implementation tasks in parallel using OMC's ultrawork protocol. Phase 5 handles review, Phase 6 handles full verification.
 
 **Procedure:**
 
-1. **ANNOUNCE:** "**Phase 4: Implement** — parallel execution via ultrawork pattern."
+1. **ANNOUNCE:** "**Phase 4: Implement** — parallel execution via ultrawork."
 
-2. **CLASSIFY** tasks by complexity and dependency:
-   - Simple (typo, config, one-liner) → model='haiku'
-   - Standard (feature, refactor) → model='sonnet' (default)
-   - Complex (architecture, debug race condition) → model='opus'
-   - Group into waves: independent tasks fire together; tasks with file dependencies on prior wave results are deferred to the next wave. No two tasks touching the same file fire in the same wave.
+2. **LOAD TASKS:** Read the Phase 3 plan from `.claude/plans/`. Extract the task list with prompts. Each prompt already contains exact implementation instructions (Architect+Critic reviewed).
 
-3. **FIRE ALL** — never serialize independent work:
-   ```
-   // Wave 1: independent tasks (no overlapping files)
-   Agent(description='Implement: <task1>', prompt='...',
-         subagent_type='general-purpose', model='sonnet', run_in_background=true)
-   Agent(description='Implement: <task2>', prompt='...',
-         subagent_type='general-purpose', model='haiku', run_in_background=true)
+3. **EXECUTE:** Follow ultrawork protocol:
+   - Ground intent: implementation
+   - Classify by complexity → route to tier (haiku/sonnet/opus, default sonnet)
+   - Group into waves (no overlapping files in same wave)
+   - Fire all agents in each wave simultaneously — never serialize independent work
+   - Collect results: success → done, failure → retry (max 3), then mark blocked
+   - Lightweight verify: build passes + affected tests pass
+   - NEVER fix errors yourself — that is Phase 5+6's job
 
-   // Wave 2: tasks depending on wave-1 file changes (await wave 1 first)
-   Agent(description='Implement: <task3>', prompt='...',
-         subagent_type='general-purpose', model='sonnet', run_in_background=true)
-   ```
-
-   All Agent prompts are taken VERBATIM from the Phase 3 plan (.claude/plans/).
-   Do NOT reinterpret, expand, rewrite, or add design steps.
-   The plan already contains exact implementation instructions 
-   reviewed by Architect + Critic. Pass them through unchanged.
-
-   Within each wave, fire all agents in ONE message. Between waves, await wave completion before firing next.
-
-4. **COLLECT** results as they complete:
-   - Success → mark done
-   - Failure → immediately spawn a retry Agent(..., run_in_background=true) — do NOT wait for other tasks to finish before retrying. The retry runs concurrently with still-running wave agents. After 3 failed attempts, mark as blocked.
-   - `Bash(command='git diff --stat')` to summarize changes
-
-5. **REPORT** — auto-transition to Phase 5:
+4. **REPORT** — auto-transition to Phase 5:
    ```
    "Phase 4: Implemented
    - Tasks: N/N completed (M retried, B blocked)
+   - Build: [pass/fail]
    - Files: <count> changed
    → Phase 5."
    ```
 
-6. **Auto-transition** to Phase 5.
+5. **Auto-transition** to Phase 5.
 
 ---
 
