@@ -60,21 +60,26 @@ ctx7 login && firecrawl login  # 浏览器授权
 - **Ralph 循环**：任何验证失败 → 自动修复 → 重新验证，直到全部通过
 - **Phase 出口可见**：每个 Phase 宣告用了什么 skill（`Phase X complete. [skill] verified. → Phase Y`）
 
-## OMC Compliance
+## v2.1 Standalone Architecture
 
-project-workflow-claude follows OMC's delegation architecture:
+project-workflow-claude v2.1 is fully standalone — zero external dependencies.
 
 | Role | Responsibility | Tools |
 |------|---------------|-------|
-| **Master Agent** | Environment detection, skill loading, design dialogue, planning, Bash commands, git operations | Glob, Grep, Read, Bash, Skill, AskUserQuestion |
+| **Master Agent** | Environment detection, skill loading, design dialogue, planning, Bash commands | Glob, Grep, Read, Bash, Skill, AskUserQuestion |
 | **Subagent (Agent)** | File writing (specs, plans, knowledge.md, source code) | Write, Edit, Read, Glob, Grep |
-| **Workflow** | Multi-file parallel implementation pipelines | pipeline(implement→review→verify) |
-| **OMC ralplan** | Consensus-based plan review (Planner→Architect→Critic) | ralplan skill |
-| **OMC ralph** | Verification-fix loop until all checks pass | ralph skill |
+| **Workflow Scripts** | Deterministic parallel execution (implement/review/verify) | 4 JS scripts via Workflow tool |
 
-Core rule: Master agent NEVER directly Write/Edit files outside trusted paths. All file modifications are delegated to Agent subagents. This is enforced by OMC's PreToolUse hook.
+**4 Workflow Scripts:**
+- `phase3-consensus.js` — Judge Panel (3 angles parallel plan review)
+- `phase4-implement.js` — Pipeline implement + Self-Review (DONE/DONE_WITH_CONCERNS/NEEDS_CONTEXT/BLOCKED)
+- `phase5-review.js` — Per-task pipeline review + Adversarial Verification (3 skeptics) + Final Review
+- `phase6-verify.js` — Loop Until Dry verification (2 consecutive clean rounds)
 
-**Launch mode:** Use `DISABLE_OMC=1 claude` (or `pwf` alias). OMC hooks are redundant with the skill's own delegation rules. OMC skills remain available. See SETUP.md.
+**Key Properties:**
+- Scripts are deterministic (no Date.now/Math.random) — support caching and resume
+- Iron Law: `references/iron-law.md` — standalone verification discipline
+- MCP-aware: auto-detects Context7/Firecrawl, falls back to WebFetch/WebSearch
 
 ## 逃逸命令
 
@@ -82,6 +87,7 @@ Core rule: Master agent NEVER directly Write/Edit files outside trusted paths. A
 |------|------|
 | `quick` / `fast` | 快速深度（精简 interview + review） |
 | `deep` / `careful` | 深度审查（含现代化审计） |
+| `skip workflow` | 跳过 Workflow 脚本驱动，退回到 Agent 委托模式 |
 | `skip design` | 跳到 Phase 2（保留 Phase 0/0.5） |
 | `skip plan` | 跳到 Phase 5 实现（保留 Phase 6+7） |
 | `no review` | 跳过 Phase 6 代码审查 |

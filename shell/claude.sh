@@ -1,3 +1,4 @@
-# project-workflow-claude — disable OMC hooks, keep OMC skills
-# OMC skills (ralph/ralplan/ultrawork) remain available via ~/.claude/skills/
-alias pwf='DISABLE_OMC=1 claude'
+# project-workflow-claude v2.1 — standalone, no external dependencies
+# 4 Workflow scripts in .claude/workflows/ handle implement/review/verify
+# Iron Law: references/iron-law.md
+alias pwf='claude'

@@ -9,7 +9,6 @@ each step autonomously. No human intervention required.
 - Hermes Agent installed (`which hermes`) and/or Claude Code installed (`which claude`)
 - Git (`which git`)
 - Node.js + npm (`which node && which npm`)
-- (Claude Code only) OMC is NOT required — the v2.1 workflow is standalone
 
 ### Fix npm global prefix (if permission denied on `npm install -g`)
 
@@ -97,10 +96,10 @@ source ~/.zshrc  # or ~/.bashrc
 
 ## Platform Support
 
-| Platform | Workflow Skill | Shell Integration | Skill Dir | OMC Required |
-|----------|---------------|-------------------|-----------|-------------|
-| Hermes | `project-workflow` (v7.0) | `~/.jessy-skills/hermes.sh` | `~/.hermes/skills/` | No |
-| Claude Code | `project-workflow-claude` (v2.1) | `CLAUDE.md` auto-load | `~/.claude/skills/` | No (standalone) |
+| Platform | Workflow Skill | Shell Integration | Skill Dir |
+|----------|---------------|-------------------|-----------|
+| Hermes | `project-workflow` (v7.0) | `~/.jessy-skills/hermes.sh` | `~/.hermes/skills/` |
+| Claude Code | `project-workflow-claude` (v2.1) | `CLAUDE.md` auto-load | `~/.claude/skills/` |
 
 | Shell | Config File | Status |
 |-------|-------------|--------|
@@ -112,6 +111,8 @@ source ~/.zshrc  # or ~/.bashrc
 ### Claude Code Specific
 
 After install, restart Claude Code or run `/reload-skills` to activate skills. The project's `CLAUDE.md` boot layer auto-loads each session. The `project-workflow-claude` v2.1 skill is fully standalone with its own workflow scripts (phase3-consensus, phase4-implement, phase5-review, phase6-verify) and does not require OMC.
+
+**Workflow Scripts:** 4 deterministic JS scripts in `.claude/workflows/` are included in the repository. The SKILL.md references them via relative paths from the project root. No additional installation needed beyond cloning the repo.
 
 ### Claude Code MCP Servers (Recommended, NOT Required)
 

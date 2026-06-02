@@ -181,6 +181,12 @@ if [ $HAS_CLAUDE -eq 1 ]; then
         echo "  ✓ .claude/skills → ../skills symlink created"
     fi
 
+    # Create .claude/workflows symlink if running from within the repo
+    if [ -d "$DOTFILES/.claude/workflows" ] && [ ! -L "$HOME/.claude/workflows" ]; then
+        # Workflow scripts stay in the repo; they're accessed via CWD
+        echo "  ✓ .claude/workflows/ available from project root"
+    fi
+
     # Copy project CLAUDE.md if not already present
     if [ -f "$DOTFILES/CLAUDE.md" ] && [ ! -f "$HOME/.claude/CLAUDE.md" ]; then
         # Don't auto-overwrite user's global CLAUDE.md; just inform
@@ -189,13 +195,11 @@ if [ $HAS_CLAUDE -eq 1 ]; then
 
     echo "  ✓ Claude Code integration ready"
 
-    # project-workflow-claude launch mode
-    echo "  ℹ Recommended: DISABLE_OMC=1 claude for project-workflow-claude"
-    echo "  → OMC hooks redundant with skill's own delegation rules"
-    echo "  → OMC skills (ralph/ralplan/ultrawork) remain available"
-    if [ -f "$DOTFILES/shell/claude.sh" ]; then
-        echo "  → Shell alias 'pwf' available: source $DOTFILES/shell/claude.sh"
-    fi
+    # project-workflow-claude v2.1 — standalone, no external dependencies
+    echo "  ℹ project-workflow-claude v2.1 is fully standalone"
+    echo "  → 4 Workflow scripts included (.claude/workflows/)"
+    echo "  → Auto-detects Context7/Firecrawl MCP (falls back to WebFetch/WebSearch)"
+    echo "  → Iron Law: references/iron-law.md"
 
     echo "  ℹ Restart Claude Code or run /reload-skills to activate"
 fi
