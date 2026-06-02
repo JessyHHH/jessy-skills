@@ -2,6 +2,13 @@
 
 一个为 [Hermes Agent](https://github.com/NousResearch/hermes-agent) 定制的多语言工作流技能集合。11 阶段自驱动并行流水线（含 HARD-GATE / Iron Law / Two-Stage Review），55+ 技能覆盖 Go/Vue/前端/工程/方法论全流程。
 
+> **Claude Code 用户：请使用 `claude` 分支。**
+> ```bash
+> git checkout claude
+> bash install.sh
+> ```
+> `claude` 分支包含 `project-workflow-claude` v2.1（独立 Workflow 脚本驱动）、CLAUDE.md、`.claude/workflows/` 等 Claude Code 专属功能。详见 [claude 分支 README](https://github.com/JessyHHH/jessy-skills/tree/claude)。
+
 ## 快速安装
 
 **AI 自安装（推荐）：** 克隆后在 Hermes 里说 "读 SETUP.md 并安装"

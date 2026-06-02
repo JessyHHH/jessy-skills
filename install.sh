@@ -3,6 +3,22 @@ set -e
 DOTFILES="$(cd "$(dirname "$0")" && pwd)"
 echo "Installing Hermes dotfiles from: $DOTFILES"
 
+# === Redirect Claude Code users to claude branch ===
+if command -v claude >/dev/null 2>&1 && ! command -v hermes >/dev/null 2>&1; then
+    echo "⚠ Claude Code detected (no Hermes). This is the 'main' branch (Hermes-only)."
+    echo "→ For Claude Code support, use the 'claude' branch:"
+    echo ""
+    echo "  git checkout claude"
+    echo "  bash install.sh"
+    echo ""
+    echo "  The claude branch includes:"
+    echo "  - project-workflow-claude v2.1 (standalone, 4 Workflow scripts)"
+    echo "  - CLAUDE.md, .claude/workflows/, Iron Law"
+    echo ""
+    exit 1
+fi
+echo ""
+
 # === Backup ===
 if [ -d "$HOME/.hermes/skills" ] && [ "$(ls -A "$HOME/.hermes/skills" 2>/dev/null)" ]; then
     BACKUP="$HOME/.hermes/skills.bak.$(date +%Y%m%d_%H%M%S)"
