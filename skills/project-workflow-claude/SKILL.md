@@ -15,6 +15,8 @@ metadata:
 
 **Platform:** Claude Code v2.1+. Standalone — no external dependencies. Uses Claude Code native tools — `Workflow`, `Agent`, `Skill`, `Glob`, `Grep`, `Bash`, `AskUserQuestion`, `CronCreate`.
 
+**Workflow Script Resolution:** The 4 Workflow scripts are installed to `~/.claude/workflows/` by `install.sh`. The Workflow tool's `name` parameter auto-discovers scripts from `~/.claude/workflows/` and `.claude/workflows/` — no path resolution needed. Always use `Workflow(name='phase<N>-<name>')` form.
+
 ---
 
 ## Delegation Rules (MANDATORY)
@@ -315,22 +317,22 @@ Simple projects = shorter design, but still present it first.
 2. **Judge Panel Review:**
    ```
    Workflow(
-     scriptPath='~/.claude/workflows/project-workflow-claude/phase3-consensus.js',
+     name='phase3-consensus',
      args={planContent: '<full plan text>'}
    )
    ```
    Script reviews from 3 angles in parallel (architecture, risk, feasibility), scores 1-10 each, synthesizes one verdict.
 
 3. **Act on verdict:**
-   - If APPROVE → proceed to step 4 (output task list)
+   - If APPROVE → proceed to step 5 (output task list)
    - If ITERATE → address findings → re-run Workflow (max 3 iterations)
    - If REJECT → present to user with reasons. Do NOT proceed.
 
-3. **Output:** Bite-sized task list with file paths, expected changes, verification criteria.
+5. **Output:** Bite-sized task list with file paths, expected changes, verification criteria.
 
-4. Present the plan for user approval before proceeding.
+6. Present the plan for user approval before proceeding.
 
-5. Auto-transition to Phase 4.
+7. Auto-transition to Phase 4.
 
 ---
 
@@ -351,7 +353,7 @@ Simple projects = shorter design, but still present it first.
 3. **EXECUTE:**
    ```
    Workflow(
-     scriptPath='~/.claude/workflows/project-workflow-claude/phase4-implement.js',
+     name='phase4-implement',
      args={tasks: [...]}
    )
    ```
@@ -397,7 +399,7 @@ Simple projects = shorter design, but still present it first.
 3. **EXECUTE:**
    ```
    Workflow(
-     scriptPath='~/.claude/workflows/project-workflow-claude/phase5-review.js',
+     name='phase5-review',
      args={planPath, changedFiles, tasks: [...], selfReviewStatuses: [...]}
    )
    ```
@@ -468,8 +470,8 @@ Simple projects = shorter design, but still present it first.
 3. **ANALYZE + FIX** (Workflow Script):
    ```
    Workflow(
-     scriptPath='~/.claude/workflows/project-workflow-claude/phase6-verify.js',
-     args={projectType: '<go|vue|node|skills-repo>', checkResults: [...]}
+     name='phase6-verify',
+     args={projectType: '<go|vue|node|skills-repo>', checkResults: [...], dryRounds: <current>}
    )
    ```
 
