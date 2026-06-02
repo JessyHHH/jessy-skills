@@ -9,7 +9,7 @@ each step autonomously. No human intervention required.
 - Hermes Agent installed (`which hermes`) and/or Claude Code installed (`which claude`)
 - Git (`which git`)
 - Node.js + npm (`which node && which npm`)
-- (Claude Code only) OMC plugin recommended: `claude plugin install oh-my-claudecode@omc`
+- (Claude Code only) OMC is NOT required — the v2.1 workflow is standalone
 
 ### Fix npm global prefix (if permission denied on `npm install -g`)
 
@@ -100,7 +100,7 @@ source ~/.zshrc  # or ~/.bashrc
 | Platform | Workflow Skill | Shell Integration | Skill Dir | OMC Required |
 |----------|---------------|-------------------|-----------|-------------|
 | Hermes | `project-workflow` (v7.0) | `~/.jessy-skills/hermes.sh` | `~/.hermes/skills/` | No |
-| Claude Code | `project-workflow-claude` (v1.0) | `CLAUDE.md` auto-load | `~/.claude/skills/` | Yes (ralph/ralplan for Phases 3/6) |
+| Claude Code | `project-workflow-claude` (v2.1) | `CLAUDE.md` auto-load | `~/.claude/skills/` | No (standalone) |
 
 | Shell | Config File | Status |
 |-------|-------------|--------|
@@ -111,33 +111,33 @@ source ~/.zshrc  # or ~/.bashrc
 
 ### Claude Code Specific
 
-After install, restart Claude Code or run `/reload-skills` to activate skills. The project's `CLAUDE.md` boot layer auto-loads each session. The `project-workflow-claude` skill uses OMC's `ralplan`/`ralph` for Phases 3/6 (recommended: install OMC plugin). Without OMC, simplified fallback review/retry loops are used.
+After install, restart Claude Code or run `/reload-skills` to activate skills. The project's `CLAUDE.md` boot layer auto-loads each session. The `project-workflow-claude` v2.1 skill is fully standalone with its own workflow scripts (phase3-consensus, phase4-implement, phase5-review, phase6-verify) and does not require OMC.
+
+### Claude Code MCP Servers (Recommended, NOT Required)
+
+For better documentation search and web research, install these MCP servers:
+```bash
+# Context7 — library/framework documentation
+claude mcp add context7 -- npx @upstash/context7-mcp@latest
+
+# Firecrawl — web search and scraping
+claude mcp add firecrawl -- npx @anthropic/firecrawl-mcp@latest
+# Set FIRECRAWL_API_KEY env var (get from https://firecrawl.dev)
+```
+
+See `skills/project-workflow-claude/references/setup.md` for detailed setup instructions.
+The workflow auto-detects MCP availability and falls back to native WebFetch/WebSearch.
 
 ## Launch Mode
 
-project-workflow-claude runs best without OMC's hooks. OMC skills (ralph/ralplan/ultrawork) remain available.
+project-workflow-claude v2.1 is fully standalone — no external dependencies required.
 
-### Quick setup
-
-Add to `~/.bashrc` or `~/.zshrc`:
 ```bash
-alias pwf='DISABLE_OMC=1 claude'
+claude                          # Start Claude Code normally
+/project-workflow-claude        # Run the workflow
 ```
 
-Or source the project's shell integration:
-```bash
-source ~/path/to/jessy-skills/shell/claude.sh
-```
-
-Then:
-```bash
-pwf                          # Start Claude Code without OMC hooks
-/project-workflow-claude     # Run the workflow
-```
-
-### Why
-
-OMC's PreToolUse hook blocks master-agent file edits -- but project-workflow-claude already enforces its own delegation rules (all file writes go through subagents). Running without OMC hooks eliminates this redundancy while keeping OMC skills available.
+The workflow auto-detects MCP availability (Context7, Firecrawl) and falls back to native WebFetch/WebSearch when MCP servers are not available.
 
 ## Report to User
 

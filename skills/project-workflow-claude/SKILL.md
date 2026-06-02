@@ -1,19 +1,19 @@
 ---
 name: project-workflow-claude
-description: "v1.0 Self-driving 11-phase pipeline for Claude Code. Auto-detect project type → load matching skills → design→plan→implement→review→verify. Hard Gates + Iron Law."
-version: "v1.0"
+description: "Use when starting any development task — auto-detects project type, loads matching skills, drives 11-phase pipeline from design through verified completion. Hard Gates + Iron Law."
+version: "v2.1"
 author: "jessyhuang"
 metadata:
   standalone: true
 ---
 
-# Project Workflow Claude v1.0 — Self-Driving Pipeline with Hard Gates
+# Project Workflow Claude v2.1 — Self-Driving Pipeline with Hard Gates
 
-**Core design:** Zero pre-loaded skills (except `karpathy-guidelines`). Everything is context-detected: Go version, project type, codebase patterns, task signals. Uses Claude Code native tools — `Workflow`, `Agent`, `Skill`, `Glob`, `Grep`, `Bash`, `AskUserQuestion`, `CronCreate`.
+**Core design:** Zero pre-loaded skills (except `karpathy-guidelines`). Everything is context-detected: Go version, project type, codebase patterns, task signals. **Workflow-script-driven:** Phase 4-6 use deterministic JS scripts (`.claude/workflows/phase4-implement.js`, `phase5-review.js`, `phase6-verify.js`) executed via the Workflow tool. Scripts support caching, resume, and structured output. **Layered skill routing:** Shared domain skills (Go/Vue/Engineering) + Claude Code platform overlay.
 
 **Self-driving:** Announce phases → execute → auto-transition. Never wait for user to say "next".
 
-**Platform:** Claude Code v2.1+. Standalone — no external dependencies.
+**Platform:** Claude Code v2.1+. Standalone — no external dependencies. Uses Claude Code native tools — `Workflow`, `Agent`, `Skill`, `Glob`, `Grep`, `Bash`, `AskUserQuestion`, `CronCreate`.
 
 ---
 
@@ -43,7 +43,7 @@ NEVER use Bash(sed -i) to edit files — it bypasses the hook but causes silent 
 2. **Simplicity First** — Minimum code. No speculative abstractions.
 3. **Surgical Changes** — Only requested files. Match existing style.
 4. **Goal-Driven Execution** — Success criteria defined BEFORE implementation. Verify with fresh evidence.
-5. **Verify Before Asserting** — Use `prior-research` chain (ctx7 → firecrawl → WebSearch). Don't guess.
+5. **Verify Before Asserting** — Use priority chain: Context7 MCP (docs) → Firecrawl MCP (search) → WebFetch → WebSearch. Don't guess.
 
 ---
 
@@ -72,14 +72,21 @@ NEVER use Bash(sed -i) to edit files — it bypasses the hook but causes silent 
    - **Vue/Node:** `Bash(command='which node && (which npm || which pnpm)')`
    - **Skills Repository:** `Bash(command='which git')`
 
-4. **Announce findings with explicit exit statement:**
+4. **MCP availability detection:**
+   - Check available tool names in current session for "context7" (case-insensitive) → Context7 MCP
+   - Check available tool names for "firecrawl" (case-insensitive) → Firecrawl MCP
+   - If neither available: document queries fallback to WebFetch, search fallback to WebSearch
+   - If missing but recommended: suggest consulting `references/setup.md` for installation
+
+5. **Announce findings with explicit exit statement:**
    ```
    "Phase 0: Environment — [type], [version]
    Tooling: go/node/git available
+   MCP: context7 [available/not available], firecrawl [available/not available]
    → Phase 0.3 + 0.5"
    ```
 
-5. **Auto-transition:** Launch Phase 0.3 and Phase 0.5.
+6. **Auto-transition:** Launch Phase 0.3 and Phase 0.5.
 
 ---
 
@@ -127,20 +134,20 @@ Skip ONLY when knowledge.md exists AND commit matches AND announced with reason.
            <project type and version from Phase 0>
            Core workflow: `project-workflow-claude` + `karpathy-guidelines`
            <!-- AUTO_END: Project -->
-           
+
            ## Essential Commands
            <!-- AUTO_START: Commands -->
            <build/test/lint commands from Phase 0>
            <!-- AUTO_END: Commands -->
-           
+
            ## Conventions
            (Human-editable — machine never touches this section)
            <inferred from codebase, 2-3 items>
-           
+
            ## Project Knowledge
            Architecture analysis: [.claude/context/knowledge.md](.claude/context/knowledge.md)
            Full workflow: load `project-workflow-claude` skill
-           
+
         b. If CLAUDE.md exists:
            i. Read it. Check for AUTO_START/AUTO_END markers.
            ii. If zero AUTO markers present (legacy file):
@@ -183,13 +190,20 @@ Skip ONLY when knowledge.md exists AND commit matches AND announced with reason.
 
 **Procedure:**
 
+0. **Load platform overlay:** `Read('references/claude-routing.md')` → load Claude Code-specific action mappings.
+   **Conflict resolution:** Overlay takes precedence over base layer. Deduplicate by skill name (skip already-loaded skills). If both layers match, log collision and use overlay.
+
 1. **Codebase signal matching** (from Phase 0 dependency scan):
-   - **Go:** `Read('go.mod')` → scan for samber, grpc, testify, etc. → match against `references/full-skill-routing.md`
-   - **Vue:** `Read('package.json')` → scan for vue, pinia, vitest → match against routing table
+   - **Go:** `Read('go.mod')` → scan for samber, grpc, testify, etc. → match against `../project-workflow/references/full-skill-routing.md` (base layer, shared) and `references/claude-routing.md` (overlay)
+   - **Vue:** `Read('package.json')` → scan for vue, pinia, vitest → match against routing tables
    - For EVERY match: `Skill(skill='<name>')`
 
+   1.5. **MCP-aware routing:** If Context7 available → prefer for docs/library queries. If Firecrawl available → prefer for web searches.
+
+   **Iron Law loading:** If task involves code changes or verification → `Read('references/iron-law.md')` to enforce verification discipline.
+
 2. **Task signal matching:**
-   - Match keywords against `references/full-skill-routing.md`
+   - Match keywords against `../project-workflow/references/full-skill-routing.md` and `references/claude-routing.md`
    - Load each matched skill via `Skill(skill='<name>')`
 
 3. **Baseline** (no Skill calls, internalized):
@@ -205,6 +219,7 @@ Skip ONLY when knowledge.md exists AND commit matches AND announced with reason.
    "Phase 0.5: Skills
    - Codebase signals: N skills loaded
    - Task signals: N skills loaded
+   - Overlay: claude-routing.md loaded
    - Total: N skills
    → Phase 1."
    ```
@@ -220,7 +235,7 @@ Simple projects = shorter design, but still present it first.
 
 **Goal:** Turn ideas into fully formed designs through collaborative dialogue. Explore codebase first, then Grill (one question at a time with recommended answers), exit when all 4 clarity dimensions are clear.
 
-**Source:** Adapted from obra/superpowers brainstorming pattern, Karpathy 5 principles.
+**Source:** Adapted from brainstorming-ideas pattern, Karpathy 5 principles.
 
 **Procedure:**
 
@@ -249,7 +264,12 @@ Simple projects = shorter design, but still present it first.
 
 4. **WRITE SPEC** — `Agent(description='Write design spec', prompt='Write the design spec to .claude/specs/YYYY-MM-DD-<topic>-design.md. Content: [spec_content].', subagent_type='general-purpose')`
 
-5. **SELF-REVIEW** — Check for TBD/TODO, contradictions, ambiguous scope.
+5. **SELF-REVIEW** (after writing spec, BEFORE user review — fix all issues inline):
+   a. **PLACEHOLDER SCAN** — "TBD", "TODO", incomplete sections, vague requirements
+   b. **INTERNAL CONSISTENCY** — Contradictions between sections? Inconsistent assumptions?
+   c. **SCOPE CHECK** — Focused enough for a single implementation plan? Needs decomposition into sub-projects?
+   d. **AMBIGUITY CHECK** — Requirements with two interpretations → pick one, make it explicit
+   → Fix ALL issues before presenting to user. Never show an unreviewed spec.
 
 6. **SKILL RE-CHECK** (after design approved):
    - Re-scan codebase + task signals against routing table.
@@ -276,28 +296,35 @@ Simple projects = shorter design, but still present it first.
    - **Files**: All files to create or modify, with expected changes
    - **Verification**: How we'll test each step
    - **Risks**: Known risks, tradeoffs, open questions
+   - **Tasks**: JSON task block (```json:tasks) with id, prompt, files, complexity, mutatesFiles — for Phase 4 Workflow consumption
 
-3. `Agent(description='Write implementation plan', prompt='Write the implementation plan to .claude/plans/<timestamp>-<slug>.md with Goal, Context, Approach, Files, Verification, Risks sections.', subagent_type='general-purpose')`
+3. `Agent(description='Write implementation plan', prompt='Write the implementation plan to .claude/plans/<timestamp>-<slug>.md with Goal, Context, Approach, Files, Verification, Risks sections. Include a ```json:tasks fenced code block at the end with an array of task objects: {id, prompt, files, complexity, mutatesFiles}. Each prompt must be a self-contained implementation instruction suitable for a subagent starting with blank context.', subagent_type='general-purpose')`
 
 4. Auto-transition to Phase 3.
 
 ---
 
-## Phase 3: Ralplan Consensus Planning
+## Phase 3: Consensus Review
 
 **Goal:** Produce a reviewed, critic-validated implementation plan before writing code.
 
 **Procedure:**
 
-1. Announce: "**Phase 3: Ralplan Consensus** — reviewing the plan."
+1. Announce: "**Phase 3: Consensus Review** — reviewing the plan."
 
-2. **Inline Consensus Review:**
-   a. Present plan summary + RALPLAN-DR (Principles, Decision Drivers, Options)
-   b. `Agent(description='Architect review', prompt='Review the plan for architectural soundness. Provide strongest steelman antithesis, at least one real tradeoff tension, and synthesis. Return APPROVE/ITERATE/REJECT with specific findings.', subagent_type='general-purpose')`
-   c. AFTER Architect completes: `Agent(description='Critic review', prompt='Evaluate the plan against quality criteria. Check: principle-option consistency, fair alternatives, risk mitigation clarity, testable acceptance criteria, concrete verification steps. Return APPROVE/ITERATE/REJECT with specific findings.', subagent_type='general-purpose')`
-   d. If APPROVE → proceed to step 3
-   e. If ITERATE → address feedback → return to step 2b. Max 3 iterations.
-   f. If REJECT → present to user with reasons.
+2. **Judge Panel Review:**
+   ```
+   Workflow(
+     scriptPath='.claude/workflows/phase3-consensus.js',
+     args={planContent: '<full plan text>'}
+   )
+   ```
+   Script reviews from 3 angles in parallel (architecture, risk, feasibility), scores 1-10 each, synthesizes one verdict.
+
+3. **Act on verdict:**
+   - If APPROVE → proceed to step 4 (output task list)
+   - If ITERATE → address findings → re-run Workflow (max 3 iterations)
+   - If REJECT → present to user with reasons. Do NOT proceed.
 
 3. **Output:** Bite-sized task list with file paths, expected changes, verification criteria.
 
@@ -307,54 +334,93 @@ Simple projects = shorter design, but still present it first.
 
 ---
 
-## Phase 4: Implement (Ultrawork Parallel)
+## Phase 4: Implement (Workflow Pipeline)
 
-**Goal:** Execute all implementation tasks in parallel using the ultrawork pattern. Phase 5 handles review, Phase 6 handles full verification.
+**Goal:** Execute all implementation tasks in parallel using a deterministic Workflow script. Phase 5 handles review, Phase 6 handles full verification.
 
 **Procedure:**
 
-1. **ANNOUNCE:** "**Phase 4: Implement** — parallel execution via ultrawork."
+1. **ANNOUNCE:** "**Phase 4: Implement** — Workflow(pipeline) via phase4-implement.js."
 
-2. **LOAD TASKS:** Read the Phase 3 plan from `.claude/plans/`. Extract the task list with prompts. Each prompt already contains exact implementation instructions (Architect+Critic reviewed).
+2. **LOAD TASKS:**
+   - Read the Phase 3 plan from `.claude/plans/`
+   - Extract the `json:tasks` fenced code block → parse JSON → get tasks array
+   - Each task: `{id, prompt, files, complexity, mutatesFiles}`
+   - `prompt` must be a self-contained implementation instruction (subagent starts with blank context)
 
-3. **EXECUTE:** Follow ultrawork protocol:
-   - Ground intent: implementation
-   - Classify by complexity → route to tier (haiku/sonnet/opus, default sonnet)
-   - Group into waves (no overlapping files in same wave)
-   - Fire all agents in each wave simultaneously — never serialize independent work
-   - Collect results: success → done, failure → retry (max 3), then mark blocked
-   - Lightweight verify: build passes + affected tests pass
-   - NEVER fix errors yourself — that is Phase 5+6's job
+3. **EXECUTE:**
+   ```
+   Workflow(
+     scriptPath='.claude/workflows/phase4-implement.js',
+     args={tasks: [...]}
+   )
+   ```
+
+   The script uses `pipeline()` (streaming, no barrier):
+   - Stage 1 (Implement): `agent(task.prompt, {model, isolation})` per task
+     - complexity='simple' → haiku, 'medium' → sonnet, 'complex' → opus
+     - mutatesFiles=true → isolation='worktree' (avoids file conflicts)
+   - Stage 2 (Quick Verify): `agent(verify, {phase: 'Quick Verify', schema})` per task
+     - Each task verified immediately after implementation (streaming — no waiting for other tasks)
+     - Validates: build passes + affected tests pass
+
+   The script includes a Self-Review stage: each implementer reports DONE/DONE_WITH_CONCERNS/NEEDS_CONTEXT/BLOCKED. The script returns `selfReviewStatus` — pass this to Phase 5 as `args.selfReviewStatuses`. If budget.total is set, tasks are prioritized by complexity.
 
 4. **REPORT** — auto-transition to Phase 5:
    ```
    "Phase 4: Implemented
-   - Tasks: N/N completed (M retried, B blocked)
-   - Build: [pass/fail]
+   - Tasks: N/N completed, M passed, B failed
    - Files: <count> changed
    → Phase 5."
    ```
+   If failures → collect failed task IDs for Phase 5 review.
 
-5. **Auto-transition** to Phase 5.
+5. **ERROR RECOVERY:** If Workflow script throws → Read error from transcript → Agent fix script bug → re-run Workflow.
+
+6. **Auto-transition** to Phase 5.
 
 ---
 
 ## Phase 5: Two-Stage Review (ALWAYS RUNS)
 
-**Goal:** Spec compliance review first → code quality review second. NEVER reverse order.
+**Goal:** Spec compliance review first → code quality review second. NEVER reverse order. Uses deterministic Workflow script for parallel code quality audit.
 
-### Stage 1: Spec Compliance Review
+**Procedure:**
 
-1. `Bash(command='git diff --name-only')` → list changed files
-2. Re-read the plan file from `.claude/plans/`
-3. `Agent(description='Spec compliance review', prompt='Compare implementation against plan. Check: all planned tasks done? extra work not in plan? requirements met?', subagent_type='general-purpose')`
-4. **Gate:** ❌ Issues found → fix → re-review. Only proceed when ✅
+1. **ANNOUNCE:** "**Phase 5: Two-Stage Review** — per-task pipeline via phase5-review.js."
 
-### Stage 2: Code Quality Review
+2. **PREPARE:**
+   - `Bash(command='git diff --name-only')` → changedFiles
+   - Re-read plan from `.claude/plans/` → planPath
+   - Collect `selfReviewStatuses` from Phase 4 output
 
-1. `Agent(description='Code quality review', prompt='Review changed files for: correctness, simplicity, error handling, concurrency safety, style consistency. Flag CRITICAL/HIGH/MEDIUM/LOW.', subagent_type='general-purpose')`
-2. **Deep depth:** Add modernization audit for Go projects (go.mod ≥ 1.21)
-3. Fix CRITICAL and HIGH before Phase 6. Re-review if substantial.
+3. **EXECUTE:**
+   ```
+   Workflow(
+     scriptPath='.claude/workflows/phase5-review.js',
+     args={planPath, changedFiles, tasks: [...], selfReviewStatuses: [...]}
+   )
+   ```
+   The script uses per-task pipeline review:
+   - **Spec Compliance** (gated per task): Each task checked against plan. Self-review statuses (DONE_WITH_CONCERNS/NEEDS_CONTEXT/BLOCKED) surfaced in review context.
+   - **Code Quality** (only if spec passes): Parallel correctness/safety/simplicity per task
+   - **Adversarial Verification**: 3 skeptics vote on each CRITICAL finding (≥2/3 majority to confirm)
+   - **Final Review**: Overall cross-task consistency after all tasks pass individual reviews
+   - Task A in code quality while Task B in spec review — zero barrier streaming
+
+4. **FIX-AND-RETRY:**
+   - Read output → `{criticalCount, highCount, findings, specFailed, finalVerdict}`
+   - If `criticalCount > 0`: Agent fixes CRITICAL issues → re-run Workflow. Max 3 iterations.
+   - If `specFailed.length > 0`: Address spec gaps → fix implementation or update plan → re-run.
+   - Report to user on 3rd failure.
+
+5. **REPORT** → auto-transition to Phase 6:
+   ```
+   "Phase 5: Reviewed
+   - Spec Compliance: [✓/✗]
+   - Code Quality: N findings (M CRITICAL, H HIGH)
+   → Phase 6."
+   ```
 
 **Red Flags (NEVER):**
 - Start code quality before spec compliance is ✅
@@ -365,39 +431,54 @@ Simple projects = shorter design, but still present it first.
 
 ## Phase 6: Verified Completion (Iron Law)
 
-```
-NO COMPLETION CLAIMS WITHOUT FRESH VERIFICATION EVIDENCE
-```
+> **Iron Law:** The complete Iron Law (Gate Function, Red Flags, Rationalization Prevention, TDD Verification, Agent Delegation Verification, Evidence Standard) is in `references/iron-law.md`. Load via `Read('references/iron-law.md')` when verification enforcement is needed.
 
-**Goal:** Run ALL verification commands, read ALL output, confirm ALL pass.
+### Verification Execution (Workflow Script + Master Agent)
 
-**Verification Routing (by project type):**
+**Goal:** Run ALL verification commands, read ALL output, confirm ALL pass. Fix loop via Workflow script.
 
-**Go:**
-1. `Bash(command='go mod tidy', description='Clean go.sum')`
-2. `Bash(command='go build ./...', description='Build all packages')` — must exit 0
-3. `Bash(command='go vet ./...', description='Run go vet')` — no warnings
-4. `Bash(command='go test -race -count=1 ./...', description='Run all tests with race detector')` — ALL PASS
-5. `Bash(command='go run golang.org/x/vuln/cmd/govulncheck@latest ./...', description='Vulnerability scan')`
-6. `Bash(command='golangci-lint run ./...', description='Lint check')` — 0 warnings
+**Procedure:**
 
-**Vue / Node:**
-1. `Bash(command='npm ci', description='Clean install')` (or `pnpm install`)
-2. `Bash(command='npx tsc --noEmit', description='Type check')` (if TypeScript)
-3. `Bash(command='npm test', description='Run tests')` — ALL PASS
-4. `Bash(command='npm run lint', description='Lint check')` — 0 warnings
+1. **ANNOUNCE:** "**Phase 6: Verify** — Iron Law enforcement via phase6-verify.js."
 
-**Skills Repository:**
-1. `Bash(command='grep -c "^## Phase" skills/project-workflow/SKILL.md', description='Phase count check')`
-2. `Bash(command='head -15 skills/*/SKILL.md | head -30', description='Spot-check YAML frontmatter')`
-3. `Bash(command='grep -rn "TODO\|FIXME" skills/', description='Check unresolved issues')`
-4. `Bash(command='git diff --check', description='No whitespace errors')`
+2. **RUN CHECKS** (Master Agent):
+   Execute ALL commands for the detected project type. Collect results as `[{name, command, exitCode, stdout, stderr}]`.
 
-**On ANY failure:**
-1. Identify the failing check
-2. `Agent(description='Fix verification failure', prompt='Fix this verification failure: [error details]. Make minimal changes. Do NOT redesign or refactor.', subagent_type='general-purpose')`
-3. Re-run verification
-4. Loop until ALL pass (max 5 iterations, then report to user)
+   **Go:**
+   1. `Bash(command='go mod tidy', description='Clean go.sum')`
+   2. `Bash(command='go build ./...', description='Build all packages')` — must exit 0
+   3. `Bash(command='go vet ./...', description='Run go vet')` — no warnings
+   4. `Bash(command='go test -race -count=1 ./...', description='Run all tests with race detector')` — ALL PASS
+   5. `Bash(command='go run golang.org/x/vuln/cmd/govulncheck@latest ./...', description='Vulnerability scan')`
+   6. `Bash(command='golangci-lint run ./...', description='Lint check')` — 0 warnings
+
+   **Vue / Node:**
+   1. `Bash(command='npm ci', description='Clean install')` (or `pnpm install`)
+   2. `Bash(command='npx tsc --noEmit', description='Type check')` (if TypeScript)
+   3. `Bash(command='npm test', description='Run tests')` — ALL PASS
+   4. `Bash(command='npm run lint', description='Lint check')` — 0 warnings
+
+   **Skills Repository:**
+   1. `Bash(command='grep -c "^## Phase" skills/project-workflow-claude/SKILL.md', description='Phase count check')`
+   2. `Bash(command='head -15 skills/*/SKILL.md | head -30', description='Spot-check YAML frontmatter')`
+   3. `Bash(command='grep -rn "TODO\|FIXME" skills/', description='Check unresolved issues')`
+   4. `Bash(command='git diff --check', description='No whitespace errors')`
+   5. Reference file existence: `for ref in $(grep -oP 'references/[a-z0-9-]+\.md' skills/project-workflow-claude/SKILL.md); do test -f "skills/project-workflow-claude/$ref" && echo "✓ $ref" || echo "✗ MISSING: $ref"; done`
+
+3. **ANALYZE + FIX** (Workflow Script):
+   ```
+   Workflow(
+     scriptPath='.claude/workflows/phase6-verify.js',
+     args={projectType: '<go|vue|node|skills-repo>', checkResults: [...]}
+   )
+   ```
+
+   **LOOP UNTIL DRY:** The script returns `{allPassed, dryRounds, shouldContinue}`.
+   - `shouldContinue=false, allPassed=true` → DONE (Iron Law satisfied, 2 consecutive dry rounds)
+   - `shouldContinue=true` → Master re-runs ALL Bash checks → re-invoke script with updated `checkResults` and current `dryRounds` value
+   - Safety cap: 10 total invocations. Report to user if cap reached.
+
+**Note:** Project type tokens passed to Workflow are normalized: `go`, `vue`, `node`, `skills-repo`.
 
 **Completion Declaration:**
 ```
@@ -412,7 +493,7 @@ NO COMPLETION CLAIMS WITHOUT FRESH VERIFICATION EVIDENCE
 
 ## Phase 7: Retrospective & Learning
 
-**Goal:** Three-layer learning: session reflection (7.1), inline self-learning (7.2), cross-session memory cron (7.3).
+**Goal:** Three-layer learning: session reflection (7.1), inline self-learning (7.2), cross-session memory cron with auto-compression (7.3).
 
 ### 7.1 Session-End Retrospective
 
@@ -422,27 +503,107 @@ NO COMPLETION CLAIMS WITHOUT FRESH VERIFICATION EVIDENCE
 
 | Trigger | Action |
 |---------|--------|
-| Phase 6 failed >3 times on same issue | Load `diagnose` skill |
-| Phase 6 found >5 modernization warnings | Load `golang-modernize` |
+| Phase 6 failed >3 times on same issue | Load `diagnose` skill (if available) |
+| Phase 5 found >5 CRITICAL/HIGH findings | Re-examine Phase 1 design assumptions |
 | User corrected same pattern ≥2 times | Save to memory as durable preference |
+| Plan missed a relevant skill | Update claude-routing.md if pattern repeats |
 
 ### 7.3 Background Memory Cron
 
+**Goal:** Persistent cron job (every 2 hours) for cross-session pattern extraction. When memory ≥90% full, auto-compress into topic-based skills.
+
+**Cron Setup (idempotent):**
 ```
-CronCreate(
-  cron='7 */2 * * *',  // every 2 hours at minute 7
-  prompt="Phase 7.3 Memory Cron. Scan recent sessions for patterns. If memory ≥90% full, compress into memory-backup skills. Otherwise extract cross-session conventions.",
-  durable=true
-)
+1. CronList → check for existing 'phase7-memory-cron' job
+2. IF found → skip creation (already running)
+3. IF not found:
+   CronCreate(
+     cron='7 */2 * * *',
+     prompt="Phase 7.3 Memory Cron. Run the COMPRESS_OR_EXTRACT algorithm below. Scan project memory files for patterns. If memory is near capacity, compress into skills. Otherwise extract cross-session conventions.",
+     durable=true
+   )
+```
+Note: Recurring tasks auto-expire after 7 days. Re-created on next workflow run only if not already present.
+
+#### COMPRESS_OR_EXTRACT Algorithm
+
+```
+1. Scan memory files: Bash(command='ls -t ~/.claude/projects/<project>/memory/*.md 2>/dev/null')
+2. Check capacity: Bash(command='wc -c ~/.claude/projects/<project>/memory/*.md | tail -1')
+   - Threshold: 10,000 chars total (~90% capacity)
+3. IF total chars ≥ 10,000:
+     RUN COMPRESSION CYCLE
+   ELSE:
+     RUN CROSS-SESSION EXTRACTION
 ```
 
-Note: Recurring tasks auto-expire after 7 days — this is expected. The cron will be re-created on next workflow run.
+#### COMPRESSION CYCLE (memory ≥ 90%)
+
+```
+1. Read ALL memory files in ~/.claude/projects/<project>/memory/
+2. Classify by topic using Agent:
+   - Group related entries (e.g., all Go conventions, all project-specific patterns)
+   - Each group becomes a candidate skill
+3. FOR EACH topic group:
+   a. Summarize into 3-5 concise, impactful rules
+   b. Name: memory-<topic-slug> (e.g., memory-golang, memory-project-x)
+   c. Agent writes skill: Write ~/.claude/skills/memory-<topic>/SKILL.md
+      - Frontmatter: name, description, version
+      - Content: Key Rules section with 3-5 rules
+   d. If skill already exists:
+      - Agent reads existing → appends new rules without duplicating
+4. REPLACE memory entries:
+   - Remove detailed entries that were classified into skills
+   - Write compact trigger entries: "<topic>: 加载 skill memory-<topic-slug>"
+   - Trigger format MUST be parseable by Phase 0.5
+5. Verify: memory total chars dropped by ≥30% from pre-compression level
+6. If still ≥10,000 chars after first pass → run second pass with more aggressive summarization
+```
+
+#### CROSS-SESSION EXTRACTION (memory < 90%)
+
+```
+1. Scan memory files for recurring patterns (same topic appearing across files)
+2. IF new durable convention found → Write new memory file
+3. IF existing convention contradicted → Edit to update
+4. IF stale convention (not referenced in last 10 sessions) → Remove memory file
+```
+
+#### Trigger Format Specification
+
+Compressed memory triggers follow this format (machine-parseable by Phase 0.5):
+
+```
+<topic>: 加载 skill <skill-name>
+```
+
+Example:
+```
+golang: 加载 skill memory-golang
+project-x: 加载 skill memory-project-x
+```
+
+#### Generated Skill Format
+
+```yaml
+---
+name: memory-<topic-slug>
+description: "Compressed memory backup — <topic> conventions and lessons. Auto-generated by Phase 7.3."
+version: "1.0"
+---
+# Memory Backup: <Topic>
+Auto-generated from compressed agent memory.
+## Key Rules
+1. <rule 1>
+2. <rule 2>
+3. <rule 3>
+```
 
 ---
 
 ## Phase 8: Finish Branch
 
-**Goal:** Structured completion of development work.
+**Goal:** Structured completion of development work. **Optional — user can skip with 'skip branch'.**
 
 1. **Verify Phase 6 results still hold** (no new code since verification)
 2. **Detect environment:**
@@ -453,6 +614,24 @@ Note: Recurring tasks auto-expire after 7 days — this is expected. The cron wi
    - `AskUserQuestion(question="What would you like to do?", options=[Merge locally, Push and create PR, Keep branch as-is, Discard this work])`
 5. **Execute choice** (merge/push/keep/discard with appropriate git commands)
 
+### Quick Reference
+
+| Choice | Command |
+|--------|---------|
+| Merge locally | `git checkout main && git merge <branch>` |
+| Push + PR | `git push -u origin <branch>` → create PR via gh |
+| Keep as-is | No action |
+| Discard | `git checkout main && git branch -d <branch>` (safe: refuses if unmerged) |
+
+### Red Flags (NEVER)
+- ❌ Merge before Phase 6 verification
+- ❌ Push with failing tests
+- ❌ Discard without confirming (data loss)
+
+---
+
+> **Iron Law:** The canonical Iron Law is in `references/iron-law.md`. Load via `Read('references/iron-law.md')` for the complete verification discipline including Gate Function, Red Flags, Rationalization Prevention, TDD Red-Green, and Agent Delegation Verification.
+
 ---
 
 ## Self-Driving Transition Rules
@@ -462,10 +641,10 @@ Note: Recurring tasks auto-expire after 7 days — this is expected. The cron wi
 | 0 (Environment) | 0.3 + 0.5 | Detection complete |
 | 0.5 (Skills) | 1 (Design) | 0.3 analysis complete + skills loaded |
 | 1 (Design) | 2 (Plan) | Design approved + spec written |
-| 2 (Plan) | 3 (Ralplan) | Plan saved to `.claude/plans/` |
-| 3 (Ralplan) | 4 (Implement) | Plan approved |
+| 2 (Plan) | 3 (Consensus) | Plan saved + json:tasks block present |
+| 3 (Consensus) | 4 (Implement) | Consensus approved by Judge Panel |
 | 4 (Implement) | 5 (Review) | All tasks done |
-| 5 (Review) | 6 (Verify) | Both stages pass (spec ✅ then code ✅) |
+| 5 (Review) | 6 (Verify) | Both review stages pass (spec per-task ✅ then code per-task ✅ + Final Review ✅) |
 | 6 (Verify) | 7 (Retro+Cron) | ALL checks PASS with fresh evidence |
 | 7 (Retro+Cron) | 8 (Finish) | 7.1+7.2 dispatched; 7.3 cron runs independently |
 | 8 (Finish) | Done | User choice executed |
@@ -481,6 +660,7 @@ Note: Recurring tasks auto-expire after 7 days — this is expected. The cron wi
 | `no review` | Skip Phase 5 (DANGEROUS) |
 | `I'll test` | Skip Phase 6 verification |
 | `skip branch` | Skip Phase 8 |
+| `skip workflow` | Fall back to manual Agent parallelism (skip Workflow scripts for Phase 4-6) |
 | `FULL` | All phases with deep depth |
 
 ## Anti-Patterns (NEVER)
@@ -494,3 +674,6 @@ Note: Recurring tasks auto-expire after 7 days — this is expected. The cron wi
 7. ❌ Start code quality review before spec compliance is ✅
 8. ❌ Use old Go version when go.mod specifies newer
 9. ❌ Claim completion without running verification commands THIS turn
+10. ❌ Skip Workflow smoke test — leads to script failures
+11. ❌ Use parallel() when pipeline() works — pipeline is more efficient
+12. ❌ Pass incomplete prompt to Phase 4 task — subagent starts with blank context

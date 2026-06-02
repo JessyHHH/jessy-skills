@@ -1,6 +1,6 @@
 # jessy-skills — Multi-Language AI Engineering Skills
 
-![Version](https://img.shields.io/badge/version-v1.0-blue)
+![Version](https://img.shields.io/badge/version-v2.1-blue)
 
 一个支持 [Hermes Agent](https://github.com/NousResearch/hermes-agent) + [Claude Code](https://code.claude.com/) 的多语言工作流技能集合。11 阶段自驱动并行流水线（含 HARD-GATE / Iron Law / Two-Stage Review），76+ 技能覆盖 Go/Vue/前端/工程/方法论全流程。
 
@@ -34,14 +34,20 @@ ctx7 login && firecrawl login  # 浏览器授权
 | 0.5 | `skill_view()` 加载技能 | `Skill()` 加载技能 |
 | 1 | `clarify()` 设计对话 ⚡ | `AskUserQuestion()` 设计对话 ⚡ |
 | 2 | `write_file(.hermes/plans/)` | `Write(.claude/plans/)` |
-| 3 | `skill_view(ralplan)` → delegate_task | `Skill(ralplan)` [OMC 原生] |
-| 4 | `delegate_task(tasks=[])` 并行 | **`Workflow(pipeline)`** 流水线编排 |
-| 5 | `delegate_task` 审查 ⚡ | `Agent` + `Workflow(parallel)` 审查 ⚡ |
-| 6 | `terminal()` 验证 ⚡ | `Bash()` + `Skill(ralph)` 验证 ⚡ |
+| 3 | `skill_view(ralplan)` → delegate_task | `Skill(ralplan)` + Judge Panel (3角度并行计划审阅) |
+| 4 | `delegate_task(tasks=[])` 并行 | **4 Workflow 脚本** (phase3-consensus / phase4-implement / phase5-review / phase6-verify) + 独立 Iron Law (`references/iron-law.md`) |
+| 5 | `delegate_task` 审查 ⚡ | **逐任务 Pipeline 审阅** + Adversarial Verification (3 skeptics) ⚡ |
+| 6 | `terminal()` 验证 ⚡ | `Bash()` + **Loop Until Dry** 验证 ⚡ |
 | 7 | `memory()` + `cronjob()` | `CronCreate()` + 文件记忆 |
 | 8 | 4-option 收尾菜单 ★ | 4-option 收尾菜单 ★ |
 
 **出口可见性：** 每个 Phase 结束时输出 `Phase X complete. [skill] verified. → Phase Y`，Skill Expected 列在转换规则表中。
+
+### project-workflow-claude v2.1 亮点
+- **Workflow 脚本驱动**: 4 个确定性 JS 脚本 (pipeline/parallel/loop/adversarial verify)
+- **Superpowers 对齐**: Spec Self-Review 4点检查、实现者自审 (DONE/DONE_WITH_CONCERNS/NEEDS_CONTEXT/BLOCKED)、逐任务审查
+- **Iron Law 独立化**: `references/iron-law.md` — Gate Function/Red Flags/Rationalization Prevention
+- **推荐 MCP**: Context7 (文档查询) + Firecrawl (网页搜索)，自动检测 fallback
 
 ## 核心设计
 
@@ -102,7 +108,7 @@ Core rule: Master agent NEVER directly Write/Edit files outside trusted paths. A
 
 ### 工作流
 - `project-workflow` — 11-Phase 自驱动流水线（核心，v7.0，Hermes）
-- `project-workflow-claude` — 11-Phase 流水线（v1.0，Claude Code，Workflow 编排 + OMC 集成）
+- `project-workflow-claude` — 11-Phase 流水线（v2.1，Claude Code，Workflow 脚本驱动 + 独立 Iron Law）
 - `karpathy-guidelines` — LLM 编码五条纪律
 - `deep-interview` — 苏格拉底式需求澄清
 - `ralplan` — 多 agent 共识计划
