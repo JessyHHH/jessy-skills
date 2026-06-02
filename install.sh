@@ -174,6 +174,27 @@ if [ $HAS_CLAUDE -eq 1 ]; then
     echo ""
     echo "→ Setting up Claude Code integration..."
 
+    # === Branch detection: Claude Code needs 'claude' branch ===
+    if [ -d "$DOTFILES/.git" ]; then
+        CURRENT_BRANCH=$(git -C "$DOTFILES" branch --show-current 2>/dev/null || echo "unknown")
+        if [ "$CURRENT_BRANCH" != "claude" ]; then
+            echo "  ⚠ Current branch: $CURRENT_BRANCH — Claude Code needs 'claude' branch"
+            # Check if claude branch exists
+            if git -C "$DOTFILES" show-ref --verify --quiet refs/heads/claude 2>/dev/null || \
+               git -C "$DOTFILES" show-ref --verify --quiet refs/remotes/origin/claude 2>/dev/null; then
+                echo "  → Auto-switching to 'claude' branch..."
+                git -C "$DOTFILES" checkout claude 2>/dev/null || \
+                git -C "$DOTFILES" checkout -b claude origin/claude 2>/dev/null
+                echo "  ✓ Switched to claude branch"
+            else
+                echo "  ⚠ 'claude' branch not found. Staying on $CURRENT_BRANCH."
+                echo "  → For Claude Code support: git checkout claude (after git fetch)"
+            fi
+        else
+            echo "  ✓ Already on claude branch"
+        fi
+    fi
+
     # Create .claude/skills symlink in the repo if running from within it
     if [ -d "$DOTFILES/skills" ] && [ ! -L "$DOTFILES/.claude/skills" ]; then
         mkdir -p "$DOTFILES/.claude"
