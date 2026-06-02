@@ -9,7 +9,7 @@ metadata:
 
 # Project Workflow Claude v2.1 — Self-Driving Pipeline with Hard Gates
 
-**Core design:** Zero pre-loaded skills (except `karpathy-guidelines`). Everything is context-detected: Go version, project type, codebase patterns, task signals. **Workflow-script-driven:** Phase 4-6 use deterministic JS scripts (`.claude/workflows/phase4-implement.js`, `phase5-review.js`, `phase6-verify.js`) executed via the Workflow tool. Scripts support caching, resume, and structured output. **Layered skill routing:** Shared domain skills (Go/Vue/Engineering) + Claude Code platform overlay.
+**Core design:** Zero pre-loaded skills (except `karpathy-guidelines`). Everything is context-detected: Go version, project type, codebase patterns, task signals. **Workflow-script-driven:** Phase 4-6 use deterministic JS scripts (`~/.claude/workflows/project-workflow-claude/phase4-implement.js`, `phase5-review.js`, `phase6-verify.js`) executed via the Workflow tool. Scripts support caching, resume, and structured output. **Layered skill routing:** Shared domain skills (Go/Vue/Engineering) + Claude Code platform overlay.
 
 **Self-driving:** Announce phases → execute → auto-transition. Never wait for user to say "next".
 
@@ -315,7 +315,7 @@ Simple projects = shorter design, but still present it first.
 2. **Judge Panel Review:**
    ```
    Workflow(
-     scriptPath='.claude/workflows/phase3-consensus.js',
+     scriptPath='~/.claude/workflows/project-workflow-claude/phase3-consensus.js',
      args={planContent: '<full plan text>'}
    )
    ```
@@ -351,7 +351,7 @@ Simple projects = shorter design, but still present it first.
 3. **EXECUTE:**
    ```
    Workflow(
-     scriptPath='.claude/workflows/phase4-implement.js',
+     scriptPath='~/.claude/workflows/project-workflow-claude/phase4-implement.js',
      args={tasks: [...]}
    )
    ```
@@ -397,7 +397,7 @@ Simple projects = shorter design, but still present it first.
 3. **EXECUTE:**
    ```
    Workflow(
-     scriptPath='.claude/workflows/phase5-review.js',
+     scriptPath='~/.claude/workflows/project-workflow-claude/phase5-review.js',
      args={planPath, changedFiles, tasks: [...], selfReviewStatuses: [...]}
    )
    ```
@@ -468,7 +468,7 @@ Simple projects = shorter design, but still present it first.
 3. **ANALYZE + FIX** (Workflow Script):
    ```
    Workflow(
-     scriptPath='.claude/workflows/phase6-verify.js',
+     scriptPath='~/.claude/workflows/project-workflow-claude/phase6-verify.js',
      args={projectType: '<go|vue|node|skills-repo>', checkResults: [...]}
    )
    ```

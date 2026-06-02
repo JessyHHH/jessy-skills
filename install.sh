@@ -202,6 +202,14 @@ if [ $HAS_CLAUDE -eq 1 ]; then
         echo "  ✓ .claude/skills → ../skills symlink created"
     fi
 
+    # Install workflow scripts to global location (so they work from any project)
+    WF_INSTALL="$HOME/.claude/workflows/project-workflow-claude"
+    if [ -d "$DOTFILES/.claude/workflows" ]; then
+        mkdir -p "$WF_INSTALL"
+        cp "$DOTFILES/.claude/workflows/"*.js "$WF_INSTALL/" 2>/dev/null || true
+        echo "  ✓ Workflow scripts installed to $WF_INSTALL/ ($(ls "$WF_INSTALL" 2>/dev/null | wc -l | tr -d ' ') scripts)"
+    fi
+
     # Create .claude/workflows symlink if running from within the repo
     if [ -d "$DOTFILES/.claude/workflows" ] && [ ! -L "$HOME/.claude/workflows" ]; then
         # Workflow scripts stay in the repo; they're accessed via CWD
