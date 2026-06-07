@@ -8,9 +8,10 @@ Codex 验证的不是一句“Claude Code 完成了”，而是验证整条链�
 
 ```text
 Phase 0 是否有事实证据
-Phase 1 是否把需求澄清
+Phase 1 是否逐题澄清并由用户确认
 Phase 2 是否生成合格 contract
-Phase 3 是否经过 Claude Code 审核
+Codex Phase 3 是否完成 contract preflight
+Claude Review Gate 是否经过 Claude Code 审核
 Phase 3.5 是否由 Codex replan
 Phase 4-6 是否由 Claude Code 执行并验证
 Phase 5 是否由 Codex final audit
@@ -40,17 +41,17 @@ Codex 要验证三类东西：
 .codex/runs/<run-id>/clarity.md
 .claude/plans/<timestamp>-codex-contract-v1-<slug>.md
 .codex/runs/<run-id>/preflight-v1.md
-.codex/runs/<run-id>/claude-phase3-review-v1.md
+.codex/runs/<run-id>/claude-review-gate-v1.md
 .codex/runs/<run-id>/replan-v1-to-v2.md
 .claude/plans/<timestamp>-codex-contract-v2-<slug>.md
 .codex/runs/<run-id>/claude-result.md
 .codex/runs/<run-id>/final-audit.md
 ```
 
-不是每次都一定有 v2。如果 Claude Phase 3 一次 APPROVE，可以没有 replan-v1-to-v2，但必须有：
+不是每次都一定有 v2。如果 Claude Review Gate 一次 APPROVE，可以没有 replan-v1-to-v2，但必须有：
 
 ```text
-Codex 对 Claude Phase 3 review 的 triage 记录
+Codex 对 Claude Review Gate 的 triage 记录
 ```
 
 ## 状态机验证
@@ -60,10 +61,11 @@ Codex 应该按顺序检查状态：
 ```text
 REQUEST_RECEIVED
 DISCOVERY_DONE
-CLARITY_CONFIRMED
+WAITING_FOR_USER_CLARIFICATION
+CLARITY_CONFIRMED_BY_USER
 CONTRACT_DRAFTED
-CONTRACT_PREFLIGHT_PASSED
-CLAUDE_PHASE3_REVIEWED
+CODEX_CONTRACT_PREFLIGHT_PASSED
+CLAUDE_REVIEW_GATE_APPROVED
 CODEX_REPLAN_DONE
 CONTRACT_APPROVED_FOR_EXECUTION
 USER_APPROVED_EXECUTION
@@ -79,8 +81,11 @@ DONE
 例如：
 
 ```text
-有 contract，但没有 Claude Phase3 review
-  -> 停在 CONTRACT_PREFLIGHT_PASSED
+有 contract，但没有 Phase 1 用户确认
+  -> 停在 WAITING_FOR_USER_CLARIFICATION
+
+有 contract，但没有 Claude Review Gate
+  -> 停在 CODEX_CONTRACT_PREFLIGHT_PASSED
 
 有 Claude result，但没有 user approval
   -> FAIL，因为执行 gate 被跳过
@@ -102,13 +107,13 @@ Codex 检查 contract：
 - 有 json tasks
 - 每个 task 有 files
 - 每个 task 有 verification
-- 有 Claude Phase3 instructions
+- 有 Claude Review Gate instructions
 - 有 result shape 要求
 ```
 
 如果缺任意关键项，不能交给 Claude Code。
 
-## Claude Phase3 Review 验证
+## Claude Review Gate 验证
 
 Codex 检查 Claude 的 review：
 
@@ -131,7 +136,7 @@ Codex 检查自己是否做了 review triage：
 - ACCEPT 的 finding 是否写进新 contract
 - REJECT 是否有理由
 - 新 contract 是否重新 preflight
-- 如果 verdict 是 ITERATE，是否重新交给 Claude Phase3
+- 如果 verdict 是 ITERATE，是否重新交给 Claude Review Gate
 ```
 
 ## 执行结果验证
@@ -139,7 +144,7 @@ Codex 检查自己是否做了 review triage：
 Codex 检查 Claude result：
 
 ```text
-- phase3_verdict = APPROVE
+- claude_review_gate_verdict = APPROVE
 - user_approved_execution = true
 - 每个 task status = done 或有明确 blocked reason
 - phase5_verdict 没有 critical/high unresolved
@@ -190,7 +195,7 @@ FAIL
 ```text
 1. 不要求用户检查每个中间文件
 2. Codex 自己做 contract preflight
-3. Codex 自己 triage Claude Phase3 findings
+3. Codex 自己 triage Claude Review Gate findings
 4. Codex 自己决定是否需要 contract v2
 5. Codex 自己做 final audit
 6. 只在需要用户授权改文件时请求批准
@@ -198,4 +203,3 @@ FAIL
 ```
 
 这样用户不用盯过程，但仍然保留关键控制权。
-

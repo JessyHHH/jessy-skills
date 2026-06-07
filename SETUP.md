@@ -103,7 +103,7 @@ source ~/.zshrc  # or ~/.bashrc
 |----------|---------------|-------------------|-----------|
 | Hermes | `project-workflow` (v7.0) | `~/.jessy-skills/hermes.sh` | `~/.hermes/skills/` |
 | Claude Code | `project-workflow-claude` (v2.2) | `CLAUDE.md` auto-load | `~/.claude/skills/` |
-| Codex | `project-workflow-codex` (v0.1) | `AGENTS.md` auto-load | `.agents/skills -> ../skills`, `~/.agents/skills/jessy-skills` |
+| Codex | `project-workflow-codex` (v0.2) | `AGENTS.md` auto-load | `.agents/skills -> ../skills`, `~/.agents/skills/jessy-skills` |
 
 | Shell | Config File | Status |
 |-------|-------------|--------|

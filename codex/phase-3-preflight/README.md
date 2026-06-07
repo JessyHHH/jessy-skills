@@ -1,12 +1,14 @@
-# Phase 3：Preflight Contract 自检
+# Phase 3：Codex Contract Preflight 自检
 
 ## 目标
 
-Phase 3 的目标是防止 Codex 把一个坏 contract 交给 Claude Code。
+Codex Phase 3 的目标是防止 Codex 把一个坏 contract 交给 Claude Code。
 
 Claude Code 很可能会认真执行 contract。如果 contract 本身范围模糊、任务不完整、验证不清楚，后面的实现越认真，返工越大。
 
 所以 Codex 在交接前必须自检。
+
+这里的 Phase 3 只属于 Codex。Claude Code 后面要做的是 `Claude Review Gate`，不要再叫成 Codex Phase 3。
 
 ## Codex 应该检查什么
 
@@ -32,12 +34,38 @@ Claude Code 很可能会认真执行 contract。如果 contract 本身范围模�
 这个文件为什么要改？
 这个目录为什么要新增？
 为什么不改 skills？
-为什么 Claude Code 从 Phase 3 开始？
+为什么 Claude Code 只能先 review，不能直接执行？
 ```
 
 如果回答不了，contract 不合格。
 
-### 3. Scope 检查
+### 3. Phase 1 用户确认检查
+
+Phase 1 必须有用户确认记录：
+
+```text
+user_confirmations:
+  - question
+  - options
+  - selected_option
+  - recorded_value
+```
+
+如果 Phase 1 是 Codex 自己填的，没有用户选择或确认，Preflight 必须失败：
+
+```text
+verdict: FAIL
+reason: Phase 1 clarity was not confirmed by user
+```
+
+或者在还没准备好时标成：
+
+```text
+verdict: NOT_VALID_YET
+reason: waiting for Phase 1 user confirmation
+```
+
+### 4. Scope 检查
 
 检查 contract 是否明确写了：
 
@@ -61,7 +89,7 @@ forbidden_changes:
 
 除非用户后来明确批准扩大范围。
 
-### 4. Task 检查
+### 5. Task 检查
 
 每个 task 必须满足：
 
@@ -77,7 +105,7 @@ forbidden_changes:
 
 如果一个 task 需要读完整上下文才能懂，说明 prompt 不合格。
 
-### 5. Verification 检查
+### 6. Verification 检查
 
 contract 里的验证不能只写：
 
@@ -94,12 +122,12 @@ git diff -- codex
 git diff --check
 ```
 
-### 6. Executor Instructions 检查
+### 7. Executor Instructions 检查
 
 检查是否明确告诉 Claude Code：
 
 ```text
-先 Phase 3 consensus
+先 Claude Review Gate
 APPROVE 后再问用户
 用户批准后才 Phase 4
 Phase 5/6 不能跳过
@@ -121,6 +149,9 @@ PASS_WITH_RISK
 
 FAIL
   不能交，必须先修 contract
+
+NOT_VALID_YET
+  还不能判断，通常是 Phase 1 正在等用户确认
 ```
 
 ## 进入 Claude Code 执行的条件
@@ -142,7 +173,6 @@ Phase 3 完成后，Codex 才能说：
 
 ```text
 contract 已通过 Codex preflight。
-现在可以交给 Claude Code 进行 Phase 3 consensus。
-注意：Claude Code 的 Phase 3 仍然必须运行，不能因为 Codex 已经检查过就跳过。
+现在可以交给 Claude Code 进行 Claude Review Gate。
+注意：Claude Code 此时只能 review contract，不能实现。
 ```
-

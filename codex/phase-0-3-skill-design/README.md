@@ -12,7 +12,7 @@ skills/project-workflow-codex/SKILL.md
 
 ```text
 Codex 负责 Phase 0-3 的发现、澄清、contract 生成、contract 自检。
-Claude Code 负责 Phase 3 审核和 Phase 4-6 执行。
+Claude Code 负责 Review Gate 审核和 Phase 4-6 执行。
 Codex 再负责 review triage、replan 和 final audit。
 ```
 
@@ -26,7 +26,7 @@ Codex 再负责 review triage、replan 和 final audit。
 匹配 Codex planner skills
 推荐 Claude executor skills
 生成 Cross-Agent Plan Contract
-调用 Claude Phase 3 review
+调用 Claude Review Gate
 根据 review 重新计划
 最终验收 Claude 执行结果
 ```
@@ -41,10 +41,10 @@ Codex 再负责 review triage、replan 和 final audit。
 Phase 0: Discovery
 Phase 0.3: Knowledge + AGENTS.md Bootstrap
 Phase 0.5: Skill Routing
-Phase 1: Clarify
+Phase 1: Clarify one question at a time
 Phase 2: Contract v1
 Phase 3: Codex Preflight
-Phase 3.5: Claude Phase3 Review Triage + Replan
+Phase 3.5: Claude Review Gate Triage + Replan
 Final Audit: Codex 验收
 ```
 
@@ -52,7 +52,7 @@ Final Audit: Codex 验收
 
 ```text
 不替 Claude Code 执行 Phase 4-6
-不跳过 Claude Code Phase 3 review
+不跳过 Claude Code Review Gate
 不绕过用户执行批准
 不把一次性任务 contract 写进 skill
 不把 Claude workflow 复制成 Codex workflow
@@ -108,4 +108,3 @@ Codex 通过 `.agents/skills -> ../skills` symlink 发现同一套 skills。
 Claude Code 通过安装脚本把 `skills/` 链接到 `~/.claude/skills`。
 
 这样 skill routing 不需要维护两套目录，也不会出现 Codex 和 Claude Code 使用不同版本的 domain skills。
-

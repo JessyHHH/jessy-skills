@@ -8,7 +8,7 @@ Codex 生成 contract 时，不只要告诉 Claude Code 做什么，还要告诉
 这次任务建议使用哪些 skills
 为什么需要这些 skills
 哪些 skills 是必须的
-Claude Phase 3 是否需要调整 skill routing
+Claude Review Gate 是否需要调整 skill routing
 ```
 
 ## 共享 skills 根目录
@@ -67,7 +67,7 @@ contract 里应该写清楚 Claude Code 执行阶段建议加载：
 ```text
 project-workflow-claude
   required: true
-  reason: 接管 Phase 3-6
+  reason: 接管 Review Gate 和 Phase 4-6
 
 karpathy-guidelines
   required: true
@@ -110,17 +110,17 @@ Go 数据库任务:
 ### Recommended Claude Code Skills
 - `project-workflow-claude`
   - required: true
-  - reason: Run Phase 3-6.
+  - reason: Run Claude Review Gate and Phase 4-6.
 - `karpathy-guidelines`
   - required: true
   - reason: Keep execution surgical and evidence-based.
 
-### Claude Phase 3 Skill Check
+### Claude Review Gate Skill Check
 Claude Code must verify:
 1. recommended skills match the actual task
 2. missing required skills are reported
 3. unnecessary skills are not loaded blindly
-4. skill routing changes are returned as Phase 3 findings
+4. skill routing changes are returned as Review Gate findings
 ```
 
 ## Task-Level Skills
@@ -139,9 +139,9 @@ Claude Code must verify:
 
 task-level skills 的作用是让 Claude Code 的 subagent 更容易拿到正确上下文。
 
-## Claude Phase 3 如何检查 skill routing
+## Claude Review Gate 如何检查 skill routing
 
-Claude Phase 3 必须回答：
+Claude Review Gate 必须回答：
 
 ```text
 推荐 skills 是否足够？
@@ -152,4 +152,3 @@ task-level recommendedSkills 是否合理？
 ```
 
 如果 Claude 建议修改 skill routing，Codex 在 Phase 3.5 判断是否采纳。
-

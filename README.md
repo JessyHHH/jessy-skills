@@ -50,11 +50,12 @@ ctx7 login && firecrawl login  # 浏览器授权
 - **Iron Law 独立化**: `references/iron-law.md` — Gate Function/Red Flags/Rationalization Prevention
 - **推荐 MCP**: Context7 (文档查询) + Firecrawl (网页搜索)，自动检测 fallback
 
-### project-workflow-codex v0.1 亮点
-- **Contract-First Planner**: Codex 负责 Phase 0-3 发现、澄清、contract 生成、preflight
+### project-workflow-codex v0.2 亮点
+- **Contract-First Planner**: Codex 负责 Phase 0-3 发现、逐题澄清、contract 生成、preflight
+- **ABCD Clarify Gate**: Phase 1 每次只问一个 A/B/C/D 问题，用户确认前 contract 只能是 clarification draft
 - **AGENTS.md Bootstrap**: Phase 0.3 生成/维护 Codex 官方项目说明入口，当前 session 显式读取
 - **Skill Routing**: contract 同时记录 Codex planner skills 和推荐 Claude Code executor skills
-- **Replan Loop**: Claude Code Phase 3 只审 contract；Codex triage findings 后生成 v2/v3 contract
+- **Replan Loop**: Claude Code Review Gate 只审 contract；Codex triage findings 后生成 v2/v3 contract
 - **Final Audit**: Claude Code Phase 4-6 后，Codex 重新检查 diff、验证命令和原始需求
 
 ## 核心设计
@@ -125,7 +126,7 @@ project-workflow-claude v2.2 is fully standalone — zero external dependencies.
 ### 工作流
 - `project-workflow` — 11-Phase 自驱动流水线（核心，v7.0，Hermes）
 - `project-workflow-claude` — 11-Phase 流水线（v2.2，Claude Code，Workflow 脚本驱动 + 独立 Iron Law）
-- `project-workflow-codex` — Contract-first planner/auditor（Codex Phase 0-3 + Claude Phase3 review + Codex replan/audit）
+- `project-workflow-codex` — Contract-first planner/auditor（Codex Phase 0-3 + Claude Review Gate + Codex replan/audit）
 - `karpathy-guidelines` — LLM 编码五条纪律
 - `deep-interview` — 苏格拉底式需求澄清
 - `ralplan` — 多 agent 共识计划

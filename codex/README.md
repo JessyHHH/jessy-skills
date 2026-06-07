@@ -22,13 +22,13 @@ User 需求
   ↓
 Codex Phase 0: Discovery
   ↓
-Codex Phase 1: Clarify
+Codex Phase 1: Clarify (one question at a time)
   ↓
 Codex Phase 2: Plan Contract
   ↓
-Codex Phase 3: Preflight
+Codex Phase 3: Contract Preflight
   ↓
-Claude Code: Phase 3 Contract Review
+Claude Code: Review Gate
   ↓
 Codex Phase 3.5: Replan / Contract Revision
   ↓
@@ -76,11 +76,12 @@ codex/
 ```text
 REQUEST_RECEIVED
 DISCOVERY_DONE
-CLARITY_CONFIRMED
+WAITING_FOR_USER_CLARIFICATION
+CLARITY_CONFIRMED_BY_USER
 CONTRACT_DRAFTED
-CONTRACT_PREFLIGHT_PASSED
-CLAUDE_INTAKE_STARTED
-CLAUDE_PHASE3_REVIEWED
+CODEX_CONTRACT_PREFLIGHT_PASSED
+CLAUDE_REVIEW_GATE_STARTED
+CLAUDE_REVIEW_GATE_APPROVED
 CODEX_REPLAN_DONE
 CONTRACT_APPROVED_FOR_EXECUTION
 USER_APPROVED_EXECUTION
@@ -93,9 +94,10 @@ DONE
 
 如果任何状态缺少证据，不能跳到后面的状态。例如：
 
-- 没有 contract preflight 结果，不能交给 Claude Code
-- Claude Phase 3 没有结构化 review，Codex 不能 replan
-- Codex 没有判断 Claude Phase 3 建议是否采纳，不能进入 Phase 4
+- Phase 1 没有用户确认，contract 只能是 DRAFT_PENDING_USER_CLARIFICATION
+- 没有 Codex contract preflight 结果，不能交给 Claude Code
+- Claude Review Gate 没有结构化 review，Codex 不能 replan
+- Codex 没有判断 Claude review 建议是否采纳，不能进入 Phase 4
 - contract 没有最终 APPROVE，不能进入 Phase 4
 - 用户没有批准执行，Claude Code 不能改文件
 - Claude Phase 6 没有通过，Codex 不能宣布完成
@@ -108,12 +110,13 @@ DONE
 ```text
 Codex:
   负责验证流程有没有按状态机走完
-  负责判断 Claude Phase 3 的建议是否值得采纳
+  负责 Phase 1 逐题澄清，并记录用户选择
+  负责判断 Claude Review Gate 的建议是否值得采纳
   负责生成 contract 新版本
   负责最终 audit
 
 Claude Code:
-  负责 Phase 3 审 contract
+  负责 Review Gate 审 contract
   负责 Phase 4-6 执行、review、verify
   负责返回结构化证据
 

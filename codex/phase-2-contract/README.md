@@ -28,6 +28,30 @@ created_at:
 
 这里最重要的是 `base_commit`。如果 Claude Code 执行时 HEAD 已经变化，就必须重新检查。
 
+### 1.5 Phase 1 User Confirmations
+
+contract 必须记录 Phase 1 的逐题确认。
+
+```text
+clarity_status: CONFIRMED_BY_USER
+questions:
+  - id:
+    question:
+    options:
+    recommended_option:
+    selected_option:
+    recorded_value:
+confirmed_by_user: true
+```
+
+如果用户还没有确认，只能生成草稿：
+
+```text
+status: DRAFT_PENDING_USER_CLARIFICATION
+```
+
+这种草稿不能进入 Codex Phase 3 PASS，也不能交给 Claude Code 执行。
+
 ### 2. Intent
 
 记录用户真正想要什么：
@@ -102,7 +126,7 @@ contract 末尾应该有结构化 tasks：
 1. Load project-workflow-claude.
 2. Treat this contract as external plan input.
 3. Do not re-plan from scratch.
-4. Run Phase 3 consensus against this contract.
+4. Run Claude Review Gate against this contract.
 5. If APPROVE, ask user approval before Phase 4.
 6. If ITERATE or REJECT, stop and report.
 7. After user approval, execute Phase 4-6.
@@ -129,6 +153,7 @@ codex/templates/cross-agent-plan-contract.md
 
 - contract 有 metadata
 - contract 有 base_commit
+- Phase 1 有用户确认记录
 - goal / non-goals / assumptions 清楚
 - expected_files 清楚
 - 每个 task 有 files、prompt、verification
@@ -145,4 +170,3 @@ Phase 2 完成后，Codex 不应该直接把任务丢给 Claude Code。
 contract 已经写好，但还没有证明它是好 contract。
 接下来进入 Phase 3，由 Codex 先做 preflight 自检。
 ```
-

@@ -19,7 +19,7 @@ target_executor: claude-code
 project_root:
 base_commit:
 created_at:
-status: CONTRACT_DRAFTED
+status: DRAFT_PENDING_USER_CLARIFICATION | CONTRACT_DRAFTED | APPROVED_FOR_EXECUTION
 ```
 
 ## Phase 0.3 Knowledge + AGENTS.md
@@ -57,14 +57,14 @@ notes:
   reason:
 ```
 
-### Claude Phase 3 Skill Check
+### Claude Review Gate Skill Check
 
 ```text
 Claude Code must verify:
 1. recommended skills match the actual task
 2. missing required skills are reported
 3. unnecessary skills are not loaded blindly
-4. skill routing changes are returned as Phase 3 findings
+4. skill routing changes are returned as Review Gate findings
 ```
 
 ## Intent
@@ -74,6 +74,26 @@ user_request:
 desired_outcome:
 non_goals:
 assumptions:
+```
+
+## Phase 1 User Confirmations
+
+Contract cannot become `CONTRACT_DRAFTED` until this section is complete.
+
+```text
+clarity_status: WAITING_FOR_USER_CONFIRMATION | CONFIRMED_BY_USER
+questions:
+  - id:
+    question:
+    options:
+      A:
+      B:
+      C:
+      D:
+    recommended_option:
+    selected_option:
+    recorded_value:
+confirmed_by_user: true | false
 ```
 
 ## Discovery Evidence
@@ -124,6 +144,7 @@ verification:
 ## Preflight Checklist
 
 ```text
+- Phase 1 confirmed by user:
 - base_commit matches current HEAD:
 - goal/non_goals clear:
 - expected files listed:
@@ -140,8 +161,8 @@ verification:
 1. Load project-workflow-claude.
 2. Treat this file as an external Cross-Agent Plan Contract.
 3. Do not re-plan from scratch.
-4. First run Phase 3 consensus against the full contract.
-5. During Phase 3, do not implement. Review only.
+4. First run Claude Review Gate against the full contract.
+5. During Claude Review Gate, do not implement. Review only.
 6. Return APPROVE / ITERATE / REJECT with structured findings.
 7. Wait for Codex to triage findings and provide an approved contract version.
 8. If the final contract is approved, ask the user for approval before Phase 4.
@@ -151,7 +172,7 @@ verification:
 12. Return structured result for Codex final audit.
 ```
 
-## Required Claude Phase 3 Review Shape
+## Required Claude Review Gate Shape
 
 ```text
 verdict: APPROVE | ITERATE | REJECT
@@ -171,7 +192,7 @@ approval_conditions:
 
 ```text
 reviewed_contract:
-claude_phase3_verdict:
+claude_review_gate_verdict:
 findings_accepted:
 findings_deferred:
 findings_rejected:
@@ -186,7 +207,7 @@ new_status:
 contract_path:
 base_commit:
 final_head:
-phase3_verdict:
+claude_review_gate_verdict:
 user_approved_execution:
 tasks:
   - id:

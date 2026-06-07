@@ -8,7 +8,7 @@ Claude Code 的职责是：
 
 ```text
 读取 contract
-运行 Phase 3 consensus
+运行 Claude Review Gate
 请求用户批准
 执行 Phase 4 implementation
 执行 Phase 5 review
@@ -42,7 +42,7 @@ $cc:rescue --background --prompt-file .claude/plans/<contract>.md
 请读取 .claude/plans/<contract>.md。
 加载 project-workflow-claude。
 把它当作 Cross-Agent Plan Contract 处理。
-先运行 Phase 3 consensus。
+先运行 Claude Review Gate。
 ```
 
 ## Claude Code 接手后的流程
@@ -63,9 +63,9 @@ forbidden_changes 是否清楚
 
 如果发现 contract 不完整，Claude Code 应该停止并报告 `ITERATE`。
 
-### 2. Phase 3 Consensus
+### 2. Claude Review Gate
 
-Claude Code 运行自己的 Phase 3 consensus。
+Claude Code 运行自己的 contract review gate。
 
 它要审查：
 
@@ -92,12 +92,12 @@ REJECT
 
 ### 3. 用户批准 gate
 
-即使 Claude Code Phase 3 APPROVE，也不能直接改文件。
+即使 Claude Code Review Gate APPROVE，也不能直接改文件。
 
 必须问用户：
 
 ```text
-Phase 3 consensus 已通过。是否批准进入 Phase 4 执行？
+Claude Review Gate 已通过。是否批准进入 Phase 4 执行？
 ```
 
 用户批准后才可以执行。
@@ -161,7 +161,7 @@ claude_result:
   contract_path:
   base_commit:
   final_commit_or_head:
-  phase3_verdict:
+  claude_review_gate_verdict:
   user_approved_execution:
   tasks:
     - id:
@@ -186,4 +186,3 @@ Claude Code 已经执行并验证。
 但 Codex 还必须独立读取 diff 和验证结果。
 只有 Codex final audit 通过，整个任务才算 DONE。
 ```
-

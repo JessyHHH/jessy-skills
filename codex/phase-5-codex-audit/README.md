@@ -19,7 +19,7 @@ Claude Code 完成 Phase 4-6 后，Codex 要做独立验收。
 Codex 先读取 Claude 返回的结构化结果：
 
 ```text
-phase3_verdict
+claude_review_gate_verdict
 user_approved_execution
 tasks status
 phase5_verdict
@@ -125,4 +125,3 @@ rework_contract:
 ```text
 Claude Code 声称完成，但 Codex 尚未独立验收。
 ```
-

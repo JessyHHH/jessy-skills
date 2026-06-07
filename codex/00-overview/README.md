@@ -19,7 +19,7 @@ Codex 更适合在当前会话里做：
 
 Claude Code 更适合用现有 `project-workflow-claude` 做：
 
-- Phase 3 consensus 审查计划
+- Review Gate 审查 contract
 - Phase 4 subagents 实现
 - Phase 5 review
 - Phase 6 verify
@@ -56,16 +56,16 @@ Codex Phase 0: Discovery
   对应 Claude Phase 0 / 0.3 的只读信息收集
 
 Codex Phase 1: Clarify
-  对应 Claude Phase 1 的需求澄清
+  对应 Claude Phase 1 的需求澄清，但必须一题一题问用户并确认
 
 Codex Phase 2: Contract
   对应 Claude Phase 2 的 plan，但输出格式更严格
 
 Codex Phase 3: Preflight
-  是 Claude Phase 3 之前的 contract 自检
+  是 Claude Review Gate 之前的 contract 自检
 
-Claude Code Phase 3:
-  仍然要运行 consensus review，不能跳过
+Claude Code Review Gate:
+  仍然要运行 contract review，不能跳过
 
 Claude Code Phase 4-6:
   真正执行、review、verify
@@ -80,12 +80,12 @@ Codex Phase 5:
 
 - contract 是否有 base commit
 - contract 是否有清楚的 goal / non-goals / assumptions
+- Phase 1 是否有用户确认记录
 - 每个 task 是否 self-contained
-- Claude Code 是否跑了 Phase 3-6
+- Claude Code 是否跑了 Review Gate 和 Phase 4-6
 - 用户是否批准过执行
 - git diff 是否在 contract 允许范围内
 - 验证命令是否真的跑过
 - Codex final audit 是否 PASS
 
 如果这些证据缺失，状态只能是 `PASS_WITH_RISK` 或 `FAIL`，不能是 `DONE`。
-
