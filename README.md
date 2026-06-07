@@ -1,18 +1,18 @@
 # jessy-skills — Multi-Language AI Engineering Skills
 
-![Version](https://img.shields.io/badge/version-v2.1-blue)
+![Version](https://img.shields.io/badge/version-v2.3-blue)
 
-一个支持 [Hermes Agent](https://github.com/NousResearch/hermes-agent) + [Claude Code](https://code.claude.com/) 的多语言工作流技能集合。11 阶段自驱动并行流水线（含 HARD-GATE / Iron Law / Two-Stage Review），76+ 技能覆盖 Go/Vue/前端/工程/方法论全流程。
+一个支持 [Hermes Agent](https://github.com/NousResearch/hermes-agent) + [Claude Code](https://code.claude.com/) + Codex 的多语言工作流技能集合。11 阶段自驱动并行流水线（含 HARD-GATE / Iron Law / Two-Stage Review），77+ 技能覆盖 Go/Vue/前端/工程/方法论全流程。
 
 ## 快速安装
 
-**AI 自安装（推荐）：** 克隆后在 Hermes 或 Claude Code 里说 "读 SETUP.md 并安装"
+**AI 自安装（推荐）：** 克隆后在 Hermes、Claude Code 或 Codex 里说 "读 SETUP.md 并安装"
 
 **手动安装：**
 ```bash
 git clone https://github.com/JessyHHH/jessy-skills.git
 cd jessy-skills
-bash install.sh          # 自动检测 Hermes / Claude Code / 两者
+bash install.sh          # 自动检测 Hermes / Claude Code / Codex
 source ~/.bashrc         # Linux · macOS 用 ~/.zshrc
 
 # 安装工具 CLI（一步）
@@ -23,6 +23,7 @@ ctx7 login && firecrawl login  # 浏览器授权
 安装后：
 - **Hermes** 每次启动自动加载 `project-workflow` + `karpathy-guidelines`
 - **Claude Code** 每次启动自动加载 CLAUDE.md，`/reload-skills` 激活技能
+- **Codex** 读取 AGENTS.md；通过 `.agents/skills -> ../skills` 和 `~/.agents/skills/jessy-skills` 发现同一套 skills
 - 自动识别 Go/Vue/Node/Skills Repository 项目
 
 ## 工作流概览
@@ -43,43 +44,52 @@ ctx7 login && firecrawl login  # 浏览器授权
 
 **出口可见性：** 每个 Phase 结束时输出 `Phase X complete. [skill] verified. → Phase Y`，Skill Expected 列在转换规则表中。
 
-### project-workflow-claude v2.1 亮点
+### project-workflow-claude v2.2 亮点
 - **Workflow 脚本驱动**: 4 个确定性 JS 脚本 (pipeline/parallel/loop/adversarial verify)
 - **Superpowers 对齐**: Spec Self-Review 4点检查、实现者自审 (DONE/DONE_WITH_CONCERNS/NEEDS_CONTEXT/BLOCKED)、逐任务审查
 - **Iron Law 独立化**: `references/iron-law.md` — Gate Function/Red Flags/Rationalization Prevention
 - **推荐 MCP**: Context7 (文档查询) + Firecrawl (网页搜索)，自动检测 fallback
 
+### project-workflow-codex v0.1 亮点
+- **Contract-First Planner**: Codex 负责 Phase 0-3 发现、澄清、contract 生成、preflight
+- **AGENTS.md Bootstrap**: Phase 0.3 生成/维护 Codex 官方项目说明入口，当前 session 显式读取
+- **Skill Routing**: contract 同时记录 Codex planner skills 和推荐 Claude Code executor skills
+- **Replan Loop**: Claude Code Phase 3 只审 contract；Codex triage findings 后生成 v2/v3 contract
+- **Final Audit**: Claude Code Phase 4-6 后，Codex 重新检查 diff、验证命令和原始需求
+
 ## 核心设计
 
-- **双平台支持**：`project-workflow`（Hermes）+ `project-workflow-claude`（Claude Code），共享 72 个 domain skills
+- **三平台支持**：`project-workflow`（Hermes）+ `project-workflow-claude`（Claude Code）+ `project-workflow-codex`（Codex），共享根目录 `skills/`
 - **零硬编码**：项目类型从 go.mod/package.json/skills/SKILL.md 自动检测，skill 自动路由
 - **自驱动顺序**：Phase 0.3 先分析代码库生成项目知识，Phase 0.5 再加载技能
-- **Hermes**: CONTEXT.md 双层结构（Knowledge + Instruction）；**Claude Code**: CLAUDE.md Boot Layer + `.claude/context/knowledge.md`
+- **Hermes**: CONTEXT.md 双层结构（Knowledge + Instruction）；**Claude Code**: CLAUDE.md Boot Layer + `.claude/context/knowledge.md`；**Codex**: AGENTS.md + `.codex/context/knowledge.md`
 - **自学习**：Phase 7.1 后台反省 → 保存 memory；7.3 cron 每 2h 跨 session 反思
 - **Hard Gates**：HARD-GATE（设计先于编码）、Iron Law（新鲜证据先于声称）、Two-Stage Review（spec→code）
 - **Ralph 循环**：任何验证失败 → 自动修复 → 重新验证，直到全部通过
 - **Phase 出口可见**：每个 Phase 宣告用了什么 skill（`Phase X complete. [skill] verified. → Phase Y`）
 
-## v2.1 Standalone Architecture
+## v2.2 Standalone Architecture
 
-project-workflow-claude v2.1 is fully standalone — zero external dependencies.
+project-workflow-claude v2.2 is fully standalone — zero external dependencies.
 
 | Role | Responsibility | Tools |
 |------|---------------|-------|
 | **Master Agent** | Environment detection, skill loading, design dialogue, planning, Bash commands | Glob, Grep, Read, Bash, Skill, AskUserQuestion |
 | **Subagent (Agent)** | File writing (specs, plans, knowledge.md, source code) | Write, Edit, Read, Glob, Grep |
-| **Workflow Scripts** | Deterministic parallel execution (implement/review/verify) | 4 JS scripts via Workflow tool |
+| **Workflow Scripts** | Deterministic parallel execution (implement/review/verify) | 4 JS scripts via Workflow tool (`pipeline()`/`parallel()`/`log()`/`budget`) |
 
 **4 Workflow Scripts:**
-- `phase3-consensus.js` — Judge Panel (3 angles parallel plan review)
-- `phase4-implement.js` — Pipeline implement + Self-Review (DONE/DONE_WITH_CONCERNS/NEEDS_CONTEXT/BLOCKED)
-- `phase5-review.js` — Per-task pipeline review + Adversarial Verification (3 skeptics) + Final Review
-- `phase6-verify.js` — Loop Until Dry verification (2 consecutive clean rounds)
+- `phase3-consensus.js` — Judge Panel (3 angles `parallel()` review, `pipeline()` per angle score → synthesize)
+- `phase4-implement.js` — Pipeline implement + Self-Review (DONE/DONE_WITH_CONCERNS/NEEDS_CONTEXT/BLOCKED) + `budget`-aware task prioritization
+- `phase5-review.js` — Per-task `pipeline()` review + Adversarial Verification (3 skeptics `parallel()`) + Final Review
+- `phase6-verify.js` — Loop Until Dry verification (2 consecutive clean rounds), supports `resumeFromRunId` for deterministic resume
 
 **Key Properties:**
-- Scripts are deterministic (no Date.now/Math.random) — support caching and resume
+- Scripts are deterministic (no Date.now/Math.random) — support caching and resume via `resumeFromRunId`
+- `pipeline()` default over `parallel()` — streaming stages, no unnecessary barriers
 - Iron Law: `references/iron-law.md` — standalone verification discipline
 - MCP-aware: auto-detects Context7/Firecrawl, falls back to WebFetch/WebSearch
+- Saved as `/` commands: press `s` in `/workflows` after a successful run to save for reuse
 
 ## 逃逸命令
 
@@ -110,11 +120,12 @@ project-workflow-claude v2.1 is fully standalone — zero external dependencies.
 - **Phase 7.3 后台 cron**：每 2h 跨 session 模式提取；memory ≥90% 自动压缩为 skill，memory 保留触发器自动加载
 - **Phase 8 收尾**：结构化分支完成 — 验证→环境检测→4选项菜单→执行→清理
 
-## 包含的技能（55+）
+## 包含的技能（77+）
 
 ### 工作流
 - `project-workflow` — 11-Phase 自驱动流水线（核心，v7.0，Hermes）
-- `project-workflow-claude` — 11-Phase 流水线（v2.1，Claude Code，Workflow 脚本驱动 + 独立 Iron Law）
+- `project-workflow-claude` — 11-Phase 流水线（v2.2，Claude Code，Workflow 脚本驱动 + 独立 Iron Law）
+- `project-workflow-codex` — Contract-first planner/auditor（Codex Phase 0-3 + Claude Phase3 review + Codex replan/audit）
 - `karpathy-guidelines` — LLM 编码五条纪律
 - `deep-interview` — 苏格拉底式需求澄清
 - `ralplan` — 多 agent 共识计划
@@ -208,6 +219,10 @@ bash install.sh
 
 ```
 jessy-skills/
+├── AGENTS.md               # Codex 项目说明入口
+├── .agents/
+│   └── skills -> ../skills # Codex repo-local skill discovery
+├── codex/                  # Codex contract-first 方法论文档
 ├── install.sh              # 安装脚本
 ├── tests/                  # 自动化测试脚本
 │   ├── test-workflow-changes.sh
@@ -217,6 +232,8 @@ jessy-skills/
 │   └── hermes.sh           # Shell 函数
 └── skills/
     ├── project-workflow/   # 核心工作流 (v7.0)
+    ├── project-workflow-codex/   # Codex contract-first planner/auditor
+    ├── project-workflow-claude/  # Claude Code executor workflow
     ├── karpathy-guidelines/
     ├── methodology/        # ★ 方法技能
     │   ├── prior-research/

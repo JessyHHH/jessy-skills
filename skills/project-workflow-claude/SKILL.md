@@ -1,21 +1,23 @@
 ---
 name: project-workflow-claude
 description: "Use when starting any development task — auto-detects project type, loads matching skills, drives 11-phase pipeline from design through verified completion. Hard Gates + Iron Law."
-version: "v2.1"
+version: "v2.2"
 author: "jessyhuang"
 metadata:
   standalone: true
 ---
 
-# Project Workflow Claude v2.1 — Self-Driving Pipeline with Hard Gates
+# Project Workflow Claude v2.2 — Self-Driving Pipeline with Hard Gates
 
-**Core design:** Zero pre-loaded skills (except `karpathy-guidelines`). Everything is context-detected: Go version, project type, codebase patterns, task signals. **Workflow-script-driven:** Phase 4-6 use deterministic JS scripts (`~/.claude/workflows/project-workflow-claude/phase4-implement.js`, `phase5-review.js`, `phase6-verify.js`) executed via the Workflow tool. Scripts support caching, resume, and structured output. **Layered skill routing:** Shared domain skills (Go/Vue/Engineering) + Claude Code platform overlay.
+**Core design:** Zero pre-loaded skills (except `karpathy-guidelines`). Everything is context-detected: Go version, project type, codebase patterns, task signals. **Workflow-script-driven:** Phase 3-6 use deterministic JS scripts executed via the Workflow tool (`phase3-consensus`, `phase4-implement`, `phase5-review`, `phase6-verify`). Scripts support `pipeline()` streaming, `parallel()` barriers, `log()` progress narration, `budget`-aware prioritization, `schema` structured output, `isolation: 'worktree'` for conflict-free parallelism, deterministic resume (`resumeFromRunId`), and save-as-command (`/phase<N>-<name>`). **Layered skill routing:** Shared domain skills (Go/Vue/Engineering) + Claude Code platform overlay.
 
 **Self-driving:** Announce phases → execute → auto-transition. Never wait for user to say "next".
 
-**Platform:** Claude Code v2.1+. Standalone — no external dependencies. Uses Claude Code native tools — `Workflow`, `Agent`, `Skill`, `Glob`, `Grep`, `Bash`, `AskUserQuestion`, `CronCreate`.
+**Platform:** Claude Code v2.1.154+ (dynamic workflows require v2.1.154+). Standalone — no external dependencies. Uses Claude Code native tools — `Workflow`, `Agent`, `Skill`, `Glob`, `Grep`, `Bash`, `AskUserQuestion`, `CronCreate`.
 
-**Workflow Script Resolution:** The 4 Workflow scripts are installed to `~/.claude/workflows/` by `install.sh`. The Workflow tool's `name` parameter auto-discovers scripts from `~/.claude/workflows/` and `.claude/workflows/` — no path resolution needed. Always use `Workflow(name='phase<N>-<name>')` form.
+**Workflow Script Resolution:** The 4 Workflow scripts are installed to `~/.claude/workflows/` by `install.sh` (flat, no subdirectory). The Workflow tool's `name` parameter auto-discovers scripts from `~/.claude/workflows/` and `.claude/workflows/` — no path resolution needed. Always use `Workflow(name='phase<N>-<name>')` form. Saved workflows run as `/<name>` slash commands globally (@ `~/.claude/workflows/`) or per-project (@ `.claude/workflows/`); project-local takes precedence.
+
+**Workflow Capabilities (v2.2):** `pipeline(items, stage1, stage2, ...)` for streaming stages (default — no barrier), `parallel(thunks)` for barriers when all results needed, `agent(prompt, {model, isolation, schema, phase, label})` for subagents, `log(message)` for progress, `budget` object (`.total`, `.spent()`, `.remaining()`) for token-aware scaling, `args` global for parameterized runs, `phase(title)` for grouping, `workflow(name)` for nesting, deterministic resume via `resumeFromRunId`.
 
 ---
 
@@ -46,6 +48,51 @@ NEVER use Bash(sed -i) to edit files — it bypasses the hook but causes silent 
 3. **Surgical Changes** — Only requested files. Match existing style.
 4. **Goal-Driven Execution** — Success criteria defined BEFORE implementation. Verify with fresh evidence.
 5. **Verify Before Asserting** — Use priority chain: Context7 MCP (docs) → Firecrawl MCP (search) → WebFetch → WebSearch. Don't guess.
+
+---
+
+## External Contract Intake (Codex -> Claude Code)
+
+Use this intake when the user or Codex provides a `Cross-Agent Plan Contract`, especially from `.claude/plans/*codex-contract*.md`.
+
+Rules:
+
+```text
+Do not re-plan from scratch.
+Do not implement during intake.
+Treat the contract as external Phase 0-2 input from Codex.
+First run Phase 3 consensus against the full contract.
+Return structured review for Codex replan.
+Wait for an approved contract version and user execution approval before Phase 4.
+```
+
+Required Phase 3 review shape:
+
+```text
+verdict: APPROVE | ITERATE | REJECT
+findings:
+  - id:
+    severity: critical | high | medium | low
+    section:
+    issue:
+    why_it_matters:
+    suggested_contract_change:
+missing_questions:
+execution_risks:
+approval_conditions:
+skill_routing_changes:
+```
+
+Skill routing check:
+
+```text
+Verify recommended Claude Code skills are sufficient.
+Report missing required domain skills.
+Report unnecessary skills if they expand context without benefit.
+Return changes as Phase 3 findings; Codex decides whether to accept them.
+```
+
+If verdict is `APPROVE`, still report any low-risk improvements. Codex owns review triage and may return a revised contract before execution.
 
 ---
 
@@ -321,7 +368,7 @@ Simple projects = shorter design, but still present it first.
      args={planContent: '<full plan text>'}
    )
    ```
-   Script reviews from 3 angles in parallel (architecture, risk, feasibility), scores 1-10 each, synthesizes one verdict.
+   Script reviews from 3 angles in parallel (architecture, risk, feasibility), scores 1-10 each, synthesizes one verdict. Uses `parallel()` barrier for all 3 angles, `pipeline()` per angle for scoring → synthesis. To save as a reusable `/` command after a successful run, press `s` in `/workflows`.
 
 3. **Act on verdict:**
    - If APPROVE → proceed to step 5 (output task list)
@@ -358,15 +405,17 @@ Simple projects = shorter design, but still present it first.
    )
    ```
 
-   The script uses `pipeline()` (streaming, no barrier):
-   - Stage 1 (Implement): `agent(task.prompt, {model, isolation})` per task
+   The script uses `pipeline()` (streaming, no barrier — default over `parallel()`):
+   - Stage 1 (Implement): `agent(task.prompt, {model, isolation, phase: 'Implement'})` per task
      - complexity='simple' → haiku, 'medium' → sonnet, 'complex' → opus
      - mutatesFiles=true → isolation='worktree' (avoids file conflicts)
+     - `log()` narrates progress per task
    - Stage 2 (Quick Verify): `agent(verify, {phase: 'Quick Verify', schema})` per task
      - Each task verified immediately after implementation (streaming — no waiting for other tasks)
      - Validates: build passes + affected tests pass
+   - Stage 3 (Self-Review): `agent(review, {phase: 'Self-Review', schema})` per task
 
-   The script includes a Self-Review stage: each implementer reports DONE/DONE_WITH_CONCERNS/NEEDS_CONTEXT/BLOCKED. The script returns `selfReviewStatus` — pass this to Phase 5 as `args.selfReviewStatuses`. If budget.total is set, tasks are prioritized by complexity.
+   The script includes a Self-Review stage: each implementer reports DONE/DONE_WITH_CONCERNS/NEEDS_CONTEXT/BLOCKED. The script returns `selfReviewStatus` — pass this to Phase 5 as `args.selfReviewStatuses`. If `budget.total` is set, tasks are prioritized by complexity and `log()` reports remaining tokens.
 
 4. **REPORT** — auto-transition to Phase 5:
    ```
@@ -385,7 +434,7 @@ Simple projects = shorter design, but still present it first.
 
 ## Phase 5: Two-Stage Review (ALWAYS RUNS)
 
-**Goal:** Spec compliance review first → code quality review second. NEVER reverse order. Uses deterministic Workflow script for parallel code quality audit.
+**Goal:** Spec compliance review first → code quality review second. NEVER reverse order. Uses deterministic Workflow script (`phase5-review.js`) with `pipeline()` per task + `parallel()` per dimension.
 
 **Procedure:**
 
@@ -403,9 +452,9 @@ Simple projects = shorter design, but still present it first.
      args={planPath, changedFiles, tasks: [...], selfReviewStatuses: [...]}
    )
    ```
-   The script uses per-task pipeline review:
+   The script uses per-task `pipeline()` (streaming, no barrier between tasks):
    - **Spec Compliance** (gated per task): Each task checked against plan. Self-review statuses (DONE_WITH_CONCERNS/NEEDS_CONTEXT/BLOCKED) surfaced in review context.
-   - **Code Quality** (only if spec passes): Parallel correctness/safety/simplicity per task
+   - **Code Quality** (only if spec passes): `parallel()` correctness/safety/simplicity per task
    - **Adversarial Verification**: 3 skeptics vote on each CRITICAL finding (≥2/3 majority to confirm)
    - **Final Review**: Overall cross-task consistency after all tasks pass individual reviews
    - Task A in code quality while Task B in spec review — zero barrier streaming
@@ -478,6 +527,7 @@ Simple projects = shorter design, but still present it first.
    **LOOP UNTIL DRY:** The script returns `{allPassed, dryRounds, shouldContinue}`.
    - `shouldContinue=false, allPassed=true` → DONE (Iron Law satisfied, 2 consecutive dry rounds)
    - `shouldContinue=true` → Master re-runs ALL Bash checks → re-invoke script with updated `checkResults` and current `dryRounds` value
+   - Reuse via `Workflow({scriptPath, resumeFromRunId})` for deterministic resume if interrupted
    - Safety cap: 10 total invocations. Report to user if cap reached.
 
 **Note:** Project type tokens passed to Workflow are normalized: `go`, `vue`, `node`, `skills-repo`.
@@ -677,5 +727,9 @@ Auto-generated from compressed agent memory.
 8. ❌ Use old Go version when go.mod specifies newer
 9. ❌ Claim completion without running verification commands THIS turn
 10. ❌ Skip Workflow smoke test — leads to script failures
-11. ❌ Use parallel() when pipeline() works — pipeline is more efficient
+11. ❌ Default to `parallel()` when `pipeline()` works — `pipeline()` is streaming (no barrier), more efficient
 12. ❌ Pass incomplete prompt to Phase 4 task — subagent starts with blank context
+13. ❌ Use `agent()` without `schema` for structured data — parsing raw text is error-prone; use `schema` for booleans, enums, arrays
+14. ❌ Ignore `budget.remaining()` in long-running loops — guard with `while (budget.remaining() > 50_000)` to avoid hard cutoffs
+15. ❌ Write Workflow scripts with `Date.now()`/`Math.random()` — breaks deterministic resume; use `args` for timestamps, index-based variation
+16. ❌ Commit `resumeFromRunId` without checking if the script changed — edited scripts resume partially cached (old agents replay, new agents run live)

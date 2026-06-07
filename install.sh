@@ -7,9 +7,11 @@ echo ""
 # === Platform detection ===
 HAS_HERMES=0
 HAS_CLAUDE=0
+HAS_CODEX=0
 command -v hermes >/dev/null 2>&1 && HAS_HERMES=1
 command -v claude >/dev/null 2>&1 && HAS_CLAUDE=1
-echo "→ Platform detection: Hermes=$([ $HAS_HERMES -eq 1 ] && echo 'yes' || echo 'no'), Claude Code=$([ $HAS_CLAUDE -eq 1 ] && echo 'yes' || echo 'no')"
+command -v codex >/dev/null 2>&1 && HAS_CODEX=1
+echo "→ Platform detection: Hermes=$([ $HAS_HERMES -eq 1 ] && echo 'yes' || echo 'no'), Claude Code=$([ $HAS_CLAUDE -eq 1 ] && echo 'yes' || echo 'no'), Codex=$([ $HAS_CODEX -eq 1 ] && echo 'yes' || echo 'no')"
 echo ""
 
 # === Backup ===
@@ -49,6 +51,28 @@ if [ $HAS_CLAUDE -eq 1 ]; then
         CC_INSTALLED=$((CC_INSTALLED + 1))
     done
     echo "  ✓ Claude Code skills installed ($CC_INSTALLED symlinks)"
+fi
+
+# === Install skills to Codex (shared root symlinks) ===
+if [ $HAS_CODEX -eq 1 ]; then
+    echo "→ Installing skills to Codex..."
+
+    # Repo-local Codex discovery: Codex scans .agents/skills from CWD up to repo root.
+    mkdir -p "$DOTFILES/.agents"
+    if [ -e "$DOTFILES/.agents/skills" ] && [ ! -L "$DOTFILES/.agents/skills" ]; then
+        BACKUP_AGENTS_SKILLS="$DOTFILES/.agents/skills.bak.$(date +%Y%m%d_%H%M%S)"
+        mv "$DOTFILES/.agents/skills" "$BACKUP_AGENTS_SKILLS"
+        echo "  ↻ Existing .agents/skills moved to $(basename "$BACKUP_AGENTS_SKILLS")"
+    fi
+    ln -sfn ../skills "$DOTFILES/.agents/skills"
+    echo "  ✓ Repo Codex skills linked: .agents/skills → ../skills"
+
+    # User-global Codex discovery: makes this skill set available from any project.
+    mkdir -p "$HOME/.agents/skills"
+    ln -sfn "$DOTFILES/skills" "$HOME/.agents/skills/jessy-skills"
+    echo "  ✓ Global Codex skills linked: ~/.agents/skills/jessy-skills → $DOTFILES/skills"
+
+    echo "  ℹ Codex reads AGENTS.md at session start; restart Codex after install if needed"
 fi
 
 # === Clean stale skills ===
@@ -226,8 +250,8 @@ if [ $HAS_CLAUDE -eq 1 ]; then
 
     echo "  ✓ Claude Code integration ready"
 
-    # project-workflow-claude v2.1 — standalone, no external dependencies
-    echo "  ℹ project-workflow-claude v2.1 is fully standalone"
+    # project-workflow-claude v2.2 — standalone, no external dependencies
+    echo "  ℹ project-workflow-claude v2.2 is fully standalone"
     echo "  → 4 Workflow scripts included (.claude/workflows/)"
     echo "  → Auto-detects Context7/Firecrawl MCP (falls back to WebFetch/WebSearch)"
     echo "  → Iron Law: references/iron-law.md"
@@ -251,5 +275,9 @@ fi
 if [ $HAS_CLAUDE -eq 1 ]; then
     echo "  Claude Code: skills installed to ~/.claude/skills/"
     echo "  Run /reload-skills in Claude Code to activate"
+fi
+if [ $HAS_CODEX -eq 1 ]; then
+    echo "  Codex: skills linked to ~/.agents/skills/jessy-skills/"
+    echo "  Run /skills or invoke \$project-workflow-codex in Codex"
 fi
 echo "  pwsh: . \$PROFILE"

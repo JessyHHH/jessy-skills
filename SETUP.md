@@ -6,7 +6,7 @@ each step autonomously. No human intervention required.
 
 ## Prerequisites
 
-- Hermes Agent installed (`which hermes`) and/or Claude Code installed (`which claude`)
+- Hermes Agent installed (`which hermes`) and/or Claude Code installed (`which claude`) and/or Codex installed (`which codex`)
 - Git (`which git`)
 - Node.js + npm (`which node && which npm`)
 
@@ -38,7 +38,8 @@ bash install.sh
 
 This single command handles everything:
 - Backs up existing skills to `~/.hermes/skills.bak.*`
-- Copies all 76+ skills to `~/.hermes/skills/`
+- Copies all 77+ skills to `~/.hermes/skills/`
+- Links shared Codex skills from `skills/` to `.agents/skills` and `~/.agents/skills/jessy-skills`
 - Cleans stale skills removed from the repo
 - Installs `hermes.sh` to `~/.jessy-skills/` (clean source-based, not inline)
 - Configures shell: zsh/bash/pwsh auto-detected
@@ -58,6 +59,8 @@ source ~/.bashrc  # Linux with bash
 
 ```bash
 ls ~/.hermes/skills/project-workflow/SKILL.md  # must exist
+ls ~/.agents/skills/jessy-skills/project-workflow-codex/SKILL.md  # Codex global skill link
+test -L .agents/skills                         # repo-local Codex skills link
 grep "jessy-skills" ~/.zshrc ~/.bashrc         # single source line
 ```
 
@@ -99,7 +102,8 @@ source ~/.zshrc  # or ~/.bashrc
 | Platform | Workflow Skill | Shell Integration | Skill Dir |
 |----------|---------------|-------------------|-----------|
 | Hermes | `project-workflow` (v7.0) | `~/.jessy-skills/hermes.sh` | `~/.hermes/skills/` |
-| Claude Code | `project-workflow-claude` (v2.1) | `CLAUDE.md` auto-load | `~/.claude/skills/` |
+| Claude Code | `project-workflow-claude` (v2.2) | `CLAUDE.md` auto-load | `~/.claude/skills/` |
+| Codex | `project-workflow-codex` (v0.1) | `AGENTS.md` auto-load | `.agents/skills -> ../skills`, `~/.agents/skills/jessy-skills` |
 
 | Shell | Config File | Status |
 |-------|-------------|--------|
@@ -110,9 +114,9 @@ source ~/.zshrc  # or ~/.bashrc
 
 ### Claude Code Specific
 
-After install, restart Claude Code or run `/reload-skills` to activate skills. The project's `CLAUDE.md` boot layer auto-loads each session. The `project-workflow-claude` v2.1 skill is fully standalone with its own workflow scripts (phase3-consensus, phase4-implement, phase5-review, phase6-verify) and does not require OMC.
+After install, restart Claude Code or run `/reload-skills` to activate skills. The project's `CLAUDE.md` boot layer auto-loads each session. The `project-workflow-claude` v2.2 skill is fully standalone with its own workflow scripts (phase3-consensus, phase4-implement, phase5-review, phase6-verify) and does not require OMC.
 
-**Workflow Scripts:** 4 deterministic JS scripts in `.claude/workflows/` are included in the repository. The SKILL.md references them via relative paths from the project root. No additional installation needed beyond cloning the repo.
+**Workflow Scripts:** 4 deterministic JS scripts in `.claude/workflows/` are included in the repository. The SKILL.md references them via `Workflow(name='phase<N>-<name>')` from any project. Saved workflows run as `/` slash commands. After a successful run, press `s` in `/workflows` to save for reuse. No additional installation needed beyond cloning the repo.
 
 ### Claude Code MCP Servers (Recommended, NOT Required)
 
@@ -129,9 +133,45 @@ claude mcp add firecrawl -- npx @anthropic/firecrawl-mcp@latest
 See `skills/project-workflow-claude/references/setup.md` for detailed setup instructions.
 The workflow auto-detects MCP availability and falls back to native WebFetch/WebSearch.
 
+### Codex Specific
+
+Codex reads `AGENTS.md` at the start of a run / TUI session. The repository-level `AGENTS.md` keeps the durable project instructions short and points to `codex/` for the full contract-first methodology.
+
+After install:
+
+```bash
+test -L .agents/skills
+readlink .agents/skills               # expected: ../skills
+ls ~/.agents/skills/jessy-skills/project-workflow-codex/SKILL.md
+```
+
+Use in Codex:
+
+```text
+$project-workflow-codex
+```
+
+or open `/skills` and select `project-workflow-codex`.
+
+The Codex workflow is planner/auditor only:
+
+```text
+Codex Phase 0-3 -> Cross-Agent Plan Contract
+Claude Code Phase 3 review
+Codex replan
+Claude Code Phase 4-6 execution
+Codex final audit
+```
+
+When a task is ready for Claude Code execution, save the concrete contract under:
+
+```text
+.claude/plans/YYYY-MM-DD_HHMMSS-codex-contract-v<N>-<slug>.md
+```
+
 ## Launch Mode
 
-project-workflow-claude v2.1 is fully standalone — no external dependencies required.
+project-workflow-claude v2.2 is fully standalone — no external dependencies required.
 
 ```bash
 claude                          # Start Claude Code normally
@@ -143,9 +183,10 @@ The workflow auto-detects MCP availability (Context7, Firecrawl) and falls back 
 ## Report to User
 
 After install, tell the user:
-- 76+ skills installed to `~/.hermes/skills/` and/or `~/.claude/skills/`
+- 77+ skills installed to `~/.hermes/skills/` and/or `~/.claude/skills/`
+- Codex: repo skills linked at `.agents/skills`, global skills linked at `~/.agents/skills/jessy-skills`
 - Hermes: Shell integration at `~/.jessy-skills/hermes.sh` (sourced from config)
 - Claude Code: CLAUDE.md auto-loads; run `/reload-skills` to activate
-- Auto-loaded on every session: `project-workflow` (Hermes) / `project-workflow-claude` (Claude Code) + `karpathy-guidelines`
+- Auto-loaded / available workflows: `project-workflow` (Hermes) / `project-workflow-claude` (Claude Code) / `project-workflow-codex` (Codex) + `karpathy-guidelines`
 - Context7 + Firecrawl CLIs installed and authenticated
 - Run `source ~/.zshrc` (or `~/.bashrc`, or `. $PROFILE`) or open a new terminal to activate

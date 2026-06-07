@@ -4,3 +4,4 @@
 # Protect against accidental skill overwrites
 *.bak.*
 .firecrawl/
+.agents/skills.backup-before-symlink/
