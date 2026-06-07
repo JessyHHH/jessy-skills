@@ -30,19 +30,45 @@ Claude Code 的职责是：
 - 当前项目的 Claude workflow 已经围绕 `.claude/plans/` 工作
 - 放在 `.claude/plans/` 比放在 `.codex/` 更容易被 Claude Code 接管
 
-如果使用 Codex 中的 Claude Code 插件，可以用类似方式：
+默认不要求用户切换到 Claude Code CLI。Codex 应该在当前会话里调用 Claude Code headless：
 
 ```text
-$cc:rescue --background --prompt-file .claude/plans/<contract>.md
+cd <project_root>
+claude -p --output-format=stream-json "<review-or-execution-prompt>"
 ```
 
-如果没有插件，也可以人工把 contract 文件路径交给 Claude Code：
+Phase 3 时，Codex 调 Claude Code 只做 Review Gate：
+
+```text
+加载 project-workflow-claude 和 karpathy-guidelines。
+读取 .claude/plans/<contract>.md。
+把它当作 Codex 的 Cross-Agent Plan Contract。
+只运行 Claude Review Gate。
+优先使用 Workflow(name='phase3-consensus')。
+不要实现，不要进入 Phase 4。
+返回结构化 review。
+```
+
+Phase 4-6 时，必须先满足执行 gate，然后 Codex 再调用 Claude Code：
+
+```text
+加载 project-workflow-claude 和 karpathy-guidelines。
+读取已批准 contract。
+不要重新规划。
+使用 Workflow(name='phase4-implement') 执行。
+使用 Workflow(name='phase5-review') 审查。
+使用 Workflow(name='phase6-verify') 验证。
+返回结构化结果给 Codex final audit。
+```
+
+不要使用 `--bare` 运行这些命令，因为 `--bare` 会关闭 skill 目录扫描、hooks、plugin sync 等能力，可能让 `project-workflow-claude` 和 Workflow 脚本不可用。
+
+如果 `claude` CLI 不存在、版本过低、或 headless 调用失败，Codex 才把手动交接作为 fallback：
 
 ```text
 请读取 .claude/plans/<contract>.md。
 加载 project-workflow-claude。
-把它当作 Cross-Agent Plan Contract 处理。
-先运行 Claude Review Gate。
+先只运行 Claude Review Gate。
 ```
 
 ## Claude Code 接手后的流程
@@ -100,11 +126,17 @@ REJECT
 Claude Review Gate 已通过。是否批准进入 Phase 4 执行？
 ```
 
-用户批准后才可以执行。
+用户批准后，Codex 才可以调用 Claude Code 执行 Phase 4-6。
 
 ### 4. Phase 4 Implementation
 
 Claude Code 按 contract 里的 `json:tasks` 执行。
+
+默认通过 `project-workflow-claude` 的 Workflow 脚本执行：
+
+```text
+Workflow(name='phase4-implement')
+```
 
 要求：
 
@@ -127,6 +159,12 @@ Claude Code 按 contract 里的 `json:tasks` 执行。
 
 Claude Code 审查执行结果。
 
+默认通过：
+
+```text
+Workflow(name='phase5-review')
+```
+
 至少看：
 
 ```text
@@ -140,6 +178,12 @@ Claude Code 审查执行结果。
 ### 6. Phase 6 Verify
 
 Claude Code 运行验证。
+
+默认通过：
+
+```text
+Workflow(name='phase6-verify')
+```
 
 对于文档任务，可能是：
 

@@ -1,7 +1,7 @@
 ---
 name: project-workflow-codex
-description: "Use when Codex should plan a development task before execution: run discovery, bootstrap AGENTS.md/knowledge, route skills, ask one-at-a-time user clarification questions, generate a Cross-Agent Plan Contract for Claude Code, triage Claude review, replan, and final-audit execution."
-version: "v0.2"
+description: "Use when Codex should plan a development task before execution: run discovery, bootstrap AGENTS.md/knowledge, route skills, ask one-at-a-time user clarification questions, generate a Cross-Agent Plan Contract, automatically invoke Claude Code headless for review/execution phases, triage Claude review, replan, and final-audit execution."
+version: "v0.3"
 author: "jessyhuang"
 ---
 
@@ -15,6 +15,7 @@ Core rule:
 Codex owns Phase 0-3 planning and final audit.
 Codex Phase 3 means Codex Contract Preflight only.
 Claude Code owns the Claude Review Gate and Phase 4-6 execution.
+Codex invokes Claude Code from the current Codex session; do not ask the user to switch CLIs.
 Codex must not treat Claude's success message as proof; verify evidence.
 ```
 
@@ -202,6 +203,76 @@ FAIL
 If Phase 1 is not complete, Phase 3 cannot PASS.
 
 Only PASS, or user-accepted PASS_WITH_RISK, can go to Claude Code.
+
+## Automatic Claude Code Invocation
+
+When the user says to enter Phase 3 or a later phase, Codex must call Claude Code from the current Codex session instead of asking the user to switch terminals.
+
+Prerequisites:
+
+```text
+claude CLI is installed (`command -v claude`)
+Claude Code version supports Workflow scripts when Phase 4-6 are requested
+contract_path exists under .claude/plans/
+project_root is known
+```
+
+Use Claude Code print/headless mode:
+
+```text
+cd <project_root>
+claude -p --output-format=stream-json "<prompt>"
+```
+
+Do not use `--bare` for workflow runs. `--bare` disables skill directory walks, hooks, plugin sync, and other behavior that `project-workflow-claude` may need.
+
+### User Says "Enter Phase 3"
+
+Codex sequence:
+
+```text
+1. Run Codex Phase 3 Contract Preflight.
+2. If verdict = PASS: automatically invoke Claude Code Review Gate.
+3. If verdict = PASS_WITH_RISK: ask for risk acceptance unless the user already accepted it.
+4. If accepted: automatically invoke Claude Code Review Gate.
+5. If verdict = FAIL: do not invoke Claude Code; fix the contract first.
+```
+
+Claude Code prompt must require:
+
+```text
+Load project-workflow-claude and karpathy-guidelines.
+Read <contract_path>.
+Treat it as External Contract Intake from Codex.
+Run Claude Review Gate only.
+Use Workflow(name='phase3-consensus') when available.
+Do not implement.
+Do not enter Phase 4.
+Return the required structured review shape.
+```
+
+Save or capture Claude's response as the Claude Review Gate artifact, then continue to Phase 3.5 Codex Replan.
+
+### User Says "Enter Phase 4" or Later
+
+Codex may invoke Claude Code execution only when the Execution Gate is satisfied.
+
+Claude Code prompt must require:
+
+```text
+Load project-workflow-claude and karpathy-guidelines.
+Read the approved contract at <contract_path>.
+Use project-workflow-claude External Contract Intake.
+Do not re-plan from scratch.
+Run Phase 4-6 with Workflow scripts:
+  Workflow(name='phase4-implement')
+  Workflow(name='phase5-review')
+  Workflow(name='phase6-verify')
+Preserve unrelated dirty worktree changes.
+Return the Required Claude Result Shape for Codex final audit.
+```
+
+If the user says "enter Phase 5" or "enter Phase 6", Codex must verify prior Claude artifacts exist. If they are missing, resume from the earliest missing Claude phase rather than skipping ahead.
 
 ## Claude Review Gate
 

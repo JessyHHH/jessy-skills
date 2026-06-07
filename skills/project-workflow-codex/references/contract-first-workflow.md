@@ -1,6 +1,6 @@
 # Contract-First Workflow
 
-Codex generates a contract from Phase 0-2 evidence. Phase 1 requires one-at-a-time user clarification questions and explicit user confirmation before the contract can be ready. Claude Code reviews the contract in the Claude Review Gate. Codex triages the review and produces a revised contract when needed. Claude Code executes only after the contract is approved and the user approves execution.
+Codex generates a contract from Phase 0-2 evidence. Phase 1 requires one-at-a-time user clarification questions and explicit user confirmation before the contract can be ready. After Codex Phase 3 preflight passes, Codex invokes Claude Code headless from the current Codex session for the Claude Review Gate. Codex triages the review and produces a revised contract when needed. Claude Code executes only after the contract is approved and the user approves execution.
 
 Contract versions:
 
@@ -16,8 +16,18 @@ Never skip:
 ```text
 Phase 1 user clarification
 Codex preflight
-Claude Review Gate
+Claude Review Gate via `claude -p`
 Codex review triage
 user execution approval
+Claude Workflow scripts for Phase 4-6
 Codex final audit
 ```
+
+Default handoff mechanism:
+
+```text
+cd <project_root>
+claude -p --output-format=stream-json "<prompt>"
+```
+
+Use `project-workflow-claude` inside Claude Code. For Phase 3, Claude must run Review Gate only, preferably with `Workflow(name='phase3-consensus')`. For Phase 4-6, Claude must use `Workflow(name='phase4-implement')`, `Workflow(name='phase5-review')`, and `Workflow(name='phase6-verify')` when available.

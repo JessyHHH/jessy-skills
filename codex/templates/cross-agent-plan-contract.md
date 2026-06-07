@@ -163,13 +163,25 @@ verification:
 3. Do not re-plan from scratch.
 4. First run Claude Review Gate against the full contract.
 5. During Claude Review Gate, do not implement. Review only.
-6. Return APPROVE / ITERATE / REJECT with structured findings.
-7. Wait for Codex to triage findings and provide an approved contract version.
-8. If the final contract is approved, ask the user for approval before Phase 4.
-9. After user approval, execute Phase 4 using the json tasks.
-10. Run Phase 5 review.
-11. Run Phase 6 verify.
-12. Return structured result for Codex final audit.
+6. Prefer Workflow(name='phase3-consensus') for the Review Gate when available.
+7. Return APPROVE / ITERATE / REJECT with structured findings.
+8. Wait for Codex to triage findings and provide an approved contract version.
+9. If the final contract is approved, Codex must obtain user approval before Phase 4.
+10. After Codex passes execution approval to Claude Code, execute Phase 4 using Workflow(name='phase4-implement').
+11. Run Phase 5 review using Workflow(name='phase5-review').
+12. Run Phase 6 verify using Workflow(name='phase6-verify').
+13. Return structured result for Codex final audit.
+```
+
+## Codex Invocation Notes
+
+```text
+Codex invokes Claude Code from the Codex session:
+  cd <project_root>
+  claude -p --output-format=stream-json "<prompt>"
+
+Do not require the user to switch to Claude Code manually.
+Do not use --bare for workflow runs.
 ```
 
 ## Required Claude Review Gate Shape

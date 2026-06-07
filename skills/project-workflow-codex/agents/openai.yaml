@@ -1,7 +1,7 @@
 interface:
   display_name: "Project Workflow Codex"
-  short_description: "Clarify, contract, and audit Claude execution"
-  default_prompt: "Use $project-workflow-codex to ask one-at-a-time clarification questions, generate a Cross-Agent Plan Contract, route skills, and audit Claude Code execution."
+  short_description: "Clarify, contract, call Claude, audit"
+  default_prompt: "Use $project-workflow-codex to ask one-at-a-time clarification questions, generate a Cross-Agent Plan Contract, invoke Claude Code headless for review/execution phases, route skills, and audit the result."
 
 policy:
   allow_implicit_invocation: true

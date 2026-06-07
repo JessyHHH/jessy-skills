@@ -50,11 +50,13 @@ ctx7 login && firecrawl login  # 浏览器授权
 - **Iron Law 独立化**: `references/iron-law.md` — Gate Function/Red Flags/Rationalization Prevention
 - **推荐 MCP**: Context7 (文档查询) + Firecrawl (网页搜索)，自动检测 fallback
 
-### project-workflow-codex v0.2 亮点
+### project-workflow-codex v0.3 亮点
 - **Contract-First Planner**: Codex 负责 Phase 0-3 发现、逐题澄清、contract 生成、preflight
 - **ABCD Clarify Gate**: Phase 1 每次只问一个 A/B/C/D 问题，用户确认前 contract 只能是 clarification draft
 - **AGENTS.md Bootstrap**: Phase 0.3 生成/维护 Codex 官方项目说明入口，当前 session 显式读取
 - **Skill Routing**: contract 同时记录 Codex planner skills 和推荐 Claude Code executor skills
+- **Headless Claude Invocation**: 用户说进入 Phase 3/4/5/6 时，Codex 自动用 `claude -p` 调 Claude Code，不要求用户切换 CLI
+- **Claude Workflow Scripts**: Claude Code 执行阶段使用 `project-workflow-claude` 的 `phase3-consensus`、`phase4-implement`、`phase5-review`、`phase6-verify`
 - **Replan Loop**: Claude Code Review Gate 只审 contract；Codex triage findings 后生成 v2/v3 contract
 - **Final Audit**: Claude Code Phase 4-6 后，Codex 重新检查 diff、验证命令和原始需求
 
