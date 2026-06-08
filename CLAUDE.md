@@ -1,16 +1,22 @@
+<!-- ⚠️ Auto-generated | Commit: 08a4c0f | Date: 2026-06-08 | Skills Repository -->
+
 # jessy-skills — Claude Code Configuration
 
 ## Project
-Skills Repository — 76 AI Agent skills (Go/Vue/Engineering/…)
+<!-- AUTO_START: Project -->
+Skills Repository — 77 AI Agent skills (Go/Vue/Engineering/…)
 Core workflow: `project-workflow-claude` + `karpathy-guidelines`
 Context: [CONTEXT.md](CONTEXT.md) — durable context contract (Knowledge + Instruction layers)
 Context spec: [context-md-spec.md](skills/project-workflow-claude/references/context-md-spec.md)
+<!-- AUTO_END: Project -->
 
 ## Essential Commands
+<!-- AUTO_START: Commands -->
 - Verify: `bash tests/test-*.sh`
 - Lint: `git diff --check`
 - Skill check: `head -15 skills/*/SKILL.md` (YAML frontmatter)
 - Install global sync: `bash install.sh`
+<!-- AUTO_END: Commands -->
 
 ## Conventions
 - SKILL.md follows agentskills.io open standard

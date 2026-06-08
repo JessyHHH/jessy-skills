@@ -1,19 +1,29 @@
 ---
 name: project-workflow-claude
 description: "Use when starting any development task — auto-detects project type, loads matching skills, drives 11-phase pipeline from design through verified completion. Hard Gates + Iron Law."
-version: "v2.1"
+version: "v2.3"
 author: "jessyhuang"
 metadata:
   standalone: true
+triggers:
+  - "start task"
+  - "implement"
+  - "build"
+  - "develop"
+  - "add feature"
+  - "fix bug"
+  - "refactor"
+  - "code change"
+  - "write code"
 ---
 
-# Project Workflow Claude v2.1 — Self-Driving Pipeline with Hard Gates
+# Project Workflow Claude v2.3 — Self-Driving Pipeline with Hard Gates
 
-**Core design:** Zero pre-loaded skills (except `karpathy-guidelines`). Everything is context-detected: Go version, project type, codebase patterns, task signals. **Workflow-script-driven:** Phase 4-6 use deterministic JS scripts (`~/.claude/workflows/project-workflow-claude/phase4-implement.js`, `phase5-review.js`, `phase6-verify.js`) executed via the Workflow tool. Scripts support caching, resume, and structured output. **Layered skill routing:** Shared domain skills (Go/Vue/Engineering) + Claude Code platform overlay.
+**Core design:** Zero pre-loaded skills (except `karpathy-guidelines`). Everything is context-detected: Go version, project type, codebase patterns, task signals. **Workflow-script-driven:** Phase 4-6 use deterministic JS scripts (`phase4-implement.js`, `phase5-review.js`, `phase6-verify.js`) installed in `~/.claude/workflows/` — executed via the Workflow tool. Scripts support caching, resume, and structured output. **Layered skill routing:** Shared domain skills (Go/Vue/Engineering) + Claude Code platform overlay.
 
 **Self-driving:** Announce phases → execute → auto-transition. Never wait for user to say "next".
 
-**Platform:** Claude Code v2.1+. Standalone — no external dependencies. Uses Claude Code native tools — `Workflow`, `Agent`, `Skill`, `Glob`, `Grep`, `Bash`, `AskUserQuestion`, `CronCreate`.
+**Platform:** Claude Code v2.3+. Standalone — no external dependencies. Uses Claude Code native tools — `Workflow`, `Agent`, `Skill`, `Glob`, `Grep`, `Bash`, `AskUserQuestion`, `CronCreate`.
 
 **Workflow Script Resolution:** The 4 Workflow scripts are installed to `~/.claude/workflows/` by `install.sh`. The Workflow tool's `name` parameter auto-discovers scripts from `~/.claude/workflows/` and `.claude/workflows/` — no path resolution needed. Always use `Workflow(name='phase<N>-<name>')` form.
 
@@ -55,13 +65,15 @@ NEVER use Bash(sed -i) to edit files — it bypasses the hook but causes silent 
 
 **Procedure:**
 
+> **Glob fallback:** If the `Glob` tool is not available in your environment (some Claude Code versions/web app), fall back to `Bash(find ...)` commands. Each Glob call below includes a Bash alternative.
+
 1. **Project type detection** (check in order, first match wins):
-   - `Glob(pattern='**/go.mod')` returns matches → **Go project**
-   - `Glob(pattern='**/package.json')` returns matches → check for Vue/React:
+   - `Glob(pattern='**/go.mod')` returns matches → **Go project** _(fallback: `Bash(command='find . -name "go.mod" -type f 2>/dev/null | head -1')`)_
+   - `Glob(pattern='**/package.json')` returns matches → check for Vue/React: _(fallback: `Bash(command='find . -name "package.json" -type f 2>/dev/null | head -1')`)_
      - `Grep(pattern='"vue"', path='package.json')` → **Vue project**
      - `Grep(pattern='"react"', path='package.json')` → **React project**
      - Otherwise → **Node/JavaScript project**
-   - `Glob(pattern='skills/*/SKILL.md')` returns matches → **Skills Repository**
+   - `Glob(pattern='skills/*/SKILL.md')` returns matches → **Skills Repository** _(fallback: `Bash(command='ls skills/*/SKILL.md 2>/dev/null | head -1')`)_
    - None of the above → **Unknown** (answer with karpathy-guidelines only)
 
 2. **Language version detection:**
@@ -689,7 +701,7 @@ Phase 5 uses a 4-layer review model to minimize token consumption. Complexity fr
    2. `Bash(command='head -15 skills/*/SKILL.md | head -30', description='Spot-check YAML frontmatter')`
    3. `Bash(command='grep -rn "TODO\|FIXME" skills/', description='Check unresolved issues')`
    4. `Bash(command='git diff --check', description='No whitespace errors')`
-   5. Reference file existence: `for ref in $(grep -oP 'references/[a-z0-9-]+\.md' skills/project-workflow-claude/SKILL.md); do test -f "skills/project-workflow-claude/$ref" && echo "✓ $ref" || echo "✗ MISSING: $ref"; done`
+   5. Reference file existence: `for ref in $(grep -oE 'references/[a-z0-9-]+\.md' skills/project-workflow-claude/SKILL.md); do test -f "skills/project-workflow-claude/$ref" && echo "✓ $ref" || echo "✗ MISSING: $ref"; done`
 
 3. **ANALYZE + FIX** (Workflow Script):
    ```

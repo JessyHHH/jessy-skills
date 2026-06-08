@@ -1,4 +1,4 @@
-⚠️ Auto-generated | Commit: e586646 | Date: 2026-06-08T14:17:58+08:00 | skills-repository
+⚠️ Auto-generated | Commit: 08a4c0f | Date: 2026-06-08T21:30:00+08:00 | skills-repository
 
 <!-- KNOWLEDGE_START -->
 ## Architecture
@@ -8,7 +8,7 @@
 [auto] Installation via `bash install.sh`; verification via `bash tests/test-*.sh`.
 
 ## Entity Map
-- **Skill**: A self-contained AI capability defined by `skills/<name>/SKILL.md` with YAML frontmatter (name, description, triggers, dependencies) and a body of operational instructions.
+- **Skill**: A self-contained AI capability defined by `skills/<name>/SKILL.md` with YAML frontmatter (name, description, version, metadata) and a body of operational instructions.
 - **Workflow Script**: Deterministic JS scripts (`.claude/workflows/phase*-*.js`) that drive the project-workflow-claude pipeline phases.
 - **Reference**: Supplementary documentation under `skills/<name>/references/` consumed by skills at runtime.
 - **Test**: Shell scripts under `tests/` that verify repository integrity (YAML frontmatter compliance, file structure, etc.).
@@ -16,28 +16,30 @@
 ## Entities
 | Entity | Location | Description |
 |--------|----------|-------------|
-| Skills (~76) | `skills/*/SKILL.md` | AI Agent skill definitions |
+| Skills (77) | `skills/*/SKILL.md` | AI Agent skill definitions |
 | Workflow scripts | `.claude/workflows/phase{3,4,5,6}-*.js` | Pipeline phase automation |
 | Install script | `install.sh` | Repository setup/bootstrap |
 | Tests | `tests/test-*.sh` | Integrity verification |
-| Project root | `/home/huangzexi/personal/jessy-skills` | Canonical workspace path |
+| Project root | `/Users/jessyhuang/Documents/jessy-skills` | Canonical workspace path |
 
 ## Key Interfaces
-[auto] `SKILL.md` files follow the agentskills.io open standard: YAML frontmatter with `name`, `description`, `triggers`, `dependencies` fields, followed by markdown body.
-[auto] Workflow scripts consume phase-specific JSON state files from `.omc/state/` and produce structured output for pipeline handoff.
+[auto] `SKILL.md` files follow the agentskills.io open standard: YAML frontmatter with `name`, `description`, `version`, `metadata` fields, followed by markdown body.
+[auto] Workflow scripts consume JSON args from the Workflow tool and return structured results for pipeline handoff.
 
 ## Package Map
 - `skills/` — Skill definitions (flat directory, one subdirectory per skill)
 - `.claude/workflows/` — Pipeline phase automation scripts
 - `.claude/skills/` — Installed skill copies used at runtime
 - `.claude/context/` — Generated analysis cache (knowledge.md)
-- `.omc/state/` — Pipeline runtime state
+- `.claude/state/` — Pipeline runtime state (grill-evidence.json)
+- `.claude/plans/` — Implementation plans
+- `.claude/specs/` — Design specifications
 - `tests/` — Repository-level test scripts
 
 ## Confidence
 [auto] Architecture and entity structure: High (verified via direct file inspection).
 [auto] Workflow script count: High (confirmed by directory listing).
-[auto] Skill count (~76): Medium (directory listing count; subject to change as skills are added/removed).
+[auto] Skill count (77): High (confirmed by directory listing — 16 top-level dirs, 77 SKILL.md files).
 <!-- KNOWLEDGE_END -->
 
 <!-- INSTRUCTION_START -->

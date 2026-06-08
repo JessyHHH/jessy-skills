@@ -52,3 +52,35 @@ Phase 0 will auto-detect MCP availability.
 If MCP tools appear in available tools list → available.
 If not → suggest checking this setup guide.
 ```
+
+## DeepSeek API Notes
+
+DeepSeek's API (`api.deepseek.com/anthropic`) is Anthropic-compatible but has important differences from native Anthropic:
+
+### Thinking ≠ Extended Thinking
+- DeepSeek's `reasoning_effort` feature is NOT the same as Anthropic's Extended Thinking
+- The `[1m]` suffix in model names (e.g., `deepseek-v4-pro[1m]`) controls **context window size** — NOT thinking budget
+- DeepSeek auto-decides thinking depth; the `/effort` command may have limited effect compared to native Anthropic
+- Thinking blocks (`{"type": "thinking", "thinking": "..."}`) appear in responses but depth is model-controlled, not user-controlled
+
+### Known Issue: Agent Subagent API Conflict
+
+When `ANTHROPIC_DEFAULT_SONNET_MODEL` or `ANTHROPIC_DEFAULT_HAIKU_MODEL` are set to a model with `reasoning_effort` enabled (e.g., `deepseek-v4-pro[1m]`), spawning Agent subagents fails with:
+
+```
+API Error: 400 thinking options type cannot be disabled when reasoning_effort is set
+```
+
+**Root cause**: Claude Code's Agent tool disables thinking for non-opus subagents (haiku/sonnet tiers), but DeepSeek's API requires `thinking.type` to be `enabled` when `reasoning_effort` is set in the request. The conflicting settings cause the API to reject subagent spawns.
+
+**Impact**: All subagent delegation is broken — this includes the `Agent` tool, `Workflow` scripts (which spawn agents internally), and any skill that delegates to subagents.
+
+**Recommended fix**: In `settings.json`, set lighter models to versions without reasoning:
+
+```json
+{
+  "ANTHROPIC_DEFAULT_HAIKU_MODEL": "deepseek-v4-flash"
+}
+```
+
+This allows haiku-tier subagents to spawn without the thinking/reasoning conflict. For sonnet-tier agents, consider using `deepseek-v4-pro` (without `[1m]`) if your use case doesn't require the 1M context window.

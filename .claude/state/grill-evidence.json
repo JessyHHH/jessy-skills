@@ -1,0 +1,49 @@
+{
+  "timestamp": "2026-06-08T21:35:00+08:00",
+  "session": "e91863f3-278d-452c-a842-3074971d2b43",
+  "ambiguityRegister": [
+    {"id": "A1", "question": "What keywords should the triggers field include?", "status": "assumed", "impact": "Skill activation reliability", "recommendedAnswer": "start task, implement, build, develop, add feature, fix bug, refactor, code change, write code", "decision": "Use 9 keywords covering common dev task triggers"},
+    {"id": "A2", "question": "Where should Glob fallback go in Phase 0?", "status": "assumed", "impact": "Phase 0 reliability", "recommendedAnswer": "Add at top of Phase 0 step 1 with per-call Bash fallbacks", "decision": "Top-level note + per-call Bash(find...) fallback"},
+    {"id": "A3", "question": "Where should DeepSeek Agent subagent conflict be documented?", "status": "assumed", "impact": "User troubleshooting", "recommendedAnswer": "New 'DeepSeek API Notes' section at end of setup.md with error message and fix", "decision": "setup.md — new section at end"},
+    {"id": "A4", "question": "How detailed should CONTEXT.md [auto] refresh be?", "status": "assumed", "impact": "Context accuracy", "recommendedAnswer": "Fix 3 obvious errors: skill count, OMC refs, field names. Keep structure intact.", "decision": "Three targeted fixes"}
+  ],
+  "assumptionLedger": [
+    {"id": "S1", "assumption": "Workflow scripts have no critical bugs — main fixes are in SKILL.md", "evidence": "Prior review found no wrong paths or logic errors in the scripts", "confidence": "medium", "correctionPath": "If review finds issues, extend scope to include script fixes"},
+    {"id": "S2", "assumption": "grep -oP fails on all macOS versions", "evidence": "BSD grep shipped with macOS does not support -P flag; tested in current session", "confidence": "high", "correctionPath": "Replace with grep -oE which works on all platforms"},
+    {"id": "S3", "assumption": "All 4 workflow scripts are syntactically valid", "evidence": "Scripts were successfully installed and parsed by previous install.sh runs", "confidence": "medium", "correctionPath": "Run node --check on each script; fix any syntax errors found"}
+  ],
+  "checklistResults": {
+    "ambiguityRegisterPrinted": true,
+    "assumptionLedgerPrinted": true,
+    "openAmbiguitiesAddressed": true,
+    "successCriteriaObservable": true,
+    "constraintsDocumented": true,
+    "selfGrade": "PASS: 13 requirements clearly mapped to 8 files with specific before/after and verification commands"
+  },
+  "requirementEcho": [
+    "Fix SKILL.md line 12 wrong path",
+    "Add triggers field to SKILL.md frontmatter",
+    "Add Glob fallback to Phase 0",
+    "Add DeepSeek thinking docs to setup.md",
+    "Document Agent subagent API conflict",
+    "Review all 4 workflow scripts",
+    "Review install.sh",
+    "Fix skill count 76→16",
+    "Fix workflow script discovery docs",
+    "Refresh CONTEXT.md [auto] entries",
+    "Fix macOS grep -oP incompatibility",
+    "Fix v2.1→v2.3 on line 16",
+    "Remove OMC references from CONTEXT.md"
+  ],
+  "scopeStatement": "Fix 13 issues across 8 files in project-workflow-claude skill and workflow scripts. Other 15 skills, settings.json, and .claude/context/knowledge.md are out of scope.",
+  "successCriteria": [
+    "cmd: grep 'triggers:' skills/project-workflow-claude/SKILL.md exits 0 (≥1 match)",
+    "cmd: grep 'project-workflow-claude/phase' skills/project-workflow-claude/SKILL.md exits 1 (0 matches)",
+    "cmd: grep 'v2\\.1' skills/project-workflow-claude/SKILL.md exits 1 (0 matches)",
+    "cmd: grep 'grep.*-P' skills/project-workflow-claude/SKILL.md exits 1 (0 matches)",
+    "cmd: grep '\\[auto\\]' CONTEXT.md | grep '76' exits 1 (0 matches)",
+    "cmd: bash install.sh exits 0",
+    "cmd: git diff --check exits 0",
+    "semantic: Phase 0 includes Glob fallback language"
+  ]
+}

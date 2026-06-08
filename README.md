@@ -258,7 +258,7 @@ jessy-skills/
 │   └── hermes.sh           # Shell function
 └── skills/
     ├── project-workflow/   # Core workflow (v7.0)
-    ├── project-workflow-claude/ # Claude Code workflow (v2.2)
+    ├── project-workflow-claude/ # Claude Code workflow (v2.3)
     │   └── references/
     │       ├── context-md-spec.md   # CONTEXT.md format spec
     │       ├── iron-law.md          # Verification discipline
