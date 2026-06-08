@@ -25,10 +25,25 @@ var dryRounds = input.dryRounds || 0
 // Shape: [{id, description, type, passed, details}]
 var evidenceChecks = input.evidenceChecks || []
 
+// Phase 4.6 Quick Gate evidence — pre-computed by master agent.
+// Shape: {passed: bool, perTask: {taskId: {expectedPassed: bool, forbiddenClean: bool, filesMatch: bool}}}
+// If null/undefined → skip with warning (backward compatible).
+var quickGateEvidence = input.quickGateEvidence || null
+
+// Path to .claude/state/grill-evidence.json for cross-reference.
+// If null/undefined → skip with warning (backward compatible).
+var grillEvidencePath = input.grillEvidencePath || null
+
 // Backward compatibility: when evidenceChecks is missing/empty,
 // log a warning and fall back to command-only verification.
 if (evidenceChecks.length === 0) {
   log('No evidenceChecks provided — command-only verification')
+}
+if (!quickGateEvidence) {
+  log('No quickGateEvidence provided — Quick Gate audit trail unavailable')
+}
+if (!grillEvidencePath) {
+  log('No grillEvidencePath provided — grill decision cross-reference unavailable')
 }
 
 // Filter failed command checks — exitCode !== 0 only (stderr is not a failure signal)
@@ -52,7 +67,9 @@ if (failures.length === 0 && evidenceFailures.length === 0) {
     shouldContinue: dryRounds < 2,
     phase: 'verify-passed',
     evidenceFailures: evidenceFailures,
-    evidenceFailureCount: evidenceFailures.length
+    evidenceFailureCount: evidenceFailures.length,
+    quickGateAudit: quickGateEvidence ? quickGateEvidence.passed : 'unavailable',
+    grillEvidenceAvailable: grillEvidencePath !== null
   }
 }
 
@@ -107,5 +124,7 @@ return {
   remainingFailures: failures.map(function(f) { return f.name }),
   phase: 'fix-complete',
   evidenceFailures: evidenceFailures,
-  evidenceFailureCount: evidenceFailures.length
+  evidenceFailureCount: evidenceFailures.length,
+  quickGateAudit: quickGateEvidence ? quickGateEvidence.passed : 'unavailable',
+  grillEvidenceAvailable: grillEvidencePath !== null
 }

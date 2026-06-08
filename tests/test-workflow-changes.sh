@@ -351,6 +351,160 @@ else
 fi
 echo ""
 
+# ── 17. P0: Hard Grill Checklist (6 items) and REQUIREMENT ECHO ──
+echo "17. P0: Hard Grill Checklist (6 items) and REQUIREMENT ECHO"
+WFC2="$ROOT/skills/project-workflow-claude/SKILL.md"
+if grep -q 'HARD GRILL CHECKLIST' "$WFC2"; then
+  green "Hard Grill Checklist heading found"
+else
+  red "Hard Grill Checklist heading MISSING"
+fi
+if grep -q 'REQUIREMENT ECHO' "$WFC2"; then
+  green "REQUIREMENT ECHO heading found"
+else
+  red "REQUIREMENT ECHO heading MISSING"
+fi
+CHECKLIST_COUNT=$(grep -c '\[ \]' "$WFC2" || true)
+if [ "$CHECKLIST_COUNT" -ge 6 ]; then
+  green "Hard Grill Checklist has ≥6 [ ] items (found $CHECKLIST_COUNT)"
+else
+  red "Hard Grill Checklist has only $CHECKLIST_COUNT [ ] items (need ≥6)"
+fi
+if grep -q 'grill-evidence.json' "$WFC2"; then
+  green "grill-evidence.json documented in SKILL.md"
+else
+  red "grill-evidence.json MISSING from SKILL.md"
+fi
+if grep -q 'ambiguityRegister' "$WFC2"; then
+  green "ambiguityRegister schema in SKILL.md"
+else
+  red "ambiguityRegister MISSING from SKILL.md"
+fi
+if grep -q 'assumptionLedger' "$WFC2"; then
+  green "assumptionLedger schema in SKILL.md"
+else
+  red "assumptionLedger MISSING from SKILL.md"
+fi
+if grep -q 'checklistResults' "$WFC2"; then
+  green "checklistResults schema in SKILL.md"
+else
+  red "checklistResults MISSING from SKILL.md"
+fi
+if grep -q 'Complete and correct?' "$WFC2"; then
+  green "REQUIREMENT ECHO asks 'Complete and correct?'"
+else
+  red "REQUIREMENT ECHO missing user confirmation prompt"
+fi
+echo ""
+
+# ── 18. P1: Layered review complexity gating and fast gate integration ──
+echo "18. P1: Layered review complexity gating and fast gate integration"
+P5A="$ROOT/.claude/workflows/phase5-review.js"
+for gateFunc in shouldSkipSpecReview getCodeReviewDepth shouldSkipFinalReview shouldSkipAdversarial; do
+  if grep -q "$gateFunc" "$P5A"; then
+    green "phase5-review.js: $gateFunc found"
+  else
+    red "phase5-review.js: $gateFunc MISSING"
+  fi
+done
+if grep -q 'correctness-only' "$P5A"; then
+  green "phase5-review.js: correctness-only depth for medium tasks"
+else
+  red "phase5-review.js: correctness-only depth MISSING"
+fi
+if grep -q 'fastGateResults' "$P5A"; then
+  green "phase5-review.js: fastGateResults input"
+else
+  red "phase5-review.js: fastGateResults input MISSING"
+fi
+if grep -q 'estimatedTokensSaved' "$P5A"; then
+  green "phase5-review.js: estimatedTokensSaved in output"
+else
+  red "phase5-review.js: estimatedTokensSaved MISSING"
+fi
+if grep -q 'layersApplied' "$P5A"; then
+  green "phase5-review.js: layersApplied in output"
+else
+  red "phase5-review.js: layersApplied MISSING"
+fi
+if grep -q 'layersSkipped' "$P5A"; then
+  green "phase5-review.js: layersSkipped in output"
+else
+  red "phase5-review.js: layersSkipped MISSING"
+fi
+if grep -q 'fileMap' "$P5A"; then
+  green "phase5-review.js: cross-task file sharing detection (fileMap)"
+else
+  red "phase5-review.js: file sharing detection MISSING"
+fi
+if grep -q 'Layer 1 Fast Gate skipped' "$P5A"; then
+  green "phase5-review.js: backward compat warning for missing fastGateResults"
+else
+  red "phase5-review.js: backward compat warning MISSING for fastGateResults"
+fi
+if grep -q 'finalReview.verdict.*APPROVE' "$P5A"; then
+  green "phase5-review.js: finalReview.verdict APPROVE gate preserved"
+else
+  red "phase5-review.js: finalReview.verdict APPROVE gate MISSING"
+fi
+echo ""
+
+# ── 19. P2: Phase 4.6 Quick Gate and grill evidence audit trail ──
+echo "19. P2: Phase 4.6 Quick Gate and grill evidence audit trail"
+WFC3="$ROOT/skills/project-workflow-claude/SKILL.md"
+P6A="$ROOT/.claude/workflows/phase6-verify.js"
+if grep -q 'Phase 4.6' "$WFC3"; then
+  green "SKILL.md: Phase 4.6 section found"
+else
+  red "SKILL.md: Phase 4.6 section MISSING"
+fi
+if grep -q 'Quick Gate' "$WFC3"; then
+  green "SKILL.md: Quick Gate procedure found"
+else
+  red "SKILL.md: Quick Gate procedure MISSING"
+fi
+if grep -q 'FAIL FAST' "$WFC3"; then
+  green "SKILL.md: FAIL FAST documented"
+else
+  red "SKILL.md: FAIL FAST MISSING"
+fi
+if grep -q 'quickGateEvidence' "$P6A"; then
+  green "phase6-verify.js: quickGateEvidence input"
+else
+  red "phase6-verify.js: quickGateEvidence input MISSING"
+fi
+if grep -q 'grillEvidencePath' "$P6A"; then
+  green "phase6-verify.js: grillEvidencePath input"
+else
+  red "phase6-verify.js: grillEvidencePath input MISSING"
+fi
+if grep -q 'quickGateAudit' "$P6A"; then
+  green "phase6-verify.js: quickGateAudit in output"
+else
+  red "phase6-verify.js: quickGateAudit MISSING from output"
+fi
+if grep -q 'grillEvidenceAvailable' "$P6A"; then
+  green "phase6-verify.js: grillEvidenceAvailable in output"
+else
+  red "phase6-verify.js: grillEvidenceAvailable MISSING from output"
+fi
+if grep -q 'Quick Gate audit trail unavailable' "$P6A"; then
+  green "phase6-verify.js: backward compat warning for quickGateEvidence"
+else
+  red "phase6-verify.js: backward compat warning for quickGateEvidence MISSING"
+fi
+if grep -q 'grill decision cross-reference unavailable' "$P6A"; then
+  green "phase6-verify.js: backward compat warning for grillEvidencePath"
+else
+  red "phase6-verify.js: backward compat warning for grillEvidencePath MISSING"
+fi
+if grep -q '4.6.*Quick Gate' "$WFC3"; then
+  green "SKILL.md: transition table includes Phase 4.6"
+else
+  red "SKILL.md: transition table MISSING Phase 4.6 row"
+fi
+echo ""
+
 # ── Summary ──
 echo "========================================="
 echo "Results: $PASS passed, $FAIL failed"

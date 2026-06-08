@@ -312,6 +312,26 @@ Simple projects = shorter design, but still present it first.
    - If the codebase already answers a question, skip that question — never re-ask what's in the repo.
    - Hard limit: 60 seconds. Move on when the timer expires.
 
+1.5. **REQUIREMENT ECHO:**
+
+   After exploration, print a structured restatement of every requirement extracted from:
+   - User's original message
+   - Task Intake Snapshot (Phase 0)
+   - Files read during EXPLORE
+   - Any relevant CONTEXT.md or knowledge.md facts
+
+   Format:
+   "Requirements extracted:
+    1. [requirement] — source: [user message / intake snapshot / file X]
+    2. [requirement] — source: [user message / intake snapshot / file X]
+    ...
+
+   Complete and correct? (yes/no)"
+
+   Ask the user: "Complete and correct?" before proceeding to the first Grill question.
+   If the user says no, update the requirements list.
+   If the user says yes, the echoed requirements become the authoritative scope baseline for the rest of Phase 1.
+
 2. **GRILL** (one question at a time with recommended answers):
 
    The Grill is a variable-depth requirements crystallization process. Its depth scales with task complexity: it may ask 0 questions for a well-specified, tight-scope task, or many questions for a complex, ambiguous one.
@@ -331,12 +351,52 @@ Simple projects = shorter design, but still present it first.
    - **Confidence**: High | Medium | Low
    - **Correction/rollback path**: what to do if the assumption proves wrong
 
-   **Variable-depth exit criteria:** The grill exits when ALL of these conditions hold:
-   - Scope boundary is pinned (no ambiguity about what is in/out of scope)
-   - No open ambiguity in the Ambiguity Register materially changes file selection, behavior, contract, verification, or risk
-   - Every non-blocking uncertainty is recorded in the Assumption Ledger with evidence, confidence, and a rollback path
-   - Assumptions do not contradict any confirmed facts from Phase 0.3
-   - Success criteria include both command evidence (what commands to run) and semantic evidence (what behavior to observe)
+   **Variable-depth exit criteria:** The grill exits when the mandatory Hard Grill Checklist is satisfied:
+
+   **HARD GRILL CHECKLIST (mandatory printed output before exit):**
+
+   The master agent MUST print this checklist with PASS/FAIL for each item.
+   If any item is FAIL, the Grill is NOT done. Re-open Ambiguity Register.
+
+   1. [ ] Ambiguity Register printed (minimum 3 items, or explain why <3)
+   2. [ ] Assumption Ledger printed (minimum 2 entries, or explain why <2)
+   3. [ ] Every "open" ambiguity addressed (asked user OR moved to "assumed" with ledger entry)
+   4. [ ] Success criteria are observable (specific commands + expected output)
+   5. [ ] Constraints documented (version, dep, compatibility)
+   6. [ ] Self-grade: "Could someone implement from this spec without asking basic questions?"
+          If no → grill NOT done. Re-open and probe.
+
+   ALL items MUST pass before proceeding to PROPOSE.
+
+   **GRILL EVIDENCE PERSISTENCE:**
+   After ALL checklist items pass and before writing the spec, write a structured JSON file
+   to `.claude/state/grill-evidence.json` (delegate to subagent):
+
+   ```json
+   {
+     "timestamp": "<ISO 8601>",
+     "session": "<session-id>",
+     "ambiguityRegister": [
+       {"id": "A1", "question": "...", "status": "answered|assumed|deferred-out-of-scope",
+        "impact": "...", "recommendedAnswer": "...", "decision": "..."}
+     ],
+     "assumptionLedger": [
+       {"id": "S1", "assumption": "...", "evidence": "...",
+        "confidence": "high|medium|low", "correctionPath": "..."}
+     ],
+     "checklistResults": {
+       "ambiguityRegisterPrinted": true, "assumptionLedgerPrinted": true,
+       "openAmbiguitiesAddressed": true, "successCriteriaObservable": true,
+       "constraintsDocumented": true, "selfGrade": "PASS: spec is implementable without basic questions"
+     },
+     "requirementEcho": ["req1", "req2"],
+     "scopeStatement": "...",
+     "successCriteria": ["cmd: <command> exits 0", "semantic: <behavior>"]
+   }
+   ```
+
+   Phase 4.6 reads this file to cross-reference evidence.
+   Phase 6 reads this file to validate semantic evidence.
 
    **No fixed question count.** Well-specified tasks with clear scope may complete the Grill with 0 additional questions. Ambiguous tasks may require many rounds. Depth is driven by the Ambiguity Register, not by a preset count.
 
@@ -507,13 +567,49 @@ Simple projects = shorter design, but still present it first.
 
 6. **ERROR RECOVERY:** If Workflow script throws → Read error from transcript → Agent fix script bug → re-run Workflow.
 
-7. **Auto-transition** to Phase 5.
+7. **Auto-transition** to Phase 4.6.
+
+---
+
+## Phase 4.6: Quick Gate (Master Agent)
+
+**Goal:** Validate that Phase 4 output matches expected evidence before entering expensive
+         Phase 5 review. Fail fast if evidence is missing.
+
+**Procedure:**
+
+1. `Bash(command='git diff --stat')` — confirm expected files changed. Compare against task files from Phase 2 plan. Flag missing or unexpected files.
+
+2. **grep for expectedEvidence per task:** For each task with expectedEvidence entries, grep changed files for expected strings/patterns. Collect per-task results.
+
+3. **grep for forbiddenEvidence per task:** For each task with forbiddenEvidence entries, grep changed files for forbidden strings/patterns. ANY match = FAIL.
+
+4. **FAIL FAST:** If expectedEvidence missing → report which task + which evidence. If forbiddenEvidence found → report which task + which evidence. If unexpected files in diff → report. Return to Phase 4 to fix, OR proceed with documented concerns.
+
+5. **ALL PASS → auto-transition to Phase 5.**
+
+Input: tasks array from Phase 2 plan (with expectedEvidence + forbiddenEvidence), optional `.claude/state/grill-evidence.json` for cross-reference.
+
+Output: `quickGateResults = {passed, perTask: {taskId: {expectedPassed, forbiddenClean, filesMatch}}}`.
 
 ---
 
 ## Phase 5: Two-Stage Review (ALWAYS RUNS)
 
 **Goal:** Spec compliance review first → code quality review second. NEVER reverse order. Uses deterministic Workflow script for parallel code quality audit.
+
+### Review Layers (P1 Optimization)
+
+Phase 5 uses a 4-layer review model to minimize token consumption. Complexity from Phase 2 task schema drives gating.
+
+| Layer | Name | Gates | Agent Calls |
+|-------|------|-------|-------------|
+| Layer 1 | Fast Gate | Master bash checks (files exist, git diff --stat, git diff --check, import check) — runs BEFORE phase5-review.js script | 0 agent calls |
+| Layer 2 | Standard (Spec Review) | Gated by complexity: `simple` skips, `medium`/`complex` runs | 0-1 agent per task |
+| Layer 3 | Deep (Code Quality) | Gated by complexity: `simple` skips entirely, `medium` gets correctness-only (1 agent), `complex` gets full 3-agent parallel | 0-3 agents per task |
+| Layer 4 | Final (Cross-Task) | Conditional: skip when <2 tasks OR no shared files; run when >=2 tasks share files | 0-1 agent |
+
+**Expected token savings: ~50-60%** for mixed-complexity runs vs. uniform full review.
 
 **Procedure:**
 
@@ -773,7 +869,9 @@ Auto-generated from compressed agent memory.
 | 1 (Design) | 2 (Plan) | Design approved + spec written |
 | 2 (Plan) | 3 (Consensus) | Plan saved + json:tasks block present |
 | 3 (Consensus) | 4 (Implement) | Consensus approved by Judge Panel |
-| 4 (Implement) | 5 (Review) | All tasks done + Phase 4.5 worktree review complete |
+| 4 (Implement) | 4.5 (Worktree) | All tasks done + Phase 4.5 worktree review complete |
+| 4.5 (Worktree) | 4.6 (Quick Gate) | All worktree merges complete |
+| 4.6 (Quick Gate) | 5 (Review) | Quick Gate ALL PASS |
 | 5 (Review) | 6 (Verify) | Both review stages pass (spec per-task ✅ then code per-task ✅ + Final Review ✅) |
 | 6 (Verify) | 7 (Retro+Cron) | ALL checks PASS with fresh evidence |
 | 7 (Retro+Cron) | 8 (Finish) | 7.1+7.2 dispatched; 7.3 cron runs independently |
