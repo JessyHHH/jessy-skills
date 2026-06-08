@@ -1,8 +1,15 @@
 # jessy-skills — Multi-Language AI Engineering Skills
 
-![Version](https://img.shields.io/badge/version-v2.2-blue)
+![Version](https://img.shields.io/badge/version-v2.3-blue)
 
 一个支持 [Claude Code](https://code.claude.com/) + [Hermes Agent](https://github.com/NousResearch/hermes-agent) 的多语言工作流技能集合。11 阶段自驱动并行流水线（含 HARD-GATE / Iron Law / Two-Stage Review），76+ 技能覆盖 Go/Vue/前端/工程/方法论全流程。
+
+**v2.3 新特性：**
+- **Phase 1 Hard Grill Checklist**: 6 项强制自查清单（PASS/FAIL），退出前必须逐条确认，杜绝"0 问即过"
+- **REQUIREMENT ECHO**: 需求回放确认步骤，在 Grill 前回显所有需求给用户确认
+- **Phase 5 Layered Review**: 4 层复杂度门控审阅 — 简单任务跳过，中等仅正确性检查（1 agent），复杂全量（3 agents），预计节省 50-60% token
+- **Phase 4.6 Quick Gate**: Phase 4 和 5 之间的 fail-fast 快速门（git diff + grep expectedEvidence/forbiddenEvidence）
+- **Grill Evidence Persistence**: `.claude/state/grill-evidence.json` 持久化 Ambiguity Register + Assumption Ledger，下游 Phase 可审计
 
 **v2.2 新特性：**
 - **CONTEXT.md 双层上下文**：Knowledge Layer（机器管理）+ Instruction Layer（人工维护），`[confirmed]`/`[auto]` 证据标签，子目录就近覆盖
@@ -10,8 +17,7 @@
 - **Phase 0 Task Intake Snapshot**：在 Phase 0 就锁定 in/out scope，从源头防范围蔓延
 - **Phase 4.5 Worktree Review**：harness-managed 隔离策略 + master agent merge-back
 - **Phase 5/3 统一裁定**：`APPROVE`/`ITERATE`/`REJECT` 现在时跨 Phase 3 和 Phase 5 一致
-- **Phase 6 语义证据**：`evidenceChecks`（master agent 预计算）+ 5 种证据类型（file-exists/text-present/text-absent/command-output-present/command-output-absent）
-- **4 Workflow 脚本能力边界修正**：脚本不能文件 I/O/Bash/Read — 能力正确建模
+- **Phase 6 语义证据**：`evidenceChecks`（master agent 预计算）+ 5 种证据类型
 
 ## 快速安装
 
@@ -36,24 +42,30 @@ ctx7 login && firecrawl login  # 浏览器授权
 
 ## 工作流概览
 
-| Phase | Hermes (`project-workflow`) | Claude Code (`project-workflow-claude` v2.2) |
+| Phase | Hermes (`project-workflow`) | Claude Code (`project-workflow-claude` v2.3) |
 |-------|---------------------------|----------------------------------------|
 | 0 | `search_files` 检测项目类型 | `Glob` + `Grep` 检测项目类型 + **Task Intake Snapshot** |
 | 0.3 | `delegate_task` 分析 → CONTEXT.md | `Agent` 分析 → **CONTEXT.md (两层) + contextSummary** |
 | 0.5 | `skill_view()` 加载技能 | `Skill()` 加载技能 |
-| 1 | `clarify()` 设计对话 ⚡ | `AskUserQuestion()` + **Ambiguity Register + Assumption Ledger（可变深度）** ⚡ |
+| 1 | `clarify()` 设计对话 ⚡ | `AskUserQuestion()` + **Hard Grill Checklist (6项) + REQUIREMENT ECHO** ⚡ |
 | 2 | `write_file(.hermes/plans/)` | `Write(.claude/plans/)` + **扩展 task schema（12 字段）** |
 | 3 | `skill_view(ralplan)` → delegate_task | **Workflow(phase3-consensus)**: 3 角度并行 Judge Panel + context/task 合同验证 |
-| 4 | `delegate_task(tasks=[])` 并行 | **Workflow(phase4-implement)**: pipeline 实现 + 策略隔离 (no-isolation/harness-managed/external-report) |
+| 4 | `delegate_task(tasks=[])` 并行 | **Workflow(phase4-implement)**: pipeline 实现 + 策略隔离 |
 | 4.5 | — | ★ **Master agent**: review worktree diff → merge-back |
-| 5 | `delegate_task` 审查 ⚡ | **Workflow(phase5-review)**: 逐任务 pipeline 审阅 + Adversarial Verify + **finalReview Hard Gate** (+ APPROVE/ITERATE/REJECT) |
+| 4.6 | — | ★ **Quick Gate**: grep expectedEvidence/forbiddenEvidence → fail-fast ⚡ |
+| 5 | `delegate_task` 审查 ⚡ | **Workflow(phase5-review)**: **4-layer 分层审阅** + Adversarial Verify + **finalReview Hard Gate** |
 | 6 | `terminal()` 验证 ⚡ | `Bash()` + **Workflow(phase6-verify)**: Loop Until Dry + **evidenceChecks 语义验证** ⚡ |
 | 7 | `memory()` + `cronjob()` | `CronCreate()` + 文件记忆 |
 | 8 | 4-option 收尾菜单 ★ | 4-option 收尾菜单 ★ |
 
 **出口可见性：** 每个 Phase 结束时输出 `Phase X complete. [skill] verified. → Phase Y`，Skill Expected 列在转换规则表中。
 
-### project-workflow-claude v2.2 亮点
+### project-workflow-claude v2.3 亮点
+- **Hard Grill Checklist**: 6 项强制自查（PASS/FAIL），逐条确认才能退出 Phase 1
+- **REQUIREMENT ECHO**: 需求回放确认步骤，在 Grill 前回显所有需求给用户确认
+- **Phase 5 Layered Review**: 4 层复杂度门控 — 简单跳过→中等仅正确性→复杂全量，预计节省 50-60% token
+- **Phase 4.6 Quick Gate**: fail-fast 快速门（git diff + grep expectedEvidence + grep forbiddenEvidence）
+- **Grill Evidence Persistence**: `.claude/state/grill-evidence.json` 持久化，Phase 4.6/6 可审计
 - **CONTEXT.md 双层上下文**: Knowledge Layer（架构/实体/接口）+ Instruction Layer（约定/命令/不变量），`[confirmed]`/`[auto]` 标签
 - **Phase 1 深度 Grill**: Ambiguity Register + Assumption Ledger，可变深度退出条件，不固定四问
 - **Phase 0 快照**: Task Intake Snapshot 从源头锁定 scope
@@ -75,21 +87,21 @@ ctx7 login && firecrawl login  # 浏览器授权
 - **Ralph 循环**：任何验证失败 → 自动修复 → 重新验证，直到全部通过
 - **Phase 出口可见**：每个 Phase 宣告用了什么 skill（`Phase X complete. [skill] verified. → Phase Y`）
 
-## v2.2 Standalone Architecture
+## v2.3 Standalone Architecture
 
-project-workflow-claude v2.2 is fully standalone — zero external dependencies.
+project-workflow-claude v2.3 is fully standalone — zero external dependencies.
 
 | Role | Responsibility | Tools |
 |------|---------------|-------|
-| **Master Agent** | Phase 0 detection, Phase 0.3 context, Phase 1 grill, Phase 4.5 worktree review, Phase 6 Bash checks | Glob, Grep, Read, Bash, Skill, AskUserQuestion |
-| **Subagent (Agent)** | Phase 0.3 analysis+write, Phase 1.4 spec write, Phase 2 plan write, Phase 4 implement | Write, Edit, Read, Glob, Grep |
-| **Workflow Scripts** | Deterministic orchestration (Phase 3 review / Phase 4 implement / Phase 5 review / Phase 6 verify) | 4 JS scripts via Workflow tool |
+| **Master Agent** | Phase 0 detection, Phase 0.3 context, Phase 1 grill (Hard Checklist + Requirement Echo), Phase 4.5 worktree review, Phase 4.6 Quick Gate, Phase 6 Bash checks | Glob, Grep, Read, Bash, Skill, AskUserQuestion |
+| **Subagent (Agent)** | Phase 0.3 analysis+write, Phase 1.4 spec write, Phase 2 plan write, Phase 4 implement, Phase 1 grill evidence write | Write, Edit, Read, Glob, Grep |
+| **Workflow Scripts** | Deterministic orchestration (Phase 3 review / Phase 4 implement / Phase 5 layered review / Phase 6 verify) | 4 JS scripts via Workflow tool |
 
-**4 Workflow Scripts (v2.2):**
+**4 Workflow Scripts (v2.3):**
 - `phase3-consensus.js` — Judge Panel (3 angles parallel) + context/task contract validation + scope/ambiguity blocking
 - `phase4-implement.js` — Pipeline implement + isolation strategies (no-isolation/harness-managed/external-report) + changedFiles threading
-- `phase5-review.js` — Per-task pipeline review + Adversarial Verification (3 skeptics) + Final Review (APPROVE/ITERATE/REJECT hard gate)
-- `phase6-verify.js` — Loop Until Dry verification + evidenceChecks evaluation (5 evidence types) + command + semantic evidence dry-round fusion
+- `phase5-review.js` — **4-layer complexity-gated review**: Layer 1 Fast Gate (bash) → Layer 2 Standard (spec, gated) → Layer 3 Deep (code quality, gated) → Layer 4 Final (cross-task, conditional). Outputs layersApplied, layersSkipped, estimatedTokensSaved
+- `phase6-verify.js` — Loop Until Dry verification + evidenceChecks evaluation (5 types) + Quick Gate audit trail + grill evidence cross-reference
 
 **Key Properties:**
 - Scripts are deterministic — support caching and resume
@@ -97,6 +109,7 @@ project-workflow-claude v2.2 is fully standalone — zero external dependencies.
 - Scripts CANNOT do file I/O, Bash, or Read — master agent pre-computes file evidence
 - MCP-aware: auto-detects Context7/Firecrawl, falls back to WebFetch/WebSearch
 - Verdicts unified: APPROVE/ITERATE/REJECT (present tense) across Phase 3 and Phase 5
+- Phase 5 layered review: ~50-60% token reduction for mixed-complexity runs
 
 ## 逃逸命令
 
@@ -106,7 +119,7 @@ project-workflow-claude v2.2 is fully standalone — zero external dependencies.
 | `deep` / `careful` | 深度审查（含现代化审计） |
 | `skip workflow` | 跳过 Workflow 脚本驱动，退回到 Agent 委托模式 |
 | `skip design` | 跳到 Phase 2（保留 Phase 0/0.5） |
-| `skip plan` | 跳到 Phase 5 实现（保留 Phase 6+7） |
+| `skip plan` | 跳到 Phase 4 实现（保留 Phase 5+6+7） |
 | `no review` | 跳过 Phase 6 代码审查 |
 | `skip branch` | 跳过 Phase 8（Finish Branch）|
 | `FULL` | 所有 Phase 深深度 |
@@ -119,13 +132,19 @@ project-workflow-claude v2.2 is fully standalone — zero external dependencies.
 - **Phase 0.3 双层更新**：CONTEXT.md 选择性刷新（保留 `[confirmed]`，替换 `[auto]`）；knowledge.md 全量覆盖
 - **Phase 0 Task Intake Snapshot**：在 Phase 0 就锁定 in/out scope，防止范围蔓延
 - **Phase 1 Grill 可变深度**：Ambiguity Register + Assumption Ledger，不固定四问 — 简单任务 0 问，复杂任务多问
+- **Phase 1 Hard Grill Checklist**：6 项强制自查（PASS/FAIL）— 逐条输出确认后才能退出 Grill，杜绝"0 问即过"
+- **Phase 1 REQUIREMENT ECHO**：Grill 前必须回显所有需求给用户确认 — "Complete and correct?"
+- **Phase 1 Grill Evidence**：`.claude/state/grill-evidence.json` 持久化 Ambiguity Register + Assumption Ledger + Checklist 结果
 - **HARD-GATE**：在用户批准设计前，禁止写任何代码 — 适用于所有项目
 - **BOUNDARY-CHECK**：第一轮 clarify 必须确认项目边界 — 涉及/不涉及哪些文件模块
 - **MUST-LOAD**：Phase 0.5/1 两个 skill 补漏点强制加载 — 扫描后必须 Skill()，只扫不载 = 不可接受
 - **Two-Stage Review**：spec compliance review 必须 ✅ 后才能开始 code quality review
 - **Phase 4.5 Worktree Review**：harness-managed 任务必须在 Phase 4 和 Phase 5 之间做 master agent merge-back
+- **Phase 4.6 Quick Gate**：Phase 4.5 和 Phase 5 之间的 fail-fast 快速门 — git diff + grep expectedEvidence + grep forbiddenEvidence
+- **Phase 5 Layered Review**：4 层复杂度门控 — Fast Gate → Standard (spec,gated) → Deep (code quality,gated) → Final (cross-task,conditional)
 - **Phase 5 统一裁定**：`APPROVE`/`ITERATE`/`REJECT`（现在时）跨 Phase 3 和 Phase 5；finalReview Hard Gate 阻断 pass
 - **Phase 6 语义证据**：evidenceChecks (5 种类型) — 命令成功是必要不充分条件；dryRounds 融合命令+语义失败
+- **Phase 6 审计轨迹**：quickGateAudit + grillEvidenceAvailable 输出，Phase 4.6/Phase 1 证据可追溯
 - **Iron Law**：没有新鲜验证证据，不准声称完成 — "should work" = 撒谎
 - **Phase 7.1 后台**：反省学习跑在子进程，主 agent 继续干活不阻塞
 - **Phase 7.3 后台 cron**：每 2h 跨 session 模式提取；memory ≥90% 自动压缩为 skill，memory 保留触发器自动加载
@@ -135,7 +154,7 @@ project-workflow-claude v2.2 is fully standalone — zero external dependencies.
 
 ### 工作流
 - `project-workflow` — 11-Phase 自驱动流水线（核心，v7.0，Hermes）
-- `project-workflow-claude` — 11-Phase 流水线（v2.2，Claude Code，Workflow 脚本驱动 + 独立 Iron Law + Deep Grill + CONTEXT.md 双层上下文）
+- `project-workflow-claude` — 11-Phase 流水线（v2.3，Claude Code，Workflow 脚本驱动 + Hard Grill Checklist + Layered Review + Quick Gate + CONTEXT.md 双层上下文）
 - `karpathy-guidelines` — LLM 编码五条纪律
 - `deep-interview` — 苏格拉底式需求澄清
 - `ralplan` — 多 agent 共识计划
