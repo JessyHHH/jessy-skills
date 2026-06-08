@@ -133,6 +133,224 @@ else
 fi
 echo ""
 
+# ── 11. CONTEXT.md and context-md-spec.md exist ──
+echo "11. CONTEXT.md and context-md-spec.md exist"
+CTX_SPEC="$ROOT/skills/project-workflow-claude/references/context-md-spec.md"
+CONTEXT_MD="$ROOT/CONTEXT.md"
+if [ -f "$CTX_SPEC" ]; then
+  green "context-md-spec.md exists"
+else
+  red "context-md-spec.md MISSING"
+fi
+if [ -f "$CONTEXT_MD" ]; then
+  green "CONTEXT.md exists at repo root"
+else
+  red "CONTEXT.md MISSING at repo root"
+fi
+if grep -q 'KNOWLEDGE_START' "$CTX_SPEC"; then
+  green "context-md-spec.md: KNOWLEDGE_START found"
+else
+  red "context-md-spec.md: KNOWLEDGE_START MISSING"
+fi
+if grep -q 'INSTRUCTION_START' "$CTX_SPEC"; then
+  green "context-md-spec.md: INSTRUCTION_START found"
+else
+  red "context-md-spec.md: INSTRUCTION_START MISSING"
+fi
+if grep -q '\[confirmed\]' "$CTX_SPEC"; then
+  green "context-md-spec.md: [confirmed] tag found"
+else
+  red "context-md-spec.md: [confirmed] tag MISSING"
+fi
+if grep -q '\[auto\]' "$CTX_SPEC"; then
+  green "context-md-spec.md: [auto] tag found"
+else
+  red "context-md-spec.md: [auto] tag MISSING"
+fi
+echo ""
+
+# ── 12. SKILL.md references context-md-spec.md and has new Phase 1/2 docs ──
+echo "12. SKILL.md references context-md-spec.md and new Phase 1/2 docs"
+WFC="$ROOT/skills/project-workflow-claude/SKILL.md"
+if grep -q 'references/context-md-spec.md' "$WFC"; then
+  green "SKILL.md: references context-md-spec.md"
+else
+  red "SKILL.md: DOES NOT reference context-md-spec.md"
+fi
+if grep -q 'Task Intake Snapshot' "$WFC"; then
+  green "SKILL.md: Task Intake Snapshot found"
+else
+  red "SKILL.md: Task Intake Snapshot MISSING"
+fi
+if grep -q 'Ambiguity Register' "$WFC"; then
+  green "SKILL.md: Ambiguity Register found"
+else
+  red "SKILL.md: Ambiguity Register MISSING"
+fi
+if grep -q 'Assumption Ledger' "$WFC"; then
+  green "SKILL.md: Assumption Ledger found"
+else
+  red "SKILL.md: Assumption Ledger MISSING"
+fi
+if grep -q 'contextSummary' "$WFC"; then
+  green "SKILL.md: contextSummary field found"
+else
+  red "SKILL.md: contextSummary field MISSING"
+fi
+if grep -q 'expectedEvidence' "$WFC"; then
+  green "SKILL.md: expectedEvidence field found"
+else
+  red "SKILL.md: expectedEvidence field MISSING"
+fi
+if grep -q 'forbiddenEvidence' "$WFC"; then
+  green "SKILL.md: forbiddenEvidence field found"
+else
+  red "SKILL.md: forbiddenEvidence field MISSING"
+fi
+if grep -q 'patchBackStrategy' "$WFC"; then
+  green "SKILL.md: patchBackStrategy field found"
+else
+  red "SKILL.md: patchBackStrategy field MISSING"
+fi
+if grep -q 'harness-managed' "$WFC"; then
+  green "SKILL.md: harness-managed strategy found"
+else
+  red "SKILL.md: harness-managed strategy MISSING"
+fi
+if grep -q 'Phase 4.5' "$WFC"; then
+  green "SKILL.md: Phase 4.5 found"
+else
+  red "SKILL.md: Phase 4.5 MISSING"
+fi
+# Must NOT have old exactly-four-questions language
+if grep -qi 'exactly four questions' "$WFC"; then
+  red "SKILL.md: STALE 'exactly four questions' language FOUND"
+else
+  green "SKILL.md: No stale 'exactly four questions' language"
+fi
+if grep -qi 'all 4 clarity' "$WFC"; then
+  red "SKILL.md: STALE 'all 4 clarity' language FOUND"
+else
+  green "SKILL.md: No stale 'all 4 clarity' language"
+fi
+echo ""
+
+# ── 13. Phase 3 script has new contract fields ──
+echo "13. Phase 3 script has new contract fields"
+P3="$ROOT/.claude/workflows/phase3-consensus.js"
+for field in contextSummary taskIntakeSnapshot grillSummary taskContractWarnings contextWarnings patchBackStrategy expectedEvidence; do
+  if grep -q "$field" "$P3"; then
+    green "phase3-consensus.js: $field"
+  else
+    red "phase3-consensus.js: $field MISSING"
+  fi
+done
+echo ""
+
+# ── 14. Phase 4 script has new contract fields and correct isolation strategies ──
+echo "14. Phase 4 script has new contract fields and isolation strategies"
+P4="$ROOT/.claude/workflows/phase4-implement.js"
+for field in contextRefs intakeRefs grillRefs expectedEvidence forbiddenEvidence patchBackStrategy changedFiles; do
+  if grep -q "$field" "$P4"; then
+    green "phase4-implement.js: $field"
+  else
+    red "phase4-implement.js: $field MISSING"
+  fi
+done
+# Isolation strategies
+for strat in harness-managed no-isolation external-report; do
+  if grep -q "$strat" "$P4"; then
+    green "phase4-implement.js: isolation strategy '$strat'"
+  else
+    red "phase4-implement.js: isolation strategy '$strat' MISSING"
+  fi
+done
+# Must NOT have forbidden isolation patterns
+for forbidden in apply-diff merge-commit manual-report; do
+  if grep -q "$forbidden" "$P4"; then
+    red "phase4-implement.js: FORBIDDEN pattern '$forbidden' FOUND"
+  else
+    green "phase4-implement.js: forbidden pattern '$forbidden' absent"
+  fi
+done
+echo ""
+
+# ── 15. Phase 5 script: REJECT blocks pass; present-tense enums; no past-tense ──
+echo "15. Phase 5 script: REJECT blocks pass, present-tense enums"
+P5="$ROOT/.claude/workflows/phase5-review.js"
+if grep -q 'finalReview' "$P5"; then
+  green "phase5-review.js: finalReview flow found"
+else
+  red "phase5-review.js: finalReview flow MISSING"
+fi
+if grep -q "'APPROVE'" "$P5"; then
+  green "phase5-review.js: APPROVE enum (present tense)"
+else
+  red "phase5-review.js: APPROVE enum MISSING"
+fi
+if grep -q 'ITERATE' "$P5"; then
+  green "phase5-review.js: ITERATE enum found"
+else
+  red "phase5-review.js: ITERATE enum MISSING"
+fi
+if grep -q 'REJECT' "$P5"; then
+  green "phase5-review.js: REJECT enum found"
+else
+  red "phase5-review.js: REJECT enum MISSING"
+fi
+for field in contextSummary taskIntakeSnapshot grillSummary; do
+  if grep -q "$field" "$P5"; then
+    green "phase5-review.js: $field"
+  else
+    red "phase5-review.js: $field MISSING"
+  fi
+done
+# Must NOT have past-tense enums
+if grep -q "'APPROVED'" "$P5"; then
+  red "phase5-review.js: STALE past-tense 'APPROVED' FOUND"
+else
+  green "phase5-review.js: No stale 'APPROVED' past-tense"
+fi
+if grep -q "'REJECTED'" "$P5"; then
+  red "phase5-review.js: STALE past-tense 'REJECTED' FOUND"
+else
+  green "phase5-review.js: No stale 'REJECTED' past-tense"
+fi
+echo ""
+
+# ── 16. Phase 6 script: evidenceChecks; all evidence types; no old field names ──
+echo "16. Phase 6 script: evidenceChecks with all evidence types"
+P6="$ROOT/.claude/workflows/phase6-verify.js"
+if grep -q 'evidenceChecks' "$P6"; then
+  green "phase6-verify.js: evidenceChecks found"
+else
+  red "phase6-verify.js: evidenceChecks MISSING"
+fi
+for evtype in file-exists text-present text-absent command-output-present command-output-absent; do
+  if grep -q "$evtype" "$P6"; then
+    green "phase6-verify.js: evidence type '$evtype'"
+  else
+    red "phase6-verify.js: evidence type '$evtype' MISSING"
+  fi
+done
+if grep -q 'allPassed' "$P6"; then
+  green "phase6-verify.js: allPassed gateway found"
+else
+  red "phase6-verify.js: allPassed gateway MISSING"
+fi
+# Must NOT have old field names (moved to phase4-implement)
+if grep -q 'expectedEvidence' "$P6"; then
+  red "phase6-verify.js: STALE old field 'expectedEvidence' FOUND"
+else
+  green "phase6-verify.js: No stale 'expectedEvidence' (moved to phase4)"
+fi
+if grep -q 'forbiddenEvidence' "$P6"; then
+  red "phase6-verify.js: STALE old field 'forbiddenEvidence' FOUND"
+else
+  green "phase6-verify.js: No stale 'forbiddenEvidence' (moved to phase4)"
+fi
+echo ""
+
 # ── Summary ──
 echo "========================================="
 echo "Results: $PASS passed, $FAIL failed"

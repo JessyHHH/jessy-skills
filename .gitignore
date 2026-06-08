@@ -4,3 +4,4 @@
 # Protect against accidental skill overwrites
 *.bak.*
 .firecrawl/
+.claude/worktrees/

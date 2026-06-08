@@ -51,7 +51,7 @@ NEVER use Bash(sed -i) to edit files — it bypasses the hook but causes silent 
 
 ## Phase 0: Environment Detection (always first)
 
-**Goal:** Detect project type, language version, dependency patterns, and available tooling.
+**Goal:** Detect project type, language version, dependency patterns, and available tooling. Capture task intake snapshot.
 
 **Procedure:**
 
@@ -80,7 +80,27 @@ NEVER use Bash(sed -i) to edit files — it bypasses the hook but causes silent 
    - If neither available: document queries fallback to WebFetch, search fallback to WebSearch
    - If missing but recommended: suggest consulting `references/setup.md` for installation
 
-5. **Announce findings with explicit exit statement:**
+5. **Task Intake Snapshot:** Capture a structured snapshot of what was requested, what is in/out of scope, and the evidence supporting these determinations. This snapshot provides traceability from the original request through implementation and verification.
+
+   ```json
+   {
+     "requestSummary": "",
+     "repoRoot": "",
+     "approvedInScope": [],
+     "approvedOutOfScope": [],
+     "sourceEvidence": [],
+     "constraints": []
+   }
+   ```
+
+   - `requestSummary`: Concise restatement of the user's request as understood.
+   - `repoRoot`: Absolute path to the repository root.
+   - `approvedInScope`: Explicitly included deliverables and changes.
+   - `approvedOutOfScope`: Explicitly excluded items (prevents scope creep).
+   - `sourceEvidence`: References to messages, files, or decisions that support the intake determinations.
+   - `constraints`: Known non-negotiables (language version, dependencies, platform requirements).
+
+6. **Announce findings with explicit exit statement:**
    ```
    "Phase 0: Environment — [type], [version]
    Tooling: go/node/git available
@@ -88,7 +108,7 @@ NEVER use Bash(sed -i) to edit files — it bypasses the hook but causes silent 
    → Phase 0.3 + 0.5"
    ```
 
-6. **Auto-transition:** Launch Phase 0.3 and Phase 0.5.
+7. **Auto-transition:** Launch Phase 0.3 and Phase 0.5.
 
 ---
 
@@ -99,31 +119,51 @@ NEVER use Bash(sed -i) to edit files — it bypasses the hook but causes silent 
 Skip ONLY when knowledge.md exists AND commit matches AND announced with reason.
 </HARD-GATE>
 
-**Goal:** Analyze codebase → generate/refresh `.claude/context/knowledge.md` (Knowledge Layer).
+**Goal:** Establish context artifacts — root `CONTEXT.md` (durable), optional scoped subdirectory `CONTEXT.md` files, and generated `.claude/context/knowledge.md` (analysis cache).
+
+### Context Artifact Model
+
+Three context artifacts serve different roles:
+
+| Artifact | Role | Managed By | Update Model |
+|----------|------|------------|-------------|
+| Root `CONTEXT.md` | Durable repository context contract | Humans + machines | Selective refresh (respects `[confirmed]` tags) |
+| Scoped subdirectory `CONTEXT.md` | Scope-specific specialization | Humans + machines | Overrides root by proximity |
+| `.claude/context/knowledge.md` | Generated analysis cache | Machines only | Full overwrite on every run |
+
+The canonical format specification for `CONTEXT.md` is in `skills/project-workflow-claude/references/context-md-spec.md`. This spec defines the two-layer marker structure (`KNOWLEDGE_START`/`KNOWLEDGE_END`, `INSTRUCTION_START`/`INSTRUCTION_END`), evidence tags (`[confirmed]`, `[auto]`), required fields, and update rules.
 
 **Procedure:**
 
 1. **Freshness check:**
    - `Read('.claude/context/knowledge.md')` → read header commit SHA
    - `Read('CLAUDE.md')` → read header commit SHA (if file exists)
+   - `Read('CONTEXT.md')` → read header commit SHA (if file exists)
    - `Bash(command='git rev-parse HEAD')` → current SHA
-   - Both files independently compared against HEAD
+   - Each artifact independently compared against HEAD
    - Stale knowledge.md → regenerate knowledge.md
+   - Stale CONTEXT.md → refresh auto sections, preserve confirmed content
    - Stale CLAUDE.md → update CLAUDE.md AUTO blocks
-   - Match → announce "Knowledge Layer fresh (commit <sha>), skipping analysis."
+   - Match → announce "Context artifacts fresh (commit <sha>), skipping analysis."
    - No match or no file → proceed to step 2
 
-2. **Announce:** "**Phase 0.3: Codebase Analysis** — understanding the project before proceeding."
+2. **Announce:** "**Phase 0.3: Codebase Analysis** — establishing context artifacts."
 
 3. **Analyze AND write** (single Agent, analysis + file write):
-   - **Go project:** `Agent(description='Analyze Go codebase and write knowledge.md', prompt='Analyze this Go codebase architecture: error handling patterns, DI approach, concurrency model, testing conventions. Map key entities with source paths. Then Write the full analysis to .claude/context/knowledge.md. Header: <!-- ⚠️ Auto-generated | Commit: <sha> | Date: <iso> | Go <version> -->.', subagent_type='general-purpose')`
-   - **Vue/Node project:** `Agent(description='Analyze frontend codebase and write knowledge.md', prompt='Analyze this frontend codebase: component tree, routing, state management, testing setup. Map key components with source paths. Then Write the full analysis to .claude/context/knowledge.md. Header: <!-- ⚠️ Auto-generated | Commit: <sha> | Date: <iso> | <type> -->.', subagent_type='general-purpose')`
-   - **Skills Repository:** `Agent(description='Analyze skills repository and write knowledge.md + CLAUDE.md', prompt='
+
+   - **Go project:** `Agent(description='Analyze Go codebase and create context artifacts', prompt='1. Analyze this Go codebase architecture: error handling patterns, DI approach, concurrency model, testing conventions. Map key entities with source paths. 2. Write CONTEXT.md (root) following the format spec in skills/project-workflow-claude/references/context-md-spec.md with KNOWLEDGE_START/KNOWLEDGE_END and INSTRUCTION_START/INSTRUCTION_END markers. 3. Write .claude/context/knowledge.md (full overwrite). Header: <!-- ⚠️ Auto-generated | Commit: <sha> | Date: <iso> | Go <version> -->.', subagent_type='general-purpose')`
+
+   - **Vue/Node project:** `Agent(description='Analyze frontend codebase and create context artifacts', prompt='1. Analyze this frontend codebase: component tree, routing, state management, testing setup. Map key components with source paths. 2. Write CONTEXT.md (root) following the format spec in skills/project-workflow-claude/references/context-md-spec.md with KNOWLEDGE_START/KNOWLEDGE_END and INSTRUCTION_START/INSTRUCTION_END markers. 3. Write .claude/context/knowledge.md (full overwrite). Header: <!-- ⚠️ Auto-generated | Commit: <sha> | Date: <iso> | <type> -->.', subagent_type='general-purpose')`
+
+   - **Skills Repository:** `Agent(description='Analyze skills repository and create context artifacts + CLAUDE.md', prompt='
      1. Analyze this Skills Repository: SKILL.md inventory by category, reference integrity,
         directory structure. Map key patterns.
-     2. Write full analysis to .claude/context/knowledge.md.
+     2. Write CONTEXT.md (root) following the format spec in
+        skills/project-workflow-claude/references/context-md-spec.md
+        with KNOWLEDGE_START/KNOWLEDGE_END and INSTRUCTION_START/INSTRUCTION_END markers.
+     3. Write .claude/context/knowledge.md (full overwrite).
         Header: <!-- ⚠️ Auto-generated | Commit: <sha> | Date: <iso> | Skills Repository -->
-     3. Check CLAUDE.md:
+     4. Check CLAUDE.md:
         a. If CLAUDE.md does NOT exist:
            Write full skeleton:
            Line 1: <!-- ⚠️ Auto-generated | Commit: <sha> | Date: <iso> | Skills Repository -->
@@ -167,21 +207,46 @@ Skip ONLY when knowledge.md exists AND commit matches AND announced with reason.
                Emit warning: "CLAUDE.md has malformed AUTO markers. Please fix manually.
                Skipping CLAUDE.md update." Do NOT touch the file.
      ', subagent_type='general-purpose')`
+
    - Header MUST include commit SHA + date + project type
-   - Full overwrite — no merge
+   - CONTEXT.md: selective refresh (preserves `[confirmed]` tags)
+   - knowledge.md: full overwrite — no merge
 
 4. **Cross-validation** (lightweight):
    - Sample 3-5 source paths from analysis → `Read()` verify existence
    - For Go: architecture claims vs `Grep` in `go.mod`
    - Log failures but don't block
 
-5. **Announce results:**
+5. **Output contextSummary:** After context artifacts are written, produce a structured summary:
+
+   ```json
+   {
+     "rootContextPath": "CONTEXT.md",
+     "rootContextStatus": "present|missing|created",
+     "nearestContextPaths": [],
+     "knowledgePath": ".claude/context/knowledge.md",
+     "knowledgeStatus": "fresh|stale|generated",
+     "contextWarnings": [],
+     "confirmedFacts": [],
+     "autoFacts": []
+   }
+   ```
+
+   - `rootContextStatus`: `present` (up-to-date), `missing` (does not exist), `created` (newly generated)
+   - `nearestContextPaths`: list of scoped subdirectory CONTEXT.md files found (sorted by depth, nearest first)
+   - `knowledgeStatus`: `fresh` (commit matches), `stale` (commit mismatch), `generated` (newly written)
+   - `contextWarnings`: contradiction warnings, malformed marker warnings, stale evidence
+   - `confirmedFacts`: key `[confirmed]` facts loaded from CONTEXT.md
+   - `autoFacts`: key `[auto]` facts loaded from CONTEXT.md
+
+6. **Announce results:**
    ```
    "Phase 0.3: Codebase Analysis — [project-type], commit <sha>
-   Knowledge Layer: generated — N patterns, N entities, N interfaces
+   CONTEXT.md: [present|missing|created]
+   Knowledge Layer: [fresh|stale|generated] — N patterns, N entities, N interfaces
    CLAUDE.md: [fresh | generated | updated (N blocks) | skipped (malformed markers — fix manually) | upgraded (first-touch AUTO markers added)]
    Cross-validation: [pass/fail details]
-   → knowledge.md + CLAUDE.md ready. → Phase 0.5."
+   → CONTEXT.md + knowledge.md + CLAUDE.md ready. → Phase 0.5."
    ```
 
 ---
@@ -235,7 +300,7 @@ Before writing or editing any file, present approach → get user approval.
 Simple projects = shorter design, but still present it first.
 </HARD-GATE>
 
-**Goal:** Turn ideas into fully formed designs through collaborative dialogue. Explore codebase first, then Grill (one question at a time with recommended answers), exit when all 4 clarity dimensions are clear.
+**Goal:** Turn ideas into fully formed designs through collaborative dialogue. Explore codebase first, then Grill — one question at a time with recommended answers, with variable depth determined by task complexity.
 
 **Source:** Adapted from brainstorming-ideas pattern, Karpathy 5 principles.
 
@@ -247,20 +312,46 @@ Simple projects = shorter design, but still present it first.
    - If the codebase already answers a question, skip that question — never re-ask what's in the repo.
    - Hard limit: 60 seconds. Move on when the timer expires.
 
-2. **GRILL** (one question at a time):
-   - **Mandatory first question:** Confirm scope boundary — "Here's what I think is in/out of scope based on exploration. Is this correct?" Ask nothing else until boundary is pinned.
-   - Then proceed through remaining clarity dimensions: intent (why, root cause), constraints (versions, deps, non-negotiables), success criteria (concrete, verifiable, how to prove done).
-   - **Each question MUST embed a recommended answer:** "I think X because Y — does that work?" This reduces decision fatigue. Explain reasoning and explicitly invite disagreement to avoid anchoring bias.
-   - **Exit condition:** Self-check all 4 clarity dimensions (intent, boundary, constraints, success) before asking the next question. When all 4 hold, announce:
-     ```
-     "Grill mode complete — all 4 dimensions clear:
-      1. Intent: [statement]
-      2. Boundary: [statement]
-      3. Constraints: [statement]
-      4. Success criteria: [statement]
-      → Moving to approach design."
-     ```
-     Then auto-transition to PROPOSE.
+2. **GRILL** (one question at a time with recommended answers):
+
+   The Grill is a variable-depth requirements crystallization process. Its depth scales with task complexity: it may ask 0 questions for a well-specified, tight-scope task, or many questions for a complex, ambiguous one.
+
+   **Mandatory first question:** Confirm scope boundary — "Here's what I think is in/out of scope based on exploration. Is this correct?" Ask nothing else until boundary is pinned.
+
+   **Ambiguity Register** — maintain a live list of unresolved questions that could change files, behavior, verification, or risk. Each entry includes:
+   - **Question**: the unresolved item
+   - **Status**: `open` | `answered` | `assumed` | `deferred-out-of-scope`
+   - **Impact**: what would change based on the answer (files, behavior, verification, risk)
+   - **Recommended answer**: "I think X because Y — does that work?"
+   - **Decision**: the final resolved answer
+
+   **Assumption Ledger** — maintain a list of allowed assumptions. Each entry includes:
+   - **Assumption**: what is being assumed
+   - **Evidence**: what supports this assumption
+   - **Confidence**: High | Medium | Low
+   - **Correction/rollback path**: what to do if the assumption proves wrong
+
+   **Variable-depth exit criteria:** The grill exits when ALL of these conditions hold:
+   - Scope boundary is pinned (no ambiguity about what is in/out of scope)
+   - No open ambiguity in the Ambiguity Register materially changes file selection, behavior, contract, verification, or risk
+   - Every non-blocking uncertainty is recorded in the Assumption Ledger with evidence, confidence, and a rollback path
+   - Assumptions do not contradict any confirmed facts from Phase 0.3
+   - Success criteria include both command evidence (what commands to run) and semantic evidence (what behavior to observe)
+
+   **No fixed question count.** Well-specified tasks with clear scope may complete the Grill with 0 additional questions. Ambiguous tasks may require many rounds. Depth is driven by the Ambiguity Register, not by a preset count.
+
+   **Each question MUST embed a recommended answer:** "I think X because Y — does that work?" This reduces decision fatigue. Explain reasoning and explicitly invite disagreement to avoid anchoring bias.
+
+   **Exit announcement:**
+   ```
+   "Grill mode complete:
+     Scope: [statement]
+     Ambiguity Register: N resolved (M assumed, K deferred-out-of-scope)
+     Assumption Ledger: M assumptions tracked
+     Success criteria: [command evidence] + [semantic evidence]
+     → Moving to approach design."
+   ```
+   Then auto-transition to PROPOSE.
 
 3. **PROPOSE** — 2-3 approaches with trade-offs and recommendation.
 
@@ -278,14 +369,14 @@ Simple projects = shorter design, but still present it first.
    - Diff against Phase 0.5 loaded skills → load missing ones via `Skill(skill='<name>')`.
    - Post-design codebase context may surface additional needed skills.
 
-7. **APPROVAL** — Present spec to user for confirmation.
+7. **APPROVAL** — Present spec to user for confirmation using sectioned design approval: present section-by-section, get user confirmation per section. This ensures each design section (scope, approach, verification, risks) receives explicit user sign-off before proceeding.
    - On approval: **Auto-transition to Phase 2.**
 
 ---
 
 ## Phase 2: Write Plan
 
-**Goal:** Produce a concrete, written implementation plan.
+**Goal:** Produce a concrete, written implementation plan with expanded task schema.
 
 **Procedure:**
 
@@ -298,11 +389,39 @@ Simple projects = shorter design, but still present it first.
    - **Files**: All files to create or modify, with expected changes
    - **Verification**: How we'll test each step
    - **Risks**: Known risks, tradeoffs, open questions
-   - **Tasks**: JSON task block (```json:tasks) with id, prompt, files, complexity, mutatesFiles — for Phase 4 Workflow consumption
+   - **Tasks**: JSON task block (```json:tasks) with expanded fields — for Phase 4 Workflow consumption
 
-3. `Agent(description='Write implementation plan', prompt='Write the implementation plan to .claude/plans/<timestamp>-<slug>.md with Goal, Context, Approach, Files, Verification, Risks sections. Include a ```json:tasks fenced code block at the end with an array of task objects: {id, prompt, files, complexity, mutatesFiles}. Each prompt must be a self-contained implementation instruction suitable for a subagent starting with blank context.', subagent_type='general-purpose')`
+3. **Task Schema (expanded):** Each task in the `json:tasks` block MUST include:
 
-4. Auto-transition to Phase 3.
+   ```
+   id, prompt, files, complexity, mutatesFiles,
+   contextRefs, intakeRefs, grillRefs,
+   expectedEvidence, forbiddenEvidence,
+   patchBackStrategy
+   ```
+
+   | Field | Type | Description |
+   |-------|------|-------------|
+   | `id` | string | Unique task identifier |
+   | `prompt` | string | Self-contained implementation instruction (subagent starts with blank context) |
+   | `files` | string[] | Files this task creates or modifies |
+   | `complexity` | string | `simple` \| `medium` \| `complex` |
+   | `mutatesFiles` | boolean | Whether this task writes to the filesystem |
+   | `contextRefs` | string[] | References to Phase 0/0.3 context artifacts this task depends on |
+   | `intakeRefs` | string[] | References to Phase 0 Task Intake Snapshot entries relevant to this task |
+   | `grillRefs` | string[] | References to Phase 1 Ambiguity Register or Assumption Ledger entries relevant to this task |
+   | `expectedEvidence` | string[] | Specific evidence expected upon completion (e.g., `go build ./... exits 0`, `TestFoo passes`) |
+   | `forbiddenEvidence` | string[] | Evidence that MUST NOT appear (e.g., `no new TODO comments`, `no import cycles`) |
+   | `patchBackStrategy` | string | How changes flow back to the master tree |
+
+   **patchBackStrategy values:**
+   - `no-isolation`: Agent works directly in the current tree (simple, low-risk tasks)
+   - `harness-managed`: Worktree isolation with harness-managed lifecycle; Phase 4.5 master agent reviews worktree diffs and merges back approved changes
+   - `external-report`: Manual integration; task marked `DONE_WITH_CONCERNS` and requires human intervention
+
+4. `Agent(description='Write implementation plan', prompt='Write the implementation plan to .claude/plans/<timestamp>-<slug>.md with Goal, Context, Approach, Files, Verification, Risks sections. Include a ```json:tasks fenced code block at the end with an array of task objects using the expanded schema: {id, prompt, files, complexity, mutatesFiles, contextRefs, intakeRefs, grillRefs, expectedEvidence, forbiddenEvidence, patchBackStrategy}. Each prompt must be a self-contained implementation instruction suitable for a subagent starting with blank context.', subagent_type='general-purpose')`
+
+5. Auto-transition to Phase 3.
 
 ---
 
@@ -324,9 +443,9 @@ Simple projects = shorter design, but still present it first.
    Script reviews from 3 angles in parallel (architecture, risk, feasibility), scores 1-10 each, synthesizes one verdict.
 
 3. **Act on verdict:**
-   - If APPROVE → proceed to step 5 (output task list)
-   - If ITERATE → address findings → re-run Workflow (max 3 iterations)
-   - If REJECT → present to user with reasons. Do NOT proceed.
+   - If `APPROVE` → proceed to step 5 (output task list)
+   - If `ITERATE` → address findings → re-run Workflow (max 3 iterations)
+   - If `REJECT` → present to user with reasons. Do NOT proceed.
 
 5. **Output:** Bite-sized task list with file paths, expected changes, verification criteria.
 
@@ -338,7 +457,9 @@ Simple projects = shorter design, but still present it first.
 
 ## Phase 4: Implement (Workflow Pipeline)
 
-**Goal:** Execute all implementation tasks in parallel using a deterministic Workflow script. Phase 5 handles review, Phase 6 handles full verification.
+**Goal:** Execute all implementation tasks in parallel using a deterministic Workflow script. Phase 4.5 handles worktree review, Phase 5 handles review, Phase 6 handles full verification.
+
+**Important:** Workflow scripts CANNOT perform file I/O, Bash, or Read operations. They are pure orchestrators — they dispatch subagents and coordinate phases. All file operations happen through dispatched subagents. Isolation strategies are documented in the task schema (Phase 2).
 
 **Procedure:**
 
@@ -347,7 +468,7 @@ Simple projects = shorter design, but still present it first.
 2. **LOAD TASKS:**
    - Read the Phase 3 plan from `.claude/plans/`
    - Extract the `json:tasks` fenced code block → parse JSON → get tasks array
-   - Each task: `{id, prompt, files, complexity, mutatesFiles}`
+   - Each task includes the expanded schema: `{id, prompt, files, complexity, mutatesFiles, contextRefs, intakeRefs, grillRefs, expectedEvidence, forbiddenEvidence, patchBackStrategy}`
    - `prompt` must be a self-contained implementation instruction (subagent starts with blank context)
 
 3. **EXECUTE:**
@@ -361,25 +482,32 @@ Simple projects = shorter design, but still present it first.
    The script uses `pipeline()` (streaming, no barrier):
    - Stage 1 (Implement): `agent(task.prompt, {model, isolation})` per task
      - complexity='simple' → haiku, 'medium' → sonnet, 'complex' → opus
-     - mutatesFiles=true → isolation='worktree' (avoids file conflicts)
+     - mutatesFiles=true, patchBackStrategy='harness-managed' → isolation='worktree' (avoids file conflicts)
+     - mutatesFiles=true, patchBackStrategy='no-isolation' → isolation='none' (agent works in current tree)
    - Stage 2 (Quick Verify): `agent(verify, {phase: 'Quick Verify', schema})` per task
      - Each task verified immediately after implementation (streaming — no waiting for other tasks)
      - Validates: build passes + affected tests pass
 
    The script includes a Self-Review stage: each implementer reports DONE/DONE_WITH_CONCERNS/NEEDS_CONTEXT/BLOCKED. The script returns `selfReviewStatus` — pass this to Phase 5 as `args.selfReviewStatuses`. If budget.total is set, tasks are prioritized by complexity.
 
-4. **REPORT** — auto-transition to Phase 5:
+4. **Phase 4.5: Worktree Review (Master Agent):** After Phase 4 script completes and BEFORE Phase 5 review, the master agent MUST:
+   - For every task with `patchBackStrategy='harness-managed'`: review the worktree diff, validate against `expectedEvidence` and verify no `forbiddenEvidence`, then merge back approved changes to the parent tree
+   - For tasks with `patchBackStrategy='no-isolation'`: changes are already in-tree; verify `expectedEvidence`
+   - For tasks with `patchBackStrategy='external-report'`: flag as `DONE_WITH_CONCERNS` and document what manual integration is needed
+
+5. **REPORT** — auto-transition to Phase 5:
    ```
    "Phase 4: Implemented
    - Tasks: N/N completed, M passed, B failed
+   - Worktree merges: N reviewed, M approved
    - Files: <count> changed
    → Phase 5."
    ```
    If failures → collect failed task IDs for Phase 5 review.
 
-5. **ERROR RECOVERY:** If Workflow script throws → Read error from transcript → Agent fix script bug → re-run Workflow.
+6. **ERROR RECOVERY:** If Workflow script throws → Read error from transcript → Agent fix script bug → re-run Workflow.
 
-6. **Auto-transition** to Phase 5.
+7. **Auto-transition** to Phase 5.
 
 ---
 
@@ -645,7 +773,7 @@ Auto-generated from compressed agent memory.
 | 1 (Design) | 2 (Plan) | Design approved + spec written |
 | 2 (Plan) | 3 (Consensus) | Plan saved + json:tasks block present |
 | 3 (Consensus) | 4 (Implement) | Consensus approved by Judge Panel |
-| 4 (Implement) | 5 (Review) | All tasks done |
+| 4 (Implement) | 5 (Review) | All tasks done + Phase 4.5 worktree review complete |
 | 5 (Review) | 6 (Verify) | Both review stages pass (spec per-task ✅ then code per-task ✅ + Final Review ✅) |
 | 6 (Verify) | 7 (Retro+Cron) | ALL checks PASS with fresh evidence |
 | 7 (Retro+Cron) | 8 (Finish) | 7.1+7.2 dispatched; 7.3 cron runs independently |

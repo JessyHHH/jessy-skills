@@ -8,10 +8,35 @@ export const meta = {
   ]
 }
 
-// Parse args: {tasks: [{id, prompt, files, complexity, mutatesFiles}]}
+// Parse args with expanded task fields from Phase 2/3:
+// {tasks: [{id, prompt, files, complexity, mutatesFiles, contextRefs, intakeRefs,
+//   grillRefs, expectedEvidence, forbiddenEvidence, patchBackStrategy}]}
 const input = typeof args === 'string' ? JSON.parse(args) : args
 const tasks = (input.tasks || []).filter(function(t) { return t && t.prompt })
 if (tasks.length === 0) return {total: 0, passed: 0, failed: 0, error: 'No valid tasks'}
+
+// --- 1. Extend task schema parsing: default expanded fields if missing ---
+for (var i = 0; i < tasks.length; i++) {
+  var t = tasks[i]
+  t.contextRefs = t.contextRefs || []
+  t.intakeRefs = t.intakeRefs || {}
+  t.grillRefs = t.grillRefs || []
+  t.expectedEvidence = t.expectedEvidence || ''
+  t.forbiddenEvidence = t.forbiddenEvidence || ''
+  t.patchBackStrategy = t.patchBackStrategy || ''
+  t.mutatesFiles = !!t.mutatesFiles
+}
+
+// --- 2. Pre-pipeline validation: mutating tasks must declare patchBackStrategy ---
+for (var j = 0; j < tasks.length; j++) {
+  var task = tasks[j]
+  if (task.mutatesFiles && !task.patchBackStrategy) {
+    return {status: 'BLOCKED', reason: 'mutating task ' + task.id + ' missing patchBackStrategy'}
+  }
+  if (task.patchBackStrategy && ['no-isolation', 'harness-managed', 'external-report'].indexOf(task.patchBackStrategy) === -1) {
+    return {status: 'BLOCKED', reason: 'task ' + task.id + ' has invalid patchBackStrategy: ' + task.patchBackStrategy}
+  }
+}
 
 // Budget-aware: prioritize complex tasks, report remaining tokens
 if (typeof budget !== 'undefined' && budget.total) {
@@ -22,24 +47,96 @@ if (typeof budget !== 'undefined' && budget.total) {
   log('Budget: ' + Math.round(budget.remaining() / 1000) + 'k tokens for ' + tasks.length + ' tasks')
 }
 
+// --- 5. Closure: thread changedFiles from Stage 1 through Stage 2/3 ---
+var taskChangedFiles = {}
+
+// --- 3 & 4. Strategy-aware isolation + Enhanced implementer prompt builder ---
+function getIsolation(task) {
+  if (task.patchBackStrategy === 'harness-managed') return 'worktree'
+  // no-isolation and external-report do not use worktree isolation
+  return undefined
+}
+
+function buildImplementerPrompt(task) {
+  var parts = [task.prompt]
+
+  // Context files
+  if (task.contextRefs && task.contextRefs.length > 0) {
+    parts.push('\nConsider these context files: ' + JSON.stringify(task.contextRefs))
+  }
+
+  // Scope: intake refs
+  if (task.intakeRefs) {
+    if (task.intakeRefs.approvedInScope) {
+      parts.push('\nIn scope: ' + JSON.stringify(task.intakeRefs.approvedInScope))
+    }
+    if (task.intakeRefs.approvedOutOfScope) {
+      parts.push('Out of scope: ' + JSON.stringify(task.intakeRefs.approvedOutOfScope))
+    }
+  }
+
+  // Grill decisions
+  if (task.grillRefs && task.grillRefs.length > 0) {
+    parts.push('\nRelevant decisions: ' + JSON.stringify(task.grillRefs))
+  }
+
+  // Evidence contract
+  if (task.expectedEvidence) {
+    parts.push('\nExpected evidence: ' + task.expectedEvidence)
+  }
+  if (task.forbiddenEvidence) {
+    parts.push('Forbidden evidence: ' + task.forbiddenEvidence)
+  }
+
+  // Isolation strategy instructions
+  if (task.patchBackStrategy) {
+    parts.push('\nIsolation strategy: ' + task.patchBackStrategy)
+    if (task.patchBackStrategy === 'no-isolation') {
+      parts.push('Work directly in the main working tree. Report changed files.')
+    } else if (task.patchBackStrategy === 'harness-managed') {
+      parts.push('You are in an isolated worktree. Return changedFiles: [list of file paths you modified]. The harness manages the worktree lifecycle. Do not attempt to merge or apply patches.')
+    } else if (task.patchBackStrategy === 'external-report') {
+      parts.push('Return a description of changes made. The harness will treat this as an external report. Include changedFiles in your response.')
+    }
+  }
+
+  return parts.join('\n')
+}
+
 phase('Implement')
 const results = await pipeline(tasks,
-  // Stage 1: Implement each task
-  (task, _item, index) => {
-    const model = task.complexity === 'simple' ? 'haiku'
+  // Stage 1: Implement each task with enhanced prompt and strategy-driven isolation
+  function(task, _item, index) {
+    var model = task.complexity === 'simple' ? 'haiku'
       : task.complexity === 'complex' ? 'opus'
       : 'sonnet'
-    return agent(task.prompt, {
-      label: 'task-' + task.id + ': ' + task.files.join(', '),
+
+    var enhancedPrompt = buildImplementerPrompt(task)
+
+    return agent(enhancedPrompt, {
+      label: 'task-' + task.id + ': ' + (task.files || []).join(', '),
       model: model,
-      isolation: task.mutatesFiles ? 'worktree' : undefined
+      isolation: getIsolation(task),
+      schema: {
+        type: 'object',
+        properties: {
+          changedFiles: {type: 'array', items: {type: 'string'}},
+          expectedEvidenceObserved: {type: 'array', items: {type: 'string'}},
+          forbiddenEvidenceObserved: {type: 'array', items: {type: 'string'}},
+          summary: {type: 'string'}
+        }
+      }
+    }).then(function(implResult) {
+      // Thread changedFiles into closure for Stage 2/3 access
+      taskChangedFiles[task.id] = (implResult && implResult.changedFiles) ? implResult.changedFiles : []
+      return implResult
     })
   },
   // Stage 2: Quick verify (streams per task, no barrier)
-  (result, task) => {
+  function(result, task) {
     if (!result) return {id: task.id, status: 'SKIPPED', buildPassed: false, testsPassed: false, errors: ['Agent skipped or failed']}
     return agent(
-      'Quick verify these files: ' + task.files.join(', ') + '. Run build and affected tests. Report results.',
+      'Quick verify these files: ' + (task.files || []).join(', ') + '. Run build and affected tests. Report results.',
       {
         label: 'verify-task-' + task.id,
         phase: 'Quick Verify',
@@ -55,13 +152,40 @@ const results = await pipeline(tasks,
       }
     )
   },
-  // Stage 3: Self-Review — implementer reports status before handoff to Phase 5
+  // Stage 3: Self-Review with full result contract
   function(result, task) {
-    // Capture Stage 2 result before Stage 3 transforms output
     var stage2Passed = result && result.buildPassed && result.testsPassed
-    if (!result || !result.buildPassed) {
-      return {taskId: task.id, status: 'FAILED', stage: 'quick-verify', _stage2Passed: !!stage2Passed}
+
+    // --- 6. External-report tasks: always DONE_WITH_CONCERNS ---
+    if (task.patchBackStrategy === 'external-report') {
+      return {
+        taskId: task.id,
+        status: 'DONE_WITH_CONCERNS',
+        concerns: ['External report task — manual review required'],
+        contextNeeded: '',
+        blockReason: '',
+        _stage2Passed: stage2Passed,
+        changedFiles: taskChangedFiles[task.id] || [],
+        expectedEvidenceObserved: [],
+        forbiddenEvidenceObserved: [],
+        patchBackStatus: 'external-report:pending-review'
+      }
     }
+
+    // Stage 2 failure: short-circuit with FAILED
+    if (!result || !result.buildPassed) {
+      return {
+        taskId: task.id,
+        status: 'FAILED',
+        stage: 'quick-verify',
+        _stage2Passed: !!stage2Passed,
+        changedFiles: taskChangedFiles[task.id] || [],
+        expectedEvidenceObserved: [],
+        forbiddenEvidenceObserved: [],
+        patchBackStatus: task.patchBackStrategy ? task.patchBackStrategy + ':pending-review' : ''
+      }
+    }
+
     return agent(
       'Self-review your implementation of task ' + task.id + ': ' + (task.files || []).join(', ') + '.\n' +
       'Check: all requirements from task prompt met? Edge cases handled? Tests pass? Code matches project patterns? Any concerns?\n\n' +
@@ -76,19 +200,33 @@ const results = await pipeline(tasks,
             status: {type: 'string', enum: ['DONE', 'DONE_WITH_CONCERNS', 'NEEDS_CONTEXT', 'BLOCKED']},
             concerns: {type: 'array', items: {type: 'string'}},
             contextNeeded: {type: 'string'},
-            blockReason: {type: 'string'}
+            blockReason: {type: 'string'},
+            expectedEvidenceObserved: {type: 'array', items: {type: 'string'}},
+            forbiddenEvidenceObserved: {type: 'array', items: {type: 'string'}}
           }
         }
       }
     ).then(function(reviewResult) {
-      // Merge task.id + Stage 2 result so Phase 5 can map status back to task
+      // Build patchBackStatus from strategy + disposition
+      var patchBackStatusValue = ''
+      if (task.patchBackStrategy === 'harness-managed') {
+        patchBackStatusValue = 'harness-managed:applied'
+      } else if (task.patchBackStrategy === 'no-isolation') {
+        patchBackStatusValue = 'no-isolation:applied'
+      }
+
+      // --- 7. Phase 4 result contract ---
       return {
         taskId: task.id,
         status: reviewResult ? reviewResult.status : 'FAILED',
         concerns: reviewResult ? reviewResult.concerns : [],
         contextNeeded: reviewResult ? reviewResult.contextNeeded : '',
         blockReason: reviewResult ? reviewResult.blockReason : '',
-        _stage2Passed: stage2Passed
+        _stage2Passed: stage2Passed,
+        changedFiles: taskChangedFiles[task.id] || [],
+        expectedEvidenceObserved: (reviewResult && reviewResult.expectedEvidenceObserved) ? reviewResult.expectedEvidenceObserved : [],
+        forbiddenEvidenceObserved: (reviewResult && reviewResult.forbiddenEvidenceObserved) ? reviewResult.forbiddenEvidenceObserved : [],
+        patchBackStatus: patchBackStatusValue
       }
     })
   }
@@ -99,8 +237,19 @@ var valid = results.filter(function(r) { return r != null })
 var passed = valid.filter(function(r) { return r._stage2Passed }).length
 var failed = valid.filter(function(r) { return !r._stage2Passed }).length
 
+// --- 7. Phase 4 result contract in selfReviewStatus ---
 var selfReviewStatus = results.filter(function(r) { return r && r.status }).map(function(r) {
-  return {taskId: r.taskId, status: r.status, concerns: r.concerns, contextNeeded: r.contextNeeded, blockReason: r.blockReason}
+  return {
+    taskId: r.taskId,
+    status: r.status,
+    concerns: r.concerns,
+    contextNeeded: r.contextNeeded,
+    blockReason: r.blockReason,
+    changedFiles: r.changedFiles || [],
+    expectedEvidenceObserved: r.expectedEvidenceObserved || [],
+    forbiddenEvidenceObserved: r.forbiddenEvidenceObserved || [],
+    patchBackStatus: r.patchBackStatus || ''
+  }
 })
 
 return {

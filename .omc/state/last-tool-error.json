@@ -1,7 +1,0 @@
-{
-  "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"ls /home/huangzexi/personal/general_agent/backend/.omc/state/design-gate.json 2>/dev/null && echo \\\"Gate file exists\\\" || echo \\\"No gate file — HARD-GATE may not have fired\\\" && echo \\\"===...",
-  "error": "Exit code 128\nNo gate file — HARD-GATE may not have fired\n=== Check git status ===\nfatal: 不是 git 仓库（或者任何父目录）：.git",
-  "timestamp": "2026-05-21T03:04:07.058Z",
-  "retry_count": 1
-}
