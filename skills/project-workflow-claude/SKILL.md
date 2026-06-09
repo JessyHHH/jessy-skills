@@ -1,7 +1,7 @@
 ---
 name: project-workflow-claude
 description: "Use when starting any development task — auto-detects project type, loads matching skills, drives 11-phase pipeline from design through verified completion. Hard Gates + Iron Law."
-version: "v2.3"
+version: "v2.4"
 author: "jessyhuang"
 metadata:
   standalone: true
@@ -17,13 +17,13 @@ triggers:
   - "write code"
 ---
 
-# Project Workflow Claude v2.3 — Self-Driving Pipeline with Hard Gates
+# Project Workflow Claude v2.4 — Self-Driving Pipeline with Hard Gates
 
 **Core design:** Zero pre-loaded skills (except `karpathy-guidelines`). Everything is context-detected: Go version, project type, codebase patterns, task signals. **Workflow-script-driven:** Phase 4-6 use deterministic JS scripts (`phase4-implement.js`, `phase5-review.js`, `phase6-verify.js`) installed in `~/.claude/workflows/` — executed via the Workflow tool. Scripts support caching, resume, and structured output. **Layered skill routing:** Shared domain skills (Go/Vue/Engineering) + Claude Code platform overlay.
 
 **Self-driving:** Announce phases → execute → auto-transition. Never wait for user to say "next".
 
-**Platform:** Claude Code v2.3+. Standalone — no external dependencies. Uses Claude Code native tools — `Workflow`, `Agent`, `Skill`, `Glob`, `Grep`, `Bash`, `AskUserQuestion`, `CronCreate`.
+**Platform:** Claude Code v2.4+. Standalone — no external dependencies. Uses Claude Code native tools — `Workflow`, `Agent`, `Skill`, `Glob`, `Grep`, `Bash`, `AskUserQuestion`, `CronCreate`. **Model Strategy:** All workflow subagents use Sonnet (default) or Haiku (simple tasks/skeptics). No Opus. Complexity: simple → haiku, medium/complex → sonnet.
 
 **Workflow Script Resolution:** The 4 Workflow scripts are installed to `~/.claude/workflows/` by `install.sh`. The Workflow tool's `name` parameter auto-discovers scripts from `~/.claude/workflows/` and `.claude/workflows/` — no path resolution needed. Always use `Workflow(name='phase<N>-<name>')` form.
 
@@ -553,7 +553,7 @@ Simple projects = shorter design, but still present it first.
 
    The script uses `pipeline()` (streaming, no barrier):
    - Stage 1 (Implement): `agent(task.prompt, {model, isolation})` per task
-     - complexity='simple' → haiku, 'medium' → sonnet, 'complex' → opus
+     - complexity='simple' → haiku, 'medium' → sonnet, 'complex' → sonnet
      - mutatesFiles=true, patchBackStrategy='harness-managed' → isolation='worktree' (avoids file conflicts)
      - mutatesFiles=true, patchBackStrategy='no-isolation' → isolation='none' (agent works in current tree)
    - Stage 2 (Quick Verify): `agent(verify, {phase: 'Quick Verify', schema})` per task
@@ -750,16 +750,23 @@ Phase 5 uses a 4-layer review model to minimize token consumption. Complexity fr
 
 **Goal:** Persistent cron job (every 2 hours) for cross-session pattern extraction. When memory ≥90% full, auto-compress into topic-based skills.
 
-**Cron Setup (idempotent):**
+**Cron Setup (opt-in, default skip):**
 ```
-1. CronList → check for existing 'phase7-memory-cron' job
-2. IF found → skip creation (already running)
-3. IF not found:
+1. AskUserQuestion(
+     question="Enable background memory compression cron? Runs every 2 hours to scan and compress project memory. (You can also start it later with /phase7-memory-cron)",
+     header="Phase 7.3 Cron",
+     options=[
+       {label: "Skip (Recommended)", description: "Skip for now. Memory compression can be enabled later."},
+       {label: "Enable", description: "Start the 2-hour memory compression cron job."}
+     ]
+   )
+2. IF "Enable" chosen:
    CronCreate(
      cron='7 */2 * * *',
      prompt="Phase 7.3 Memory Cron. Run the COMPRESS_OR_EXTRACT algorithm below. Scan project memory files for patterns. If memory is near capacity, compress into skills. Otherwise extract cross-session conventions.",
      durable=true
    )
+3. IF "Skip" chosen → announce "Phase 7.3 cron skipped. Start later with: /phase7-memory-cron"
 ```
 Note: Recurring tasks auto-expire after 7 days. Re-created on next workflow run only if not already present.
 
@@ -886,7 +893,7 @@ Auto-generated from compressed agent memory.
 | 4.6 (Quick Gate) | 5 (Review) | Quick Gate ALL PASS |
 | 5 (Review) | 6 (Verify) | Both review stages pass (spec per-task ✅ then code per-task ✅ + Final Review ✅) |
 | 6 (Verify) | 7 (Retro+Cron) | ALL checks PASS with fresh evidence |
-| 7 (Retro+Cron) | 8 (Finish) | 7.1+7.2 dispatched; 7.3 cron runs independently |
+| 7 (Retro+Cron) | 8 (Finish) | 7.1+7.2 done; 7.3 by user opt-in (default skip) |
 | 8 (Finish) | Done | User choice executed |
 
 ## Escape Hatches

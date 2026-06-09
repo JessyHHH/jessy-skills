@@ -133,7 +133,7 @@ var reviews = await parallel(ANGLES.map(function(a) {
       'Return: score (1-10), findings (specific observations), verdict (APPROVE/ITERATE/REJECT).\n\n' +
       '=== PLAN ===\n' + planContent +
       (contextBlock ? '\n' + contextBlock : ''),
-      {label: 'judge-' + a.key, schema: JUDGE_SCHEMA}
+      {label: 'judge-' + a.key, schema: JUDGE_SCHEMA, model: 'sonnet'}
     )
   }
 }))
@@ -145,7 +145,8 @@ var synthesis = await agent(
   'Synthesize ' + valid.length + ' independent plan reviews into one verdict.\n' +
   'Adopt the strongest insights from each angle. Resolve any contradictions.\n' +
   'Return: verdict (APPROVE/ITERATE/REJECT), summary (key findings), recommendation.\n\n' +
-  JSON.stringify(valid, null, 2)
+  JSON.stringify(valid, null, 2),
+  {model: 'sonnet'}
 )
 
 // --- Determine final verdict ---

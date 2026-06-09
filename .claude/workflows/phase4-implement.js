@@ -107,9 +107,7 @@ phase('Implement')
 const results = await pipeline(tasks,
   // Stage 1: Implement each task with enhanced prompt and strategy-driven isolation
   function(task, _item, index) {
-    var model = task.complexity === 'simple' ? 'haiku'
-      : task.complexity === 'complex' ? 'opus'
-      : 'sonnet'
+    var model = task.complexity === 'simple' ? 'haiku' : 'sonnet'
 
     var enhancedPrompt = buildImplementerPrompt(task)
 

@@ -1,8 +1,13 @@
 # jessy-skills — Multi-Language AI Engineering Skills
 
-![Version](https://img.shields.io/badge/version-v2.3-blue)
+![Version](https://img.shields.io/badge/version-v2.4-blue)
 
 一个支持 [Claude Code](https://code.claude.com/) + [Hermes Agent](https://github.com/NousResearch/hermes-agent) 的多语言工作流技能集合。11 阶段自驱动并行流水线（含 HARD-GATE / Iron Law / Two-Stage Review），76+ 技能覆盖 Go/Vue/前端/工程/方法论全流程。
+
+**v2.4 新特性：**
+- **全面移除 Opus**: 所有 Workflow subagent 使用 Sonnet/Haiku，复杂任务不再使用 Opus，大幅降低成本
+- **Phase 7.3 可选启动**: 后台记忆压缩定时任务改为 opt-in（默认跳过），不再自动创建 durable cron job
+- **模型显式声明**: 4 个 Workflow 脚本的 17 个 subagent 全部显式指定 model 参数，不再隐式继承主会话模型
 
 **v2.3 新特性：**
 - **Phase 1 Hard Grill Checklist**: 6 项强制自查清单（PASS/FAIL），退出前必须逐条确认，杜绝"0 问即过"

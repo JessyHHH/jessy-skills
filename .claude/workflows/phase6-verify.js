@@ -94,7 +94,8 @@ await pipeline(failures,
 
     return agent(fixPrompt, {
       label: 'fix-' + failure.name,
-      isolation: 'worktree'
+      isolation: 'worktree',
+      model: 'sonnet'
     })
   }
 )
@@ -108,7 +109,8 @@ await pipeline(evidenceFailures,
 
     return agent(fixPrompt, {
       label: 'fix-evidence-' + ef.id,
-      isolation: 'worktree'
+      isolation: 'worktree',
+      model: 'sonnet'
     })
   }
 )

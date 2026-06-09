@@ -99,7 +99,7 @@ source ~/.zshrc  # or ~/.bashrc
 | Platform | Workflow Skill | Shell Integration | Skill Dir |
 |----------|---------------|-------------------|-----------|
 | Hermes | `project-workflow` (v7.0) | `~/.jessy-skills/hermes.sh` | `~/.hermes/skills/` |
-| Claude Code | `project-workflow-claude` (v2.3) | `CLAUDE.md` auto-load | `~/.claude/skills/` |
+| Claude Code | `project-workflow-claude` (v2.4) | `CLAUDE.md` auto-load | `~/.claude/skills/` |
 
 | Shell | Config File | Status |
 |-------|-------------|--------|
@@ -110,7 +110,7 @@ source ~/.zshrc  # or ~/.bashrc
 
 ### Claude Code Specific
 
-After install, restart Claude Code or run `/reload-skills` to activate skills. The project's `CLAUDE.md` boot layer auto-loads each session. The `project-workflow-claude` v2.3 skill is fully standalone with its own workflow scripts (phase3-consensus, phase4-implement, phase5-review, phase6-verify) and does not require OMC.
+After install, restart Claude Code or run `/reload-skills` to activate skills. The project's `CLAUDE.md` boot layer auto-loads each session. The `project-workflow-claude` v2.4 skill is fully standalone with its own workflow scripts (phase3-consensus, phase4-implement, phase5-review, phase6-verify) and does not require OMC. Model: Sonnet/Haiku only, no Opus.
 
 **Workflow Scripts:** 4 deterministic JS scripts in `.claude/workflows/` are included in the repository. The SKILL.md references them via relative paths from the project root. No additional installation needed beyond cloning the repo.
 
@@ -131,7 +131,7 @@ The workflow auto-detects MCP availability and falls back to native WebFetch/Web
 
 ## Launch Mode
 
-project-workflow-claude v2.3 is fully standalone — no external dependencies required.
+project-workflow-claude v2.4 is fully standalone — no external dependencies required.
 
 ```bash
 claude                          # Start Claude Code normally

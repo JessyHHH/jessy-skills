@@ -204,7 +204,7 @@ var specResults = await pipeline(tasks,
       intakeNote +
       concernNote + '\n\n' +
       'Return APPROVE, ITERATE, or REJECT with specific issues. Use APPROVE when the task is fully correct and complete. Use ITERATE for minor issues that need adjustment. Use REJECT for significant problems that block the task.',
-      {label: 'spec-task-' + task.id, schema: SPEC_SCHEMA}
+      {label: 'spec-task-' + task.id, schema: SPEC_SCHEMA, model: 'sonnet'}
     )
   },
   // Stage 2: Code Quality Review (only if spec APPROVE)
@@ -225,7 +225,7 @@ var specResults = await pipeline(tasks,
       return parallel([
         function() {
           return agent('Review CORRECTNESS: ' + (task.files || []).join(', ') + '\nLogic errors, edge cases, error handling. Flag CRITICAL/HIGH/MEDIUM/LOW.',
-            {label: 'correctness-' + task.id, phase: 'Code Review', schema: REVIEW_SCHEMA})
+            {label: 'correctness-' + task.id, phase: 'Code Review', schema: REVIEW_SCHEMA, model: 'sonnet'})
         }
       ])
     }
@@ -233,15 +233,15 @@ var specResults = await pipeline(tasks,
     return parallel([
       function() {
         return agent('Review CORRECTNESS: ' + (task.files || []).join(', ') + '\nLogic errors, edge cases, error handling, concurrency safety. Flag CRITICAL/HIGH/MEDIUM/LOW.',
-          {label: 'correctness-' + task.id, phase: 'Code Review', schema: REVIEW_SCHEMA})
+          {label: 'correctness-' + task.id, phase: 'Code Review', schema: REVIEW_SCHEMA, model: 'sonnet'})
       },
       function() {
         return agent('Review SAFETY: ' + (task.files || []).join(', ') + '\nNil/null panics, resource leaks, security, data races. Flag CRITICAL/HIGH/MEDIUM/LOW.',
-          {label: 'safety-' + task.id, phase: 'Code Review', schema: REVIEW_SCHEMA})
+          {label: 'safety-' + task.id, phase: 'Code Review', schema: REVIEW_SCHEMA, model: 'sonnet'})
       },
       function() {
         return agent('Review SIMPLICITY: ' + (task.files || []).join(', ') + '\nOver-engineering, dead code, style, Karpathy compliance. Flag CRITICAL/HIGH/MEDIUM/LOW.',
-          {label: 'simplicity-' + task.id, phase: 'Code Review', schema: REVIEW_SCHEMA})
+          {label: 'simplicity-' + task.id, phase: 'Code Review', schema: REVIEW_SCHEMA, model: 'sonnet'})
       }
     ])
   }
@@ -281,7 +281,7 @@ if (criticalFindings.length > 0) {
       // simple/medium: auto-confirm (medium gets 1 skeptic, simple auto-confirmed)
       if (isMedium) {
         var singleVote = await agent('Try to REFUTE this finding. Default to refuted=false if uncertain.\n\nFinding: ' + f.description + '\nFile: ' + f.file + (f.line ? ' (line ' + f.line + ')' : ''),
-          {label: 'skeptic-1-' + f.file, schema: SKEPTIC_SCHEMA})
+          {label: 'skeptic-1-' + f.file, schema: SKEPTIC_SCHEMA, model: 'haiku'})
         if (singleVote && singleVote.refuted) {
           f.severity = 'HIGH'
         } else {
@@ -296,15 +296,15 @@ if (criticalFindings.length > 0) {
     var votes = await parallel([
       function() {
         return agent('Try to REFUTE this finding. Look for reasons it might not be a real CRITICAL issue.\n\nFinding: ' + f.description + '\nFile: ' + f.file + (f.line ? ' (line ' + f.line + ')' : '') + '\n\nReturn refuted (boolean) and reason.',
-          {label: 'skeptic-1-' + f.file, schema: SKEPTIC_SCHEMA})
+          {label: 'skeptic-1-' + f.file, schema: SKEPTIC_SCHEMA, model: 'haiku'})
       },
       function() {
         return agent('Try to REFUTE this finding. Consider: is this really CRITICAL? Could it be a false positive?\n\nFinding: ' + f.description + '\nFile: ' + f.file + (f.line ? ' (line ' + f.line + ')' : ''),
-          {label: 'skeptic-2-' + f.file, schema: SKEPTIC_SCHEMA})
+          {label: 'skeptic-2-' + f.file, schema: SKEPTIC_SCHEMA, model: 'haiku'})
       },
       function() {
         return agent('Try to REFUTE this finding. Default to refuted=true if uncertain.\n\nFinding: ' + f.description + '\nFile: ' + f.file + (f.line ? ' (line ' + f.line + ')' : ''),
-          {label: 'skeptic-3-' + f.file, schema: SKEPTIC_SCHEMA})
+          {label: 'skeptic-3-' + f.file, schema: SKEPTIC_SCHEMA, model: 'haiku'})
       }
     ])
 
@@ -370,7 +370,7 @@ if (skipFinal) {
         reasons: {type: 'array', items: {type: 'string'}},
         summary: {type: 'string'}
       }
-    }}
+    }, model: 'sonnet'}
   )
 }
 
