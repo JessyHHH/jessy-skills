@@ -1,8 +1,15 @@
 # jessy-skills — Multi-Language AI Engineering Skills
 
-![Version](https://img.shields.io/badge/version-v2.4-blue)
+![Version](https://img.shields.io/badge/version-v2.6-blue)
 
 一个支持 [Claude Code](https://code.claude.com/) + [Hermes Agent](https://github.com/NousResearch/hermes-agent) 的多语言工作流技能集合。11 阶段自驱动并行流水线（含 HARD-GATE / Iron Law / Two-Stage Review），76+ 技能覆盖 Go/Vue/前端/工程/方法论全流程。
+
+**v2.6 新特性：**
+- **Phase 5 优化 — 墙钟时间 39min → ~8-14min（65-80% 提升）**: 6 项优化（P0+P1+P2），每任务独立流水线（spec→code→adversarial），任务间不再相互阻塞
+- **分层模型选择**: Haiku 用于清单式审查（spec/simplicity/final/adversarial），Sonnet 用于深度推理（correctness/safety），~60-70% token 节省
+- **上下文注入 + 反探索护栏**: Master agent 预先提取 spec 段落和文件内容注入 agent prompt，硬限制 5 次文件读取 / 无 build/test/grep / 最多 3 个 thinking block
+- **Git-diff 式代码审查**: 审查 agent 只看变更行，不看全文。预计算的 diff 由 Master agent 注入
+- **快速门控强化**: 强烈推荐 Fast Gate 在 Phase 5 工作流脚本运行前启动（脚本记录建议性警告，但不打断执行）
 
 **v2.4 新特性：**
 - **全面移除 Opus**: 所有 Workflow subagent 使用 Sonnet/Haiku，复杂任务不再使用 Opus，大幅降低成本
@@ -47,7 +54,7 @@ ctx7 login && firecrawl login  # 浏览器授权
 
 ## 工作流概览
 
-| Phase | Hermes (`project-workflow`) | Claude Code (`project-workflow-claude` v2.3) |
+| Phase | Hermes (`project-workflow`) | Claude Code (`project-workflow-claude` v2.6) |
 |-------|---------------------------|----------------------------------------|
 | 0 | `search_files` 检测项目类型 | `Glob` + `Grep` 检测项目类型 + **Task Intake Snapshot** |
 | 0.3 | `delegate_task` 分析 → CONTEXT.md | `Agent` 分析 → **CONTEXT.md (两层) + contextSummary** |
@@ -58,7 +65,7 @@ ctx7 login && firecrawl login  # 浏览器授权
 | 4 | `delegate_task(tasks=[])` 并行 | **Workflow(phase4-implement)**: pipeline 实现 + 策略隔离 |
 | 4.5 | — | ★ **Master agent**: review worktree diff → merge-back |
 | 4.6 | — | ★ **Quick Gate**: grep expectedEvidence/forbiddenEvidence → fail-fast ⚡ |
-| 5 | `delegate_task` 审查 ⚡ | **Workflow(phase5-review)**: **4-layer 分层审阅** + Adversarial Verify + **finalReview Hard Gate** |
+| 5 | `delegate_task` 审查 ⚡ | **Workflow(phase5-review)**: 每任务独立流水线 + 分层模型 + 上下文注入 + 反探索护栏 ⚡ |
 | 6 | `terminal()` 验证 ⚡ | `Bash()` + **Workflow(phase6-verify)**: Loop Until Dry + **evidenceChecks 语义验证** ⚡ |
 | 7 | `memory()` + `cronjob()` | `CronCreate()` + 文件记忆 |
 | 8 | 4-option 收尾菜单 ★ | 4-option 收尾菜单 ★ |

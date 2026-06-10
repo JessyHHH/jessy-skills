@@ -226,8 +226,8 @@ if [ $HAS_CLAUDE -eq 1 ]; then
 
     echo "  ✓ Claude Code integration ready"
 
-    # project-workflow-claude v2.3 — standalone, no external dependencies
-    echo "  ℹ project-workflow-claude v2.3 is fully standalone"
+    # project-workflow-claude v2.6 — standalone, no external dependencies
+    echo "  ℹ project-workflow-claude v2.6 is fully standalone"
     echo "  → 4 Workflow scripts included (.claude/workflows/)"
     echo "  → Auto-detects Context7/Firecrawl MCP (falls back to WebFetch/WebSearch)"
     echo "  → Iron Law: references/iron-law.md"
