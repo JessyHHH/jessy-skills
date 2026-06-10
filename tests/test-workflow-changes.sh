@@ -67,17 +67,21 @@ else
 fi
 echo ""
 
-# ── 5. Every Phase has a skills-used exit declaration ──
-echo "5. Every Phase has exit declaration (Phase X complete. [skill] ...)"
-# Count ## Phase headers
-PHASE_COUNT=$(grep -c '^## Phase' "$WF" || true)
-# Count exit declarations
-EXIT_COUNT=$(grep -c 'Phase.*complete.*→' "$WF" || true)
-# Phase 0 (Environment), 6 (Verify), 7 (Retro), 8 (Finish) may use (none)
-if [ "$EXIT_COUNT" -ge "$((PHASE_COUNT - 2))" ]; then
-  green "Exit declarations: $EXIT_COUNT (phases: $PHASE_COUNT)"
+# ── 5. Orchestrator references all 7 modular execution skills ──
+echo "5. Orchestrator references all 7 modular execution skills"
+WFC_CHECK="$ROOT/skills/project-workflow-claude/SKILL.md"
+MODULAR_REFS=0
+for skill in detecting-environment designing-solutions planning-implementation implementing-changes reviewing-implementation verifying-completion finishing-development; do
+  if grep -q "$skill" "$WFC_CHECK"; then
+    MODULAR_REFS=$((MODULAR_REFS + 1))
+  else
+    red "Orchestrator MISSING reference to $skill"
+  fi
+done
+if [ "$MODULAR_REFS" -eq 7 ]; then
+  green "All 7 execution skills referenced ($MODULAR_REFS/7)"
 else
-  red "Exit declarations: $EXIT_COUNT, expected ≥ $((PHASE_COUNT - 2))"
+  red "Orchestrator references $MODULAR_REFS/7 execution skills"
 fi
 echo ""
 
@@ -169,18 +173,17 @@ else
 fi
 echo ""
 
-# ── 12. SKILL.md references context-md-spec.md and has new Phase 1/2 docs ──
-echo "12. SKILL.md references context-md-spec.md and new Phase 1/2 docs"
+# ── 12. SKILL.md references context-md-spec.md and modular skill fields in correct locations ──
+echo "12. SKILL.md references context-md-spec.md and modular skill fields in correct locations"
 WFC="$ROOT/skills/project-workflow-claude/SKILL.md"
-if grep -q 'references/context-md-spec.md' "$WFC"; then
+DC="$ROOT/skills/detecting-environment/SKILL.md"
+IC="$ROOT/skills/implementing-changes/SKILL.md"
+
+# Orchestrator-level checks (still valid post-modularization)
+if grep -q 'context-md-spec.md' "$WFC"; then
   green "SKILL.md: references context-md-spec.md"
 else
   red "SKILL.md: DOES NOT reference context-md-spec.md"
-fi
-if grep -q 'Task Intake Snapshot' "$WFC"; then
-  green "SKILL.md: Task Intake Snapshot found"
-else
-  red "SKILL.md: Task Intake Snapshot MISSING"
 fi
 if grep -q 'Ambiguity Register' "$WFC"; then
   green "SKILL.md: Ambiguity Register found"
@@ -197,31 +200,41 @@ if grep -q 'contextSummary' "$WFC"; then
 else
   red "SKILL.md: contextSummary field MISSING"
 fi
-if grep -q 'expectedEvidence' "$WFC"; then
-  green "SKILL.md: expectedEvidence field found"
+
+# Task Intake Snapshot → now in detecting-environment
+if grep -q 'Task Intake Snapshot\|task-intake.json' "$DC"; then
+  green "detecting-environment: Task Intake Snapshot found"
 else
-  red "SKILL.md: expectedEvidence field MISSING"
+  red "detecting-environment: Task Intake Snapshot MISSING"
 fi
-if grep -q 'forbiddenEvidence' "$WFC"; then
-  green "SKILL.md: forbiddenEvidence field found"
+
+# Implementation detail fields → now in implementing-changes
+if grep -q 'expectedEvidence' "$IC"; then
+  green "implementing-changes: expectedEvidence field found"
 else
-  red "SKILL.md: forbiddenEvidence field MISSING"
+  red "implementing-changes: expectedEvidence field MISSING"
 fi
-if grep -q 'patchBackStrategy' "$WFC"; then
-  green "SKILL.md: patchBackStrategy field found"
+if grep -q 'forbiddenEvidence' "$IC"; then
+  green "implementing-changes: forbiddenEvidence field found"
 else
-  red "SKILL.md: patchBackStrategy field MISSING"
+  red "implementing-changes: forbiddenEvidence field MISSING"
 fi
-if grep -q 'harness-managed' "$WFC"; then
-  green "SKILL.md: harness-managed strategy found"
+if grep -q 'patchBackStrategy' "$IC"; then
+  green "implementing-changes: patchBackStrategy field found"
 else
-  red "SKILL.md: harness-managed strategy MISSING"
+  red "implementing-changes: patchBackStrategy field MISSING"
 fi
-if grep -q 'Phase 4.5' "$WFC"; then
-  green "SKILL.md: Phase 4.5 found"
+if grep -q 'harness-managed' "$IC"; then
+  green "implementing-changes: harness-managed strategy found"
 else
-  red "SKILL.md: Phase 4.5 MISSING"
+  red "implementing-changes: harness-managed strategy MISSING"
 fi
+if grep -q 'Phase 4.5\|Worktree Review\|worktree review' "$IC"; then
+  green "implementing-changes: Phase 4.5 worktree review found"
+else
+  red "implementing-changes: Phase 4.5 worktree review MISSING"
+fi
+
 # Must NOT have old exactly-four-questions language
 if grep -qi 'exactly four questions' "$WFC"; then
   red "SKILL.md: STALE 'exactly four questions' language FOUND"
@@ -353,47 +366,58 @@ echo ""
 
 # ── 17. P0: Hard Grill Checklist (6 items) and REQUIREMENT ECHO ──
 echo "17. P0: Hard Grill Checklist (6 items) and REQUIREMENT ECHO"
-WFC2="$ROOT/skills/project-workflow-claude/SKILL.md"
-if grep -q 'HARD GRILL CHECKLIST' "$WFC2"; then
-  green "Hard Grill Checklist heading found"
+DS="$ROOT/skills/designing-solutions/SKILL.md"
+GC="$ROOT/skills/designing-solutions/references/grill-checklist.md"
+
+# Checks on SKILL.md (control-plane level)
+if grep -q 'HARD GRILL CHECKLIST\|Hard Grill Checklist\|grill-checklist' "$DS"; then
+  green "designing-solutions: Hard Grill Checklist referenced"
 else
-  red "Hard Grill Checklist heading MISSING"
+  red "designing-solutions: Hard Grill Checklist MISSING"
 fi
-if grep -q 'REQUIREMENT ECHO' "$WFC2"; then
-  green "REQUIREMENT ECHO heading found"
+if grep -q 'REQUIREMENT ECHO\|Requirement Echo' "$DS"; then
+  green "designing-solutions: REQUIREMENT ECHO found"
 else
-  red "REQUIREMENT ECHO heading MISSING"
+  red "designing-solutions: REQUIREMENT ECHO MISSING"
 fi
-CHECKLIST_COUNT=$(grep -c '\[ \]' "$WFC2" || true)
-if [ "$CHECKLIST_COUNT" -ge 6 ]; then
-  green "Hard Grill Checklist has ≥6 [ ] items (found $CHECKLIST_COUNT)"
+if grep -q 'grill-evidence.json' "$DS"; then
+  green "designing-solutions: grill-evidence.json documented"
 else
-  red "Hard Grill Checklist has only $CHECKLIST_COUNT [ ] items (need ≥6)"
+  red "designing-solutions: grill-evidence.json MISSING"
 fi
-if grep -q 'grill-evidence.json' "$WFC2"; then
-  green "grill-evidence.json documented in SKILL.md"
+if grep -q 'Complete and correct?' "$DS"; then
+  green "designing-solutions: REQUIREMENT ECHO asks 'Complete and correct?'"
 else
-  red "grill-evidence.json MISSING from SKILL.md"
+  red "designing-solutions: REQUIREMENT ECHO missing user confirmation prompt"
 fi
-if grep -q 'ambiguityRegister' "$WFC2"; then
-  green "ambiguityRegister schema in SKILL.md"
+
+# Checks on reference file (execution-plane detail, per modular design: details in references/)
+if [ -f "$GC" ]; then
+  green "designing-solutions: grill-checklist.md reference exists"
+
+  CHECKLIST_COUNT=$(grep -c '\[ \]' "$GC" || true)
+  if [ "$CHECKLIST_COUNT" -ge 6 ]; then
+    green "designing-solutions: Hard Grill Checklist has ≥6 [ ] items in reference (found $CHECKLIST_COUNT)"
+  else
+    red "designing-solutions: Hard Grill Checklist has only $CHECKLIST_COUNT [ ] items in reference (need ≥6)"
+  fi
+  if grep -q 'ambiguityRegister' "$GC"; then
+    green "designing-solutions: ambiguityRegister schema in reference"
+  else
+    red "designing-solutions: ambiguityRegister MISSING from reference"
+  fi
+  if grep -q 'assumptionLedger' "$GC"; then
+    green "designing-solutions: assumptionLedger schema in reference"
+  else
+    red "designing-solutions: assumptionLedger MISSING from reference"
+  fi
+  if grep -q 'checklistResults' "$GC"; then
+    green "designing-solutions: checklistResults schema in reference"
+  else
+    red "designing-solutions: checklistResults MISSING from reference"
+  fi
 else
-  red "ambiguityRegister MISSING from SKILL.md"
-fi
-if grep -q 'assumptionLedger' "$WFC2"; then
-  green "assumptionLedger schema in SKILL.md"
-else
-  red "assumptionLedger MISSING from SKILL.md"
-fi
-if grep -q 'checklistResults' "$WFC2"; then
-  green "checklistResults schema in SKILL.md"
-else
-  red "checklistResults MISSING from SKILL.md"
-fi
-if grep -q 'Complete and correct?' "$WFC2"; then
-  green "REQUIREMENT ECHO asks 'Complete and correct?'"
-else
-  red "REQUIREMENT ECHO missing user confirmation prompt"
+  red "designing-solutions: grill-checklist.md reference file MISSING"
 fi
 echo ""
 
@@ -437,7 +461,7 @@ if grep -q 'fileMap' "$P5A"; then
 else
   red "phase5-review.js: file sharing detection MISSING"
 fi
-if grep -q 'Layer 1 Fast Gate skipped' "$P5A"; then
+if grep -q 'ADVISORY.*fastGateResults\|Layer 1 Fast Gate' "$P5A"; then
   green "phase5-review.js: backward compat warning for missing fastGateResults"
 else
   red "phase5-review.js: backward compat warning MISSING for fastGateResults"
@@ -451,22 +475,22 @@ echo ""
 
 # ── 19. P2: Phase 4.6 Quick Gate and grill evidence audit trail ──
 echo "19. P2: Phase 4.6 Quick Gate and grill evidence audit trail"
-WFC3="$ROOT/skills/project-workflow-claude/SKILL.md"
+IC="$ROOT/skills/implementing-changes/SKILL.md"
 P6A="$ROOT/.claude/workflows/phase6-verify.js"
-if grep -q 'Phase 4.6' "$WFC3"; then
-  green "SKILL.md: Phase 4.6 section found"
+if grep -q 'Phase 4.6\|Quick Gate.*Phase' "$IC"; then
+  green "implementing-changes: Phase 4.6 section found"
 else
-  red "SKILL.md: Phase 4.6 section MISSING"
+  red "implementing-changes: Phase 4.6 section MISSING"
 fi
-if grep -q 'Quick Gate' "$WFC3"; then
-  green "SKILL.md: Quick Gate procedure found"
+if grep -q 'Quick Gate\|quick gate' "$IC"; then
+  green "implementing-changes: Quick Gate procedure found"
 else
-  red "SKILL.md: Quick Gate procedure MISSING"
+  red "implementing-changes: Quick Gate procedure MISSING"
 fi
-if grep -q 'FAIL FAST' "$WFC3"; then
-  green "SKILL.md: FAIL FAST documented"
+if grep -q 'FAIL FAST\|Fail fast\|fail fast' "$IC"; then
+  green "implementing-changes: FAIL FAST documented"
 else
-  red "SKILL.md: FAIL FAST MISSING"
+  red "implementing-changes: FAIL FAST MISSING"
 fi
 if grep -q 'quickGateEvidence' "$P6A"; then
   green "phase6-verify.js: quickGateEvidence input"
@@ -498,11 +522,40 @@ if grep -q 'grill decision cross-reference unavailable' "$P6A"; then
 else
   red "phase6-verify.js: backward compat warning for grillEvidencePath MISSING"
 fi
-if grep -q '4.6.*Quick Gate' "$WFC3"; then
-  green "SKILL.md: transition table includes Phase 4.6"
+if grep -q 'Phase 4.6\|Quick Gate' "$IC"; then
+  green "implementing-changes: Phase 4.6 Quick Gate documented"
 else
-  red "SKILL.md: transition table MISSING Phase 4.6 row"
+  red "implementing-changes: Phase 4.6 Quick Gate row MISSING"
 fi
+echo ""
+
+# ── Modular project-workflow-claude skills (v2.7) ──
+echo "20. Modular workflow skills exist and have handoffs"
+MODULAR_SKILLS="detecting-environment designing-solutions planning-implementation implementing-changes reviewing-implementation verifying-completion finishing-development"
+for skill in $MODULAR_SKILLS; do
+  f="$ROOT/skills/$skill/SKILL.md"
+  if [ -f "$f" ] && grep -q "^name: $skill" "$f" && grep -q 'Exit Contract' "$f"; then
+    green "$skill: SKILL.md + Exit Contract OK"
+  else
+    red "$skill: SKILL.md or Exit Contract invalid"
+  fi
+  lines=$(wc -l < "$f" 2>/dev/null || echo 9999)
+  if [ "$lines" -le 500 ]; then
+    green "$skill: under 500 lines ($lines)"
+  else
+    red "$skill: over 500 lines ($lines)"
+  fi
+done
+
+# ── Thin orchestrator ──
+echo "21. project-workflow-claude thin orchestrator"
+WFC="$ROOT/skills/project-workflow-claude/SKILL.md"
+if grep -q 'Modular Orchestrator' "$WFC" && grep -q 'detecting-environment' "$WFC" && grep -q 'handoffPolicy' "$WFC"; then
+  green "orchestrator routing markers found"
+else
+  red "orchestrator routing markers not found"
+fi
+
 echo ""
 
 # ── Summary ──

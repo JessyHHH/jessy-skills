@@ -1,40 +1,47 @@
-<!-- ⚠️ Auto-generated | Commit: 81e2b8debd28eed74b25c1c548b3574c4fb5b41f | Date: 2026-06-10 | Skills Repository -->
+<!-- ⚠️ Auto-generated | Commit: ea3e7e62d7c41286e43ad72ccd02d36f7a219717 | Date: 2026-06-10 | Skills Repository -->
 
 # Skills Repository — Knowledge Layer
 
 ## Project Overview
 
-This is a Skills Repository containing 77 AI Agent skills organized across 16 top-level category directories. Skills are defined using the agentskills.io YAML frontmatter open standard (`SKILL.md` files). The repository is a text-only project (no compiled language) with shell-based verification.
+This is a Skills Repository containing 84 AI Agent skills organized across 23 top-level category directories. Skills are defined using the agentskills.io YAML frontmatter open standard (`SKILL.md` files). The repository is a text-only project (no compiled language) with shell-based verification.
 
 - **Repository root**: `/home/huangzexi/personal/jessy-skills`
 - **Git branch**: `claude`
-- **Core workflow**: `project-workflow-claude` v2.6 — 11-phase self-driving pipeline
+- **Core workflow**: `project-workflow-claude` v2.7 — modular orchestrator + 7 execution skills
 - **Platform**: Claude Code v2.4+
 
 ## Architecture
 
 ```
 jessy-skills/
-├── skills/                        # 77 skill definitions (16 category dirs)
+├── skills/                        # 84 skill definitions (23 category dirs)
 │   ├── analyze/                   # 1 skill
 │   ├── code-review/               # 1 skill
 │   ├── deep-interview/            # 1 skill
+│   ├── designing-solutions/       # 1 skill (v2.7 modular — Phase 1)
+│   ├── detecting-environment/     # 1 skill (v2.7 modular — Phase 0)
 │   ├── engineering/               # 15 skills
+│   ├── finishing-development/     # 1 skill (v2.7 modular — Phase 7/8)
 │   ├── frontend/                  # 3 skills
 │   ├── go/                        # 34 skills
+│   ├── implementing-changes/      # 1 skill (v2.7 modular — Phase 4)
 │   ├── karpathy-guidelines/       # 1 skill
 │   ├── methodology/               # 4 skills
+│   ├── planning-implementation/   # 1 skill (v2.7 modular — Phase 2/3)
 │   ├── project/                   # 2 skills
 │   ├── project-workflow/          # 1 skill (shared base)
-│   ├── project-workflow-claude/   # 1 skill (Claude Code overlay) + references/
+│   ├── project-workflow-claude/   # 1 skill (v2.7 modular orchestrator) + references/
 │   ├── ralph/                     # 1 skill
 │   ├── ralplan/                   # 1 skill
+│   ├── reviewing-implementation/  # 1 skill (v2.7 modular — Phase 5)
 │   ├── tools/                     # 2 skills
 │   ├── ultrawork/                 # 1 skill
+│   ├── verifying-completion/      # 1 skill (v2.7 modular — Phase 6)
 │   └── vue/                       # 8 skills
 ├── .claude/
 │   ├── context/knowledge.md       # Generated analysis cache (this file)
-│   ├── state/grill-evidence.json  # Phase 1 grill persistence
+│   ├── state/                     # Pipeline state files (workflow-state.json, task-intake.json, etc.)
 │   ├── plans/                     # Phase 2 implementation plans
 │   └── specs/                     # Phase 1 design specs
 ├── ~/.claude/workflows/           # Pipeline scripts (installed by install.sh)
@@ -45,29 +52,37 @@ jessy-skills/
 ├── tests/                         # Repository-level test scripts
 ├── CONTEXT.md                     # Durable context contract (2-layer markers)
 ├── CLAUDE.md                      # Project Claude Code config (AUTO blocks)
+├── SETUP.md                       # AI agent install guide
 └── install.sh                     # Bootstrap/install script
 ```
 
-## Skill Categories (77 total, 16 directories)
+## Skill Categories (84 total, 23 directories)
 
 | # | Category | Skills | Type |
 |---|----------|--------|------|
 | 1 | analyze | 1 | Engineering |
 | 2 | code-review | 1 | Engineering |
 | 3 | deep-interview | 1 | Engineering |
-| 4 | engineering | 15 | Engineering |
-| 5 | frontend | 3 | Frontend |
-| 6 | go | 34 | Language (Go) |
-| 7 | karpathy-guidelines | 1 | Behavioral |
-| 8 | methodology | 4 | Methodology |
-| 9 | project | 2 | Project-specific |
-| 10 | project-workflow | 1 | Workflow (base) |
-| 11 | project-workflow-claude | 1 | Workflow (Claude Code) |
-| 12 | ralph | 1 | Agent mode |
-| 13 | ralplan | 1 | Planning mode |
-| 14 | tools | 2 | Tool integration |
-| 15 | ultrawork | 1 | Execution engine |
-| 16 | vue | 8 | Language (Vue) |
+| 4 | designing-solutions | 1 | Workflow (v2.7 modular) |
+| 5 | detecting-environment | 1 | Workflow (v2.7 modular) |
+| 6 | engineering | 15 | Engineering |
+| 7 | finishing-development | 1 | Workflow (v2.7 modular) |
+| 8 | frontend | 3 | Frontend |
+| 9 | go | 34 | Language (Go) |
+| 10 | implementing-changes | 1 | Workflow (v2.7 modular) |
+| 11 | karpathy-guidelines | 1 | Behavioral |
+| 12 | methodology | 4 | Methodology |
+| 13 | planning-implementation | 1 | Workflow (v2.7 modular) |
+| 14 | project | 2 | Project-specific |
+| 15 | project-workflow | 1 | Workflow (base) |
+| 16 | project-workflow-claude | 1 | Workflow (orchestrator) |
+| 17 | ralph | 1 | Agent mode |
+| 18 | ralplan | 1 | Planning mode |
+| 19 | reviewing-implementation | 1 | Workflow (v2.7 modular) |
+| 20 | tools | 2 | Tool integration |
+| 21 | ultrawork | 1 | Execution engine |
+| 22 | verifying-completion | 1 | Workflow (v2.7 modular) |
+| 23 | vue | 8 | Language (Vue) |
 
 ### Go skills (34) — Full Inventory
 
@@ -99,13 +114,17 @@ context7-docs (Context7 MCP integration), firecrawl-web (Firecrawl MCP integrati
 
 ## Reference Dependencies
 
-The `project-workflow-claude` skill has 3 reference files:
+The `project-workflow-claude` skill has 7 reference files:
 
 | Reference | Role |
 |-----------|------|
 | `references/claude-routing.md` | Claude Code platform-specific signal-to-action/skill routing overlay |
 | `references/iron-law.md` | Verification discipline: Gate Function, Red Flags, Rationalization Prevention, TDD Red-Green, Agent Delegation Verification |
 | `references/context-md-spec.md` | Canonical CONTEXT.md format specification v1.0 (two-layer markers, evidence tags, update rules) |
+| `references/workflow-state-contract.md` | State file schema, field ownership, resume behavior |
+| `references/transition-rules.md` | Skill pipeline order, legacy phase mapping, auto-transition conditions, escape hatches |
+| `references/handoff-contract.md` | Full workflow vs standalone mode, handoff table with next-step recommendations |
+| `references/setup.md` | Recommended MCP servers (Context7, Firecrawl), fallback behavior, DeepSeek API notes |
 
 ## Workflow Script Architecture
 
@@ -169,8 +188,19 @@ New functions introduced in v2.6:
 
 
 ```
-Phase 0 (Environment) → Phase 0.3+0.5 → Phase 1 (Design/Grill) → Phase 2 (Plan) → Phase 3 (Consensus) → Phase 4 (Implement) → Phase 4.5 (Worktree Review) → Phase 4.6 (Quick Gate) → Phase 5 (Review) → Phase 6 (Verify) → Phase 7 (Retrospective) → Phase 8 (Finish)
+detecting-environment (Phase 0/0.3/0.5) → designing-solutions (Phase 1) → planning-implementation (Phase 2/3) → implementing-changes (Phase 4/4.5/4.6) → reviewing-implementation (Phase 5) → verifying-completion (Phase 6) → finishing-development (Phase 7/8)
 ```
+
+## v2.7 Modular Architecture
+
+project-workflow-claude v2.7 uses a thin orchestrator (227 lines) + 7 independent execution skills (125-191 lines each). The master agent is a supervisor — it routes, monitors, and transitions, but never implements directly.
+
+| Plane | Role | What Lives Here |
+|-------|------|----------------|
+| **Control Plane** | Route, supervise, transition | `skills/project-workflow-claude/SKILL.md` — routing logic, delegation rules, global rules, escape hatches |
+| **Execution Plane** | Do the work | 7 child skills — detect, design, plan, implement, review, verify, finish |
+
+All 7 child skills support two modes: full workflow (`handoffPolicy=auto-continue`, auto-transition to next) and standalone (`handoffPolicy=prompt-next-step`, prompt user for next action).
 
 ## Delegation Model
 
@@ -192,13 +222,14 @@ Master agent is a SUPERVISOR only. All file modifications MUST be delegated to s
 
 | Claim | Confidence | Basis |
 |-------|-----------|-------|
-| Skill count: 77 | High | `find skills -name "SKILL.md" -type f | wc -l` |
-| Category count: 16 | High | `ls -d skills/*/` |
+| Skill count: 84 | High | `find skills -name "SKILL.md" -type f | wc -l` |
+| Category count: 23 | High | `ls -d skills/*/` |
 | Go skills: 34 | High | Directory listing of skills/go/ |
 | Vue skills: 8 | High | Directory listing of skills/vue/ |
 | Engineering skills: 15 | High | Directory listing of skills/engineering/ |
+| Modular execution skills: 7 | High | Directory listing of skills/{detecting-environment,designing-solutions,planning-implementation,implementing-changes,reviewing-implementation,verifying-completion,finishing-development}/ |
 | Workflow scripts: 4 | High | `ls ~/.claude/workflows/phase*.js` |
-| Reference files: 3 | High | Directory listing of skills/project-workflow-claude/references/ |
-| Pipeline phase count: 11 + sub-phases | High | Phase count in SKILL.md (Phase 0-8 with 0.3, 0.5, 4.5, 4.6, 7.1-7.3) |
+| Reference files: 7 | High | Directory listing of skills/project-workflow-claude/references/ |
+| Orchestrator: v2.7 thin control plane (227 lines) | High | `wc -l skills/project-workflow-claude/SKILL.md` |
 | No compiled language | High | No go.mod, package.json, or other language markers found |
 | AUTO markers in CLAUDE.md: well-formed | High | Verified by direct inspection of CLAUDE.md |

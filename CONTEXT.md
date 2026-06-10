@@ -1,10 +1,10 @@
-⚠️ Auto-generated | Commit: 81e2b8debd28eed74b25c1c548b3574c4fb5b41f | Date: 2026-06-10 | skills-repository
+⚠️ Auto-generated | Commit: ea3e7e62d7c41286e43ad72ccd02d36f7a219717 | Date: 2026-06-10 | skills-repository
 
 <!-- KNOWLEDGE_START -->
 ## Architecture
-[auto] Monorepo of 77 AI Agent skills, each defined under `skills/*/SKILL.md` using the agentskills.io YAML frontmatter open standard. 16 top-level category directories organize skills by domain.
-[confirmed] Core workflow: `project-workflow-claude` + `karpathy-guidelines` — an 11-phase self-driving pipeline with Hard Gates and Iron Law.
-[auto] Workflow automation scripts reside in `~/.claude/workflows/` (phase3-consensus.js, phase4-implement.js, phase5-review.js, phase6-verify.js) — deterministic JS orchestrators executed via the Workflow tool. Phase 5 review pipeline optimized — per-task independent pipeline, tiered model selection (Haiku checklist reviews, Sonnet deep reasoning), context injection, anti-exploration guardrails.
+[auto] Monorepo of 84 AI Agent skills, each defined under `skills/*/SKILL.md` using the agentskills.io YAML frontmatter open standard. 23 top-level category directories organize skills by domain.
+[confirmed] Core workflow: `project-workflow-claude` v2.7 modular orchestrator + 7 execution skills + `karpathy-guidelines` — a thin control plane that delegates to independent execution skills with Hard Gates and Iron Law.
+[auto] Workflow automation scripts reside in `~/.claude/workflows/` (phase3-consensus.js, phase4-implement.js, phase5-review.js, phase6-verify.js) — deterministic JS orchestrators executed via the Workflow tool.
 [auto] Installation via `bash install.sh`; verification via `bash tests/test-*.sh`.
 [auto] Platform overlay: `skills/project-workflow-claude/references/claude-routing.md` maps Claude Code-specific task signals and codebase signals to workflow phases and skills.
 
@@ -18,8 +18,10 @@
 ## Entities
 | Entity | Location | Description |
 |--------|----------|-------------|
-| Skills (77) | `skills/*/SKILL.md` | AI Agent skill definitions across 16 categories |
+| Skills (84) | `skills/*/SKILL.md` | AI Agent skill definitions across 23 categories |
 | Workflow scripts | `~/.claude/workflows/phase{3,4,5,6}-*.js` | Pipeline phase automation (consensus, implement, review, verify) |
+| Modular execution skills (7) | `skills/{detecting-environment,designing-solutions,planning-implementation,implementing-changes,reviewing-implementation,verifying-completion,finishing-development}/SKILL.md` | v2.7 thin orchestrator delegation targets |
+| State contracts | `skills/project-workflow-claude/references/{workflow-state-contract,transition-rules,handoff-contract}.md` | Modular skill baton-pass contracts |
 | Install script | `install.sh` | Repository setup/bootstrap with global sync |
 | Tests | `tests/test-*.sh` | Integrity verification scripts |
 | Context spec | `skills/project-workflow-claude/references/context-md-spec.md` | Canonical CONTEXT.md format specification v1.0 |
@@ -35,7 +37,7 @@
 [auto] CLAUDE.md uses `<!-- AUTO_START: <Section> -->`/`<!-- AUTO_END: <Section> -->` markers for machine-managed blocks.
 
 ## Package Map
-- `skills/` — 77 skill definitions in 16 category directories (flat within each category)
+- `skills/` — 84 skill definitions in 23 category directories (flat within each category)
 - `skills/analyze/` — 1 skill: repository analysis
 - `skills/code-review/` — 1 skill: comprehensive code review
 - `skills/deep-interview/` — 1 skill: Socratic deep interview
@@ -46,7 +48,7 @@
 - `skills/methodology/` — 4 skills: api-design-first, data-model-first, error-taxonomy, prior-research
 - `skills/project/` — 2 skills: jessy-self-iterate, mixclaw-cron-review
 - `skills/project-workflow/` — 1 skill: shared base workflow (language-agnostic)
-- `skills/project-workflow-claude/` — 1 skill: Claude Code-specific workflow (11-phase pipeline, v2.6) with references/
+- `skills/project-workflow-claude/` — 1 skill: Claude Code-specific workflow (v2.7 modular orchestrator + 7 execution skills) with references/
 - `skills/ralph/` — 1 skill: Ralph agent mode
 - `skills/ralplan/` — 1 skill: Ralplan planning mode
 - `skills/tools/` — 2 skills: context7-docs, firecrawl-web
@@ -60,8 +62,8 @@
 - `tests/` — Repository-level test scripts
 
 ## Confidence
-[auto] Architecture and entity structure: High (verified via direct file inspection of 77 SKILL.md files across 16 directories).
-[auto] Skill count (77): High (confirmed by `find skills -name "SKILL.md" -type f | wc -l`).
+[auto] Architecture and entity structure: High (verified via direct file inspection of 84 SKILL.md files across 23 directories).
+[auto] Skill count (84): High (confirmed by `find skills -name "SKILL.md" -type f | wc -l`).
 [auto] Workflow script count (4): High (confirmed by listing `~/.claude/workflows/`).
 [auto] Category breakdown: High (verified by directory traversal of skills/ tree).
 <!-- KNOWLEDGE_END -->
@@ -87,7 +89,7 @@
 ## Domain Glossary
 - **Iron Law**: No completion claims without fresh verification evidence. Evidence before claims, always.
 - **Hard Gates**: Non-negotiable quality checkpoints in the 11-phase pipeline (Phase 0.3 freshness check, Phase 1 design approval, Phase 5 two-stage review, Phase 6 Iron Law verification).
-- **Phase**: A discrete step in the project-workflow-claude pipeline (0: Environment Detection, 0.3: Codebase Analysis, 0.5: Skill Selection, 1: Design/Grill, 2: Plan, 3: Consensus/Judge Panel, 4: Parallel Implement, 4.5: Worktree Review, 4.6: Quick Gate, 5: Two-Stage Review, 6: Verified Completion/Iron Law, 7: Retrospective, 8: Finish Branch).
+- **Phase**: A discrete step in the project-workflow-claude pipeline. Modular skills: detecting-environment (Phase 0/0.3/0.5), designing-solutions (Phase 1), planning-implementation (Phase 2/3), implementing-changes (Phase 4/4.5/4.6), reviewing-implementation (Phase 5), verifying-completion (Phase 6), finishing-development (Phase 7/8).
 - **Workflow Script**: Deterministic JavaScript orchestrator (no file I/O) executed via the Workflow tool to drive pipeline phases 3-6.
 - **Ambiguity Register**: Live list of unresolved questions during Phase 1 Grill, each with status (open/answered/assumed/deferred-out-of-scope), impact, recommended answer, and decision.
 - **Assumption Ledger**: Tracked list of allowed assumptions during Phase 1, each with evidence, confidence (High/Medium/Low), and correction/rollback path.

@@ -226,11 +226,12 @@ if [ $HAS_CLAUDE -eq 1 ]; then
 
     echo "  ✓ Claude Code integration ready"
 
-    # project-workflow-claude v2.6 — standalone, no external dependencies
-    echo "  ℹ project-workflow-claude v2.6 is fully standalone"
+    # project-workflow-claude v2.7 — modular execution skills
+    echo "  ℹ project-workflow-claude v2.7 uses modular execution skills"
+    echo "  → 1 orchestrator + 7 execution skills"
     echo "  → 4 Workflow scripts included (.claude/workflows/)"
     echo "  → Auto-detects Context7/Firecrawl MCP (falls back to WebFetch/WebSearch)"
-    echo "  → Iron Law: references/iron-law.md"
+    echo "  → Iron Law: skills/project-workflow-claude/references/iron-law.md"
 
     echo "  ℹ Restart Claude Code or run /reload-skills to activate"
 fi

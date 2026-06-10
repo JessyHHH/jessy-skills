@@ -5,7 +5,7 @@
 ## Project
 <!-- AUTO_START: Project -->
 Skills Repository — 77 AI Agent skills (Go/Vue/Engineering/…)
-Core workflow: `project-workflow-claude` v2.6 + `karpathy-guidelines`
+Core workflow: `project-workflow-claude` v2.7 modular orchestrator + 7 execution skills + `karpathy-guidelines`
 Context: [CONTEXT.md](CONTEXT.md) — durable context contract (Knowledge + Instruction layers)
 Context spec: [context-md-spec.md](skills/project-workflow-claude/references/context-md-spec.md)
 <!-- AUTO_END: Project -->
