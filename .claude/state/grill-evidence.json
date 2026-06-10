@@ -1,16 +1,62 @@
 {
-  "timestamp": "2026-06-08T21:35:00+08:00",
-  "session": "e91863f3-278d-452c-a842-3074971d2b43",
+  "timestamp": "2026-06-10T00:00:00Z",
+  "session": "phase5-optimization",
   "ambiguityRegister": [
-    {"id": "A1", "question": "What keywords should the triggers field include?", "status": "assumed", "impact": "Skill activation reliability", "recommendedAnswer": "start task, implement, build, develop, add feature, fix bug, refactor, code change, write code", "decision": "Use 9 keywords covering common dev task triggers"},
-    {"id": "A2", "question": "Where should Glob fallback go in Phase 0?", "status": "assumed", "impact": "Phase 0 reliability", "recommendedAnswer": "Add at top of Phase 0 step 1 with per-call Bash fallbacks", "decision": "Top-level note + per-call Bash(find...) fallback"},
-    {"id": "A3", "question": "Where should DeepSeek Agent subagent conflict be documented?", "status": "assumed", "impact": "User troubleshooting", "recommendedAnswer": "New 'DeepSeek API Notes' section at end of setup.md with error message and fix", "decision": "setup.md — new section at end"},
-    {"id": "A4", "question": "How detailed should CONTEXT.md [auto] refresh be?", "status": "assumed", "impact": "Context accuracy", "recommendedAnswer": "Fix 3 obvious errors: skill count, OMC refs, field names. Keep structure intact.", "decision": "Three targeted fixes"}
+    {
+      "id": "A1",
+      "question": "P2 pipeline structure — Plan A (per-task independent pipeline) vs Plan B (keep existing structure)?",
+      "status": "answered",
+      "impact": "Phase 5 wall clock time: max(task review time) vs sum of all tasks",
+      "recommendedAnswer": "Plan A: pipeline(tasks, enrichStage, reviewStage) — two-stage form where enrichStage is no-op and reviewStage runs spec→code→adversarial per task independently. Wall clock ≈ max(single task spec+code+adversarial time) + overhead",
+      "decision": "Plan A (corrected to two-stage form per Phase 3 review)"
+    },
+    {
+      "id": "A2",
+      "question": "Guardrail granularity — hard numeric limits vs soft constraints?",
+      "status": "answered",
+      "impact": "Whether agents re-read files 12+ times (observed in session 36064b31 task-02)",
+      "recommendedAnswer": "Option 1: 5 file reads max, no build/test/grep, 3 thinking blocks max",
+      "decision": "Option 1 — hard numeric limits"
+    },
+    {
+      "id": "A3",
+      "question": "Model tiering — Haiku or Sonnet for spec review with injected context?",
+      "status": "answered",
+      "impact": "~45% token cost difference per spec review agent",
+      "recommendedAnswer": "Haiku default for spec review; Sonnet when Quick Gate marks task as high-risk (missing >=2 expectedEvidence)",
+      "decision": "Haiku default, Sonnet upgrade for high-risk"
+    },
+    {
+      "id": "A4",
+      "question": "Implement all P0+P1+P2 this run or split into phases?",
+      "status": "answered",
+      "impact": "Whether P2 refactor is done now or later",
+      "recommendedAnswer": "All in one run — P2 structural refactor is a one-time change",
+      "decision": "All P0+P1+P2 implemented this run"
+    }
   ],
   "assumptionLedger": [
-    {"id": "S1", "assumption": "Workflow scripts have no critical bugs — main fixes are in SKILL.md", "evidence": "Prior review found no wrong paths or logic errors in the scripts", "confidence": "medium", "correctionPath": "If review finds issues, extend scope to include script fixes"},
-    {"id": "S2", "assumption": "grep -oP fails on all macOS versions", "evidence": "BSD grep shipped with macOS does not support -P flag; tested in current session", "confidence": "high", "correctionPath": "Replace with grep -oE which works on all platforms"},
-    {"id": "S3", "assumption": "All 4 workflow scripts are syntactically valid", "evidence": "Scripts were successfully installed and parsed by previous install.sh runs", "confidence": "medium", "correctionPath": "Run node --check on each script; fix any syntax errors found"}
+    {
+      "id": "S1",
+      "assumption": "With injected spec text + file contents, Haiku is sufficient for spec compliance review (checklist-style)",
+      "evidence": "Qodo benchmark: Haiku 4.5 Thinking outperformed Sonnet 4.5 on code review quality (7.29 vs 6.60) for single-pass reviews",
+      "confidence": "high",
+      "correctionPath": "If spec review false-negative rate increases, upgrade to Sonnet for tasks with >3 file dependencies"
+    },
+    {
+      "id": "S2",
+      "assumption": "pipeline(tasks, enrichStage, reviewStage) with per-task independent execution won't cause file conflicts",
+      "evidence": "Task files are generally disjoint in well-structured plans; current session's 5 tasks had distinct file sets",
+      "confidence": "medium",
+      "correctionPath": "File-overlap check at enrichment time + serialization for shared-file tasks. Master agent logs warning, enrichment step documents overlap in task._sharedFilesWarning."
+    },
+    {
+      "id": "S3",
+      "assumption": "5 file reads is sufficient when spec + file contents are injected into the agent prompt",
+      "evidence": "task-01 completed spec review in 111s with 7 calls; injected context should reduce this further",
+      "confidence": "medium",
+      "correctionPath": "If found insufficient, adjust to 8 file reads"
+    }
   ],
   "checklistResults": {
     "ambiguityRegisterPrinted": true,
@@ -18,32 +64,58 @@
     "openAmbiguitiesAddressed": true,
     "successCriteriaObservable": true,
     "constraintsDocumented": true,
-    "selfGrade": "PASS: 13 requirements clearly mapped to 8 files with specific before/after and verification commands"
+    "selfGrade": "PASS: spec is implementable without basic questions"
   },
   "requirementEcho": [
-    "Fix SKILL.md line 12 wrong path",
-    "Add triggers field to SKILL.md frontmatter",
-    "Add Glob fallback to Phase 0",
-    "Add DeepSeek thinking docs to setup.md",
-    "Document Agent subagent API conflict",
-    "Review all 4 workflow scripts",
-    "Review install.sh",
-    "Fix skill count 76→16",
-    "Fix workflow script discovery docs",
-    "Refresh CONTEXT.md [auto] entries",
-    "Fix macOS grep -oP incompatibility",
-    "Fix v2.1→v2.3 on line 16",
-    "Remove OMC references from CONTEXT.md"
+    "Context injection: Master pre-extracts plan content and injects into agent prompt (replaces file exploration)",
+    "Anti-exploration guardrails: 5 file reads max, no build/test/grep, 3 thinking blocks max per agent",
+    "Tiered model selection: Haiku for checklist reviews (spec/simplicity/final), Sonnet for deep reasoning (correctness/safety)",
+    "Strongly Recommended Fast Gate: advisory warning when fastGateResults is null, not blocking",
+    "Git-diff-based code review: reviewers see pre-computed diffText, not raw file paths",
+    "Per-task independent pipeline: pipeline(tasks, enrichStage, reviewStage) — two-stage form, each task flows independently"
   ],
-  "scopeStatement": "Fix 13 issues across 8 files in project-workflow-claude skill and workflow scripts. Other 15 skills, settings.json, and .claude/context/knowledge.md are out of scope.",
+  "scopeStatement": "Modify phase5-review.js (full refactor for P0+P1+P2) and SKILL.md Phase 5 section. Keep Phase 3/4/6 scripts unchanged.",
   "successCriteria": [
-    "cmd: grep 'triggers:' skills/project-workflow-claude/SKILL.md exits 0 (≥1 match)",
-    "cmd: grep 'project-workflow-claude/phase' skills/project-workflow-claude/SKILL.md exits 1 (0 matches)",
-    "cmd: grep 'v2\\.1' skills/project-workflow-claude/SKILL.md exits 1 (0 matches)",
-    "cmd: grep 'grep.*-P' skills/project-workflow-claude/SKILL.md exits 1 (0 matches)",
-    "cmd: grep '\\[auto\\]' CONTEXT.md | grep '76' exits 1 (0 matches)",
-    "cmd: bash install.sh exits 0",
-    "cmd: git diff --check exits 0",
-    "semantic: Phase 0 includes Glob fallback language"
-  ]
+    "cmd: node -c ~/.claude/workflows/phase5-review.js exits 0",
+    "semantic: spec review agents receive injected context (no file exploration needed)",
+    "semantic: Haiku used for spec review (default), Sonnet for correctness/safety code review",
+    "semantic: Fast Gate logs advisory warning if fastGateResults is null (not blocking error)",
+    "semantic: per-task pipeline: pipeline(enrichStage, reviewStage) — tasks run independently",
+    "semantic: code reviewers receive pre-computed task.diffText instead of full file paths"
+  ],
+  "phase3Findings": {
+    "verdict": "ITERATE",
+    "score": 6,
+    "resolvedFindings": [
+      {
+        "id": "F1",
+        "severity": "CRITICAL",
+        "issue": "pipeline() API mismatch",
+        "resolution": "Use two-stage pipeline(enrichStage, reviewStage) — proven API shape"
+      },
+      {
+        "id": "F2",
+        "severity": "HIGH",
+        "issue": "Git-diff acquisition mechanism absent",
+        "resolution": "Master agent pre-computes task.diffText — injected as wf arg"
+      },
+      {
+        "id": "F3",
+        "severity": "HIGH",
+        "issue": "Fast Gate backward compat break",
+        "resolution": "Soft Fast Gate: advisory warn, not blocking error"
+      },
+      {
+        "id": "F4",
+        "severity": "MEDIUM",
+        "issue": "Risk S2 circular non-mitigation",
+        "resolution": "File-overlap check at enrichment time + serialization for shared files"
+      }
+    ],
+    "acceptedLowFindings": [
+      "Wall-clock formula is approximation not bound — accepted, will use ~ prefix",
+      "phase() display granularity lost — accepted, new architecture trades UI for speed"
+    ]
+  },
+  "phase3Update": "Plan updated 2026-06-10 with F1-F4 resolutions. See phase3Findings for details."
 }

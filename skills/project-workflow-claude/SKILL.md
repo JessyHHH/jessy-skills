@@ -1,7 +1,7 @@
 ---
 name: project-workflow-claude
 description: "Use when starting any development task — auto-detects project type, loads matching skills, drives 11-phase pipeline from design through verified completion. Hard Gates + Iron Law."
-version: "v2.4"
+version: "v2.6"
 author: "jessyhuang"
 metadata:
   standalone: true
@@ -17,13 +17,13 @@ triggers:
   - "write code"
 ---
 
-# Project Workflow Claude v2.4 — Self-Driving Pipeline with Hard Gates
+# Project Workflow Claude v2.6 — Self-Driving Pipeline with Hard Gates
 
 **Core design:** Zero pre-loaded skills (except `karpathy-guidelines`). Everything is context-detected: Go version, project type, codebase patterns, task signals. **Workflow-script-driven:** Phase 4-6 use deterministic JS scripts (`phase4-implement.js`, `phase5-review.js`, `phase6-verify.js`) installed in `~/.claude/workflows/` — executed via the Workflow tool. Scripts support caching, resume, and structured output. **Layered skill routing:** Shared domain skills (Go/Vue/Engineering) + Claude Code platform overlay.
 
 **Self-driving:** Announce phases → execute → auto-transition. Never wait for user to say "next".
 
-**Platform:** Claude Code v2.4+. Standalone — no external dependencies. Uses Claude Code native tools — `Workflow`, `Agent`, `Skill`, `Glob`, `Grep`, `Bash`, `AskUserQuestion`, `CronCreate`. **Model Strategy:** All workflow subagents use Sonnet (default) or Haiku (simple tasks/skeptics). No Opus. Complexity: simple → haiku, medium/complex → sonnet.
+**Platform:** Claude Code v2.4+. Standalone — no external dependencies. Uses Claude Code native tools — `Workflow`, `Agent`, `Skill`, `Glob`, `Grep`, `Bash`, `AskUserQuestion`, `CronCreate`. **Model Strategy:** All workflow subagents use tiered model selection: Haiku for checklist reviews (spec, simplicity, final, adversarial skeptics), Sonnet for deep reasoning (correctness, safety). No Opus. Complexity: simple → haiku, medium/complex → sonnet.
 
 **Workflow Script Resolution:** The 4 Workflow scripts are installed to `~/.claude/workflows/` by `install.sh`. The Workflow tool's `name` parameter auto-discovers scripts from `~/.claude/workflows/` and `.claude/workflows/` — no path resolution needed. Always use `Workflow(name='phase<N>-<name>')` form.
 
@@ -479,12 +479,15 @@ Simple projects = shorter design, but still present it first.
    | `files` | string[] | Files this task creates or modifies |
    | `complexity` | string | `simple` \| `medium` \| `complex` |
    | `mutatesFiles` | boolean | Whether this task writes to the filesystem |
-   | `contextRefs` | string[] | References to Phase 0/0.3 context artifacts this task depends on |
+   | `contextRefs` | string[] | References to Phase 0/0.3 context artifacts this task depends on. Used as fallback references when `fileContents` is not provided. |
    | `intakeRefs` | string[] | References to Phase 0 Task Intake Snapshot entries relevant to this task |
-   | `grillRefs` | string[] | References to Phase 1 Ambiguity Register or Assumption Ledger entries relevant to this task |
+   | `grillRefs` | string[] | References to Phase 1 Ambiguity Register or Assumption Ledger entries relevant to this task. Used as fallback references when `grillDecisions` is not provided. |
    | `expectedEvidence` | string[] | Specific evidence expected upon completion (e.g., `go build ./... exits 0`, `TestFoo passes`) |
    | `forbiddenEvidence` | string[] | Evidence that MUST NOT appear (e.g., `no new TODO comments`, `no import cycles`) |
    | `patchBackStrategy` | string | How changes flow back to the master tree |
+   | `fileContents` | object[] | (Optional) Full file contents for embedding in sub-agent prompt. Each: `{file: string, content: string}`. Master fills before Phase 4 via Read of task.files. |
+   | `grillDecisions` | object[] | (Optional) Resolved grill decisions by key. Each: `{key: string, decision: string}`. Master fills from `.claude/state/grill-evidence.json`. |
+   | `planSections` | string | (Optional) Plan sections relevant to this task. Master extracts from plan before Phase 4. |
 
    **patchBackStrategy values:**
    - `no-isolation`: Agent works directly in the current tree (simple, low-risk tasks)
@@ -505,11 +508,26 @@ Simple projects = shorter design, but still present it first.
 
 1. Announce: "**Phase 3: Consensus Review** — reviewing the plan."
 
+1.5. **COLLECT CONTEXT:** Master agent MUST collect the following before calling the workflow:
+   - `contextSummary`: From Phase 0.3 output (structured JSON with rootContextPath, knowledgeStatus, confirmedFacts, etc.)
+   - `grillSummary`: From Phase 1 `.claude/state/grill-evidence.json` (ambiguityRegister + assumptionLedger)
+   - `taskIntakeSnapshot`: From Phase 0 Task Intake Snapshot
+   - `tasks`: Parsed tasks array from the plan's `json:tasks` block
+   These enable pre-check validation: scope contradiction detection, ambiguity resolution, and task contract validation (mutating tasks must have patchBackStrategy, tasks must have expectedEvidence or verification explanation).
+
+   If `.claude/state/grill-evidence.json` does not exist (simple tasks may skip Grill), pass `null` for grillSummary and document the omission in contextWarnings.
+
 2. **Judge Panel Review:**
    ```
    Workflow(
      name='phase3-consensus',
-     args={planContent: '<full plan text>'}
+     args={
+       planContent: '<full plan text>',
+       contextSummary: <Phase 0.3 output contextSummary>,
+       grillSummary: <Phase 1 grill evidence — ambiguity register + assumption ledger>,
+       taskIntakeSnapshot: <Phase 0 task intake snapshot>,
+       tasks: <parsed tasks array from plan>
+     }
    )
    ```
    Script reviews from 3 angles in parallel (architecture, risk, feasibility), scores 1-10 each, synthesizes one verdict.
@@ -541,26 +559,56 @@ Simple projects = shorter design, but still present it first.
    - Read the Phase 3 plan from `.claude/plans/`
    - Extract the `json:tasks` fenced code block → parse JSON → get tasks array
    - Each task includes the expanded schema: `{id, prompt, files, complexity, mutatesFiles, contextRefs, intakeRefs, grillRefs, expectedEvidence, forbiddenEvidence, patchBackStrategy}`
-   - `prompt` must be a self-contained implementation instruction (subagent starts with blank context)
 
-3. **EXECUTE:**
+3. **ENRICH TASKS (Master Agent — REQUIRED):**
+   For each task in the tasks array:
+
+   a. **Read target files:** Use `Read()` on every file in `task.files`. Build `fileContents` array:
+      ```javascript
+      fileContents: [
+        {file: "internal/repository/store.go", content: "<full file content>"},
+        ...
+      ]
+      ```
+      Embed the COMPLETE file content, not just summaries. Sub-agents have 1M context windows — token budget is not a constraint.
+
+   b. **Resolve grill decisions:** Read `.claude/state/grill-evidence.json` (if exists). For each key in `task.grillRefs`, find the matching entry in ambiguityRegister or assumptionLedger, and build `grillDecisions` array:
+      ```javascript
+      grillDecisions: [
+        {key: "Q1-ConfigRouting", decision: "Two MySQL configs: admin stays in yunui_mixyun, tenants use rag_tenant_db..."},
+        ...
+      ]
+      ```
+      Resolution: match grillRefs key against ambiguityRegister[].id or assumptionLedger[].id. Extract the `decision` field (for register) or `assumption`+`evidence`+`confidence` fields (for ledger).
+
+   c. **Extract plan sections:** Read the plan. For each task, extract the approach steps and verification sections relevant to this task's scope. Build `planSections` string.
+
+   c2. **Generate per-task git diff:** For each task, construct the git diff for its files:
+      ```bash
+      git diff <base> <head> -- <task.files...>
+      ```
+      Store as `task.diff` (string). If base/head not available, use `HEAD` only with `git diff HEAD~1 HEAD -- <files>`.
+      This diff is injected into Phase 5 code review prompts so reviewers only examine changed lines.
+
+   d. **Build enriched task object:** Each enriched task MUST be self-contained — the sub-agent starts with blank context and only receives this prompt. The `buildImplementerPrompt()` function in `phase4-implement.js` embeds `fileContents`, `grillDecisions`, and `planSections` under dedicated headings when present.
+
+4. **EXECUTE:**
    ```
    Workflow(
      name='phase4-implement',
-     args={tasks: [...]}
+     args={tasks: enrichedTasks}
    )
    ```
 
    The script uses `pipeline()` (streaming, no barrier):
    - Stage 1 (Implement): `agent(task.prompt, {model, isolation})` per task
+     - `buildImplementerPrompt()` embeds fileContents/grillDecisions/planSections when present
+     - Falls back to contextRefs/grillRefs references when absent (backward compatible)
      - complexity='simple' → haiku, 'medium' → sonnet, 'complex' → sonnet
-     - mutatesFiles=true, patchBackStrategy='harness-managed' → isolation='worktree' (avoids file conflicts)
-     - mutatesFiles=true, patchBackStrategy='no-isolation' → isolation='none' (agent works in current tree)
+     - mutatesFiles=true, patchBackStrategy='harness-managed' → isolation='worktree'
+     - mutatesFiles=true, patchBackStrategy='no-isolation' → isolation='none'
    - Stage 2 (Quick Verify): `agent(verify, {phase: 'Quick Verify', schema})` per task
-     - Each task verified immediately after implementation (streaming — no waiting for other tasks)
-     - Validates: build passes + affected tests pass
-
-   The script includes a Self-Review stage: each implementer reports DONE/DONE_WITH_CONCERNS/NEEDS_CONTEXT/BLOCKED. The script returns `selfReviewStatus` — pass this to Phase 5 as `args.selfReviewStatuses`. If budget.total is set, tasks are prioritized by complexity.
+   - Stage 3 (Self-Review): Each implementer reports DONE/DONE_WITH_CONCERNS/NEEDS_CONTEXT/BLOCKED
 
 4. **Phase 4.5: Worktree Review (Master Agent):** After Phase 4 script completes and BEFORE Phase 5 review, the master agent MUST:
    - For every task with `patchBackStrategy='harness-managed'`: review the worktree diff, validate against `expectedEvidence` and verify no `forbiddenEvidence`, then merge back approved changes to the parent tree
@@ -604,47 +652,61 @@ Input: tasks array from Phase 2 plan (with expectedEvidence + forbiddenEvidence)
 
 Output: `quickGateResults = {passed, perTask: {taskId: {expectedPassed, forbiddenClean, filesMatch}}}`.
 
+   **IMPORTANT:** `quickGateResults` MUST be passed to Phase 5 as input. Phase 5 uses it to compute per-task risk level: tasks with >=2 missing expectedEvidence are classified as high-risk and receive Sonnet spec review (instead of Haiku).
+
 ---
 
 ## Phase 5: Two-Stage Review (ALWAYS RUNS)
 
-**Goal:** Spec compliance review first → code quality review second. NEVER reverse order. Uses deterministic Workflow script for parallel code quality audit.
+**Goal:** Spec compliance review first → code quality review second. NEVER reverse order. Uses per-task independent pipeline with tiered models, context injection, and anti-exploration guardrails.
 
 ### Review Layers (P1 Optimization)
 
-Phase 5 uses a 4-layer review model to minimize token consumption. Complexity from Phase 2 task schema drives gating.
+Phase 5 uses a 5-layer review model with tiered models to minimize wall clock time and token consumption. Complexity from Phase 2 task schema drives gating.
 
-| Layer | Name | Gates | Agent Calls |
-|-------|------|-------|-------------|
-| Layer 1 | Fast Gate | Master bash checks (files exist, git diff --stat, git diff --check, import check) — runs BEFORE phase5-review.js script | 0 agent calls |
-| Layer 2 | Standard (Spec Review) | Gated by complexity: `simple` skips, `medium`/`complex` runs | 0-1 agent per task |
-| Layer 3 | Deep (Code Quality) | Gated by complexity: `simple` skips entirely, `medium` gets correctness-only (1 agent), `complex` gets full 3-agent parallel | 0-3 agents per task |
-| Layer 4 | Final (Cross-Task) | Conditional: skip when <2 tasks OR no shared files; run when >=2 tasks share files | 0-1 agent |
+| Layer | Name | Gates | Model | Agent Calls |
+|-------|------|-------|-------|-------------|
+| Layer 1 | Fast Gate | Strongly Recommended: Master bash checks (files exist, git diff --stat, git diff --check, import check) — runs BEFORE phase5-review.js script. Script logs advisory warning if missing. | N/A (bash) | 0 agent calls |
+| Layer 2 | Spec Review | Gated by complexity: `simple` skips, `medium`/`complex` runs. Context injected directly — agent does NOT read plan file. | Haiku (default) / Sonnet (high-risk: >=2 missing expectedEvidence from Quick Gate) | 0-1 agent per task |
+| Layer 3 | Code Review | Gated by complexity: `simple` skips entirely, `medium` gets correctness-only (1 agent), `complex` gets full 3-agent parallel. Reviewers receive `git diff` output — only review changed lines. | Correctness: Sonnet, Safety: Sonnet, Simplicity: Haiku | 0-3 agents per task |
+| Layer 4 | Adversarial Verify | Gated by complexity: `simple` auto-confirms, `medium` gets 1 skeptic, `complex` gets 3 skeptics. Runs per-task inline (not deferred). | Haiku | 0-3 agents per CRITICAL finding |
+| Layer 5 | Final Review | Conditional: skip when <2 tasks OR no shared files. Summary-based synthesis — does NOT re-read files. | Haiku | 0-1 agent |
 
-**Expected token savings: ~50-60%** for mixed-complexity runs vs. uniform full review.
+**Anti-Exploration Guardrails (injected into every review prompt):**
+```
+Maximum 5 file reads. DO NOT read same file twice.
+FORBIDDEN: go build, go test, go vet, grep exploration.
+Maximum 3 thinking blocks.
+```
+
+**Expected wall clock: ~8-14min** (down from ~39min, per-task independent pipeline). **Token savings: ~60-70%** vs. uniform full Sonnet review.
 
 **Procedure:**
 
-1. **ANNOUNCE:** "**Phase 5: Two-Stage Review** — per-task pipeline via phase5-review.js."
+1. **ANNOUNCE:** "**Phase 5: Two-Stage Review** — per-task independent pipeline via phase5-review.js."
 
-2. **PREPARE:**
-   - `Bash(command='git diff --name-only')` → changedFiles
-   - Re-read plan from `.claude/plans/` → planPath
-   - Collect `selfReviewStatuses` from Phase 4 output
+2. **PREPARE (Master Agent):**
+   - **Context Injection (MANDATORY):** For each task, pre-extract spec sections from plan text — inject as `task.specSection`. Pre-read task target files — inject as `task.fileContents`. Resolve grillRefs against grill-evidence.json — inject as `task.grillDecisions`. Agents receive pre-digested context; no file exploration needed.
+   - **Diff Generation:** For each task, pre-compute `git diff <base>..<head> -- <task.files>` — inject as `task.diffText`. Code reviewers only examine changed lines.
+   - **Fast Gate (Strongly Recommended):** Run bash checks → build `fastGateResults`: `git diff --stat`, `git diff --check`, files-exist, import check. Script logs advisory warning if missing — guardrails still apply.
+   - Collect `selfReviewStatuses` from Phase 4 output.
+   - Collect `quickGateResults` from Phase 4.6 output (per-task expectedEvidence/forbiddenEvidence results).
 
 3. **EXECUTE:**
    ```
    Workflow(
      name='phase5-review',
-     args={planPath, changedFiles, tasks: [...], selfReviewStatuses: [...]}
+     args={planPath, planText, changedFiles, tasks: [...enrichedTasks], selfReviewStatuses: [...], fastGateResults: {...}, quickGateResults: {...}, grillEvidence: {...}}
    )
    ```
-   The script uses per-task pipeline review:
-   - **Spec Compliance** (gated per task): Each task checked against plan. Self-review statuses (DONE_WITH_CONCERNS/NEEDS_CONTEXT/BLOCKED) surfaced in review context.
-   - **Code Quality** (only if spec passes): Parallel correctness/safety/simplicity per task
-   - **Adversarial Verification**: 3 skeptics vote on each CRITICAL finding (≥2/3 majority to confirm)
-   - **Final Review**: Overall cross-task consistency after all tasks pass individual reviews
-   - Task A in code quality while Task B in spec review — zero barrier streaming
+   The script uses **per-task independent pipeline**:
+   - Each task flows independently through spec → code → adversarial
+   - Task A can complete full review while Task B is still in spec review
+   - Wall clock = max(single task full review time), not sum of all stages
+   - **Spec Review**: Context injected directly. Haiku by default, Sonnet for high-risk tasks.
+   - **Code Review**: Reviewers receive pre-computed `git diff` — only review changed lines. Tiered models: correctness=Sonnet, safety=Sonnet, simplicity=Haiku.
+   - **Adversarial Verification**: Runs per-task inline. Complexity-gated: complex=3 skeptics, medium=1, simple=auto-confirm. All skeptics use Haiku.
+   - **Final Review**: Haiku synthesis of per-task findings only. Cross-task consistency check. Skipped when <=1 task or no shared files.
 
 4. **FIX-AND-RETRY:**
    - Read output → `{criticalCount, highCount, findings, specFailed, finalVerdict}`
@@ -655,8 +717,9 @@ Phase 5 uses a 4-layer review model to minimize token consumption. Complexity fr
 5. **REPORT** → auto-transition to Phase 6:
    ```
    "Phase 5: Reviewed
-   - Spec Compliance: [✓/✗]
+   - Spec Compliance: [passed/total]
    - Code Quality: N findings (M CRITICAL, H HIGH)
+   - Models: N Haiku + M Sonnet
    → Phase 6."
    ```
 
@@ -664,6 +727,8 @@ Phase 5 uses a 4-layer review model to minimize token consumption. Complexity fr
 - Start code quality before spec compliance is ✅
 - Skip either stage
 - Accept "close enough"
+- Skip context injection before invoking Phase 5
+- Use Sonnet for simplicity review or final review (Haiku is sufficient and faster)
 
 ---
 
@@ -890,7 +955,7 @@ Auto-generated from compressed agent memory.
 | 3 (Consensus) | 4 (Implement) | Consensus approved by Judge Panel |
 | 4 (Implement) | 4.5 (Worktree) | All tasks done + Phase 4.5 worktree review complete |
 | 4.5 (Worktree) | 4.6 (Quick Gate) | All worktree merges complete |
-| 4.6 (Quick Gate) | 5 (Review) | Quick Gate ALL PASS |
+| 4.6 (Quick Gate) | 5 (Review) | Quick Gate complete (fastGateResults + quickGateResults built) |
 | 5 (Review) | 6 (Verify) | Both review stages pass (spec per-task ✅ then code per-task ✅ + Final Review ✅) |
 | 6 (Verify) | 7 (Retro+Cron) | ALL checks PASS with fresh evidence |
 | 7 (Retro+Cron) | 8 (Finish) | 7.1+7.2 done; 7.3 by user opt-in (default skip) |
@@ -923,4 +988,4 @@ Auto-generated from compressed agent memory.
 9. ❌ Claim completion without running verification commands THIS turn
 10. ❌ Skip Workflow smoke test — leads to script failures
 11. ❌ Use parallel() when pipeline() works — pipeline is more efficient
-12. ❌ Pass incomplete prompt to Phase 4 task — subagent starts with blank context
+12. ❌ Pass incomplete prompt to Phase 4 task — subagent starts with blank context; Master MUST enrich with fileContents, grillDecisions, and planSections

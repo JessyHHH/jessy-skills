@@ -1,11 +1,11 @@
-<!-- ⚠️ Auto-generated | Commit: 08a4c0f | Date: 2026-06-08 | Skills Repository -->
+<!-- ⚠️ Auto-generated | Commit: 81e2b8debd28eed74b25c1c548b3574c4fb5b41f | Date: 2026-06-10 | Skills Repository -->
 
 # jessy-skills — Claude Code Configuration
 
 ## Project
 <!-- AUTO_START: Project -->
 Skills Repository — 77 AI Agent skills (Go/Vue/Engineering/…)
-Core workflow: `project-workflow-claude` + `karpathy-guidelines`
+Core workflow: `project-workflow-claude` v2.6 + `karpathy-guidelines`
 Context: [CONTEXT.md](CONTEXT.md) — durable context contract (Knowledge + Instruction layers)
 Context spec: [context-md-spec.md](skills/project-workflow-claude/references/context-md-spec.md)
 <!-- AUTO_END: Project -->

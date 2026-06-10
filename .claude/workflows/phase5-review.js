@@ -1,6 +1,6 @@
 export const meta = {
   name: 'phase5-review',
-  description: 'Per-task review pipeline: spec compliance → parallel code quality → adversarial verify → final review',
+  description: 'Per-task review pipeline: each task flows independently through spec → code → adversarial. Tiered models, context injection, anti-exploration guardrails.',
   phases: [
     {title: 'Spec Review', detail: 'Verify each task matches plan (gated per task)'},
     {title: 'Code Review', detail: 'Parallel correctness, safety, simplicity per task'},
@@ -17,15 +17,22 @@ var selfReviewStatuses = input.selfReviewStatuses || []
 var contextSummary = input.contextSummary || ''
 var taskIntakeSnapshot = input.taskIntakeSnapshot || null
 var grillSummary = input.grillSummary || ''
+var planText = input.planText || ''
+var grillEvidence = input.grillEvidence || null
+var quickGateResults = input.quickGateResults || null
+var baseSha = input.baseSha || ''
+var headSha = input.headSha || ''
 
 // Layer 1 Fast Gate: pre-computed by master agent before Workflow invocation.
 // Shape: {filesExist: bool, diffStat: string, diffCheck: bool, importCheck: {passed: bool, issues: [...]}}
 // If null/undefined, skip Layer 1 with warning (backward compatible).
 var fastGateResults = input.fastGateResults || null
 
+// P1: Strongly Recommended Fast Gate — advisory warning, not blocking
 if (!fastGateResults) {
-  log('Layer 1 Fast Gate skipped — fastGateResults not provided. Run master bash checks before Phase 5 for optimal efficiency.')
+  log('ADVISORY: fastGateResults not provided. Fast Gate checks (git diff --stat, git diff --check, import check, files-exist) are strongly recommended before Phase 5. Continuing with guardrails only.')
 }
+var fastGateResultsAvailable = !!fastGateResults
 
 // Validate fast gate results if provided
 var fastGateIssues = []
@@ -160,217 +167,406 @@ if (selfReviewContext) {
   contextHeader += '\nPHASE 4 SELF-REVIEW STATUS (implementer-performed review):\n' + selfReviewContext + '\n'
 }
 
-// ===== Per-Task Pipeline =====
+// ===== Helper functions =====
+
+function formatFileContents(fileContents) {
+  var result = ''
+  if (typeof fileContents === 'object' && !Array.isArray(fileContents)) {
+    for (var filePath in fileContents) {
+      result += '### ' + filePath + '\n```\n' + fileContents[filePath] + '\n```\n\n'
+    }
+  } else if (Array.isArray(fileContents)) {
+    for (var i = 0; i < fileContents.length; i++) {
+      var entry = fileContents[i]
+      if (typeof entry === 'object') {
+        result += '### ' + (entry.file || entry.path || 'file-' + i) + '\n```\n' + (entry.content || '') + '\n```\n\n'
+      }
+    }
+  }
+  return result
+}
+
+function enrichTaskForReview(task, planText, grillEvidence) {
+  var context = ''
+
+  // Spec section
+  if (task.specSection) {
+    context += task.specSection + '\n\n'
+  } else if (planText) {
+    var extracted = ''
+    var lines = planText.split('\n')
+    var inSection = false
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i]
+      if (line.indexOf(task.id) !== -1 || line.indexOf('## Task') !== -1) {
+        inSection = true
+      }
+      if (inSection) {
+        extracted += line + '\n'
+        if (line.match(/^## /) && extracted.trim().length > 50) break
+      }
+    }
+    if (extracted.trim()) {
+      context += extracted + '\n\n'
+    } else {
+      context += (task.prompt || 'No specification provided') + '\n\n'
+    }
+  } else {
+    context += (task.prompt || 'No specification provided') + '\n\n'
+  }
+
+  // Current Code
+  if (task.fileContents) {
+    context += '## Current Code\n'
+    if (typeof task.fileContents === 'object' && !Array.isArray(task.fileContents)) {
+      for (var filePath in task.fileContents) {
+        context += '### ' + filePath + '\n```\n' + task.fileContents[filePath] + '\n```\n\n'
+      }
+    } else if (Array.isArray(task.fileContents)) {
+      for (var i = 0; i < task.fileContents.length; i++) {
+        var entry = task.fileContents[i]
+        if (typeof entry === 'object') {
+          context += '### ' + (entry.file || entry.path || 'file-' + i) + '\n```\n' + (entry.content || '') + '\n```\n\n'
+        }
+      }
+    }
+  } else if (task.files && task.files.length > 0) {
+    context += '## Task Files\n' + task.files.join(', ') + '\n\n'
+  }
+
+  // Design Decisions
+  if (task.grillDecisions) {
+    context += '## Design Decisions\n'
+    if (Array.isArray(task.grillDecisions)) {
+      for (var i = 0; i < task.grillDecisions.length; i++) {
+        context += '- ' + task.grillDecisions[i] + '\n'
+      }
+    } else if (typeof task.grillDecisions === 'string') {
+      context += task.grillDecisions + '\n'
+    }
+  } else if (grillEvidence) {
+    context += '## Design Decisions\n' + grillEvidence + '\n\n'
+  } else {
+    context += '## Design Decisions\nNone provided\n\n'
+  }
+
+  return context
+}
+
+function computeTaskRisk(task, quickGateResults) {
+  if (!quickGateResults || !quickGateResults.perTask) return 'normal'
+  var perTask = quickGateResults.perTask[task.id]
+  if (!perTask) return 'normal'
+  if (perTask.expectedPassed === false || perTask.forbiddenClean === false) {
+    return 'high'
+  }
+  return 'normal'
+}
+
+function buildGuardedSpecPrompt(task) {
+  var model = task.riskLevel === 'high' ? 'sonnet' : 'haiku'
+
+  var selfReview = selfReviewMap[task.id]
+  var selfReviewText = ''
+  if (selfReview) {
+    selfReviewText += 'status=' + (selfReview.status || 'NONE')
+    if (selfReview.concerns && selfReview.concerns.length > 0) {
+      selfReviewText += ', concerns=' + selfReview.concerns.join('; ')
+    }
+    if (selfReview.contextNeeded) {
+      selfReviewText += ', contextNeeded=' + selfReview.contextNeeded
+    }
+  } else {
+    selfReviewText = 'Not provided'
+  }
+
+  var intakeNote = ''
+  if (taskIntakeSnapshot && taskIntakeSnapshot[task.id]) {
+    intakeNote = '\n\nTASK INTAKE SNAPSHOT (original scope for this task):\n' + JSON.stringify(taskIntakeSnapshot[task.id], null, 2) + '\nVerify implementation stays within this scope.'
+  }
+
+  var prompt =
+    'Spec compliance review for task ' + task.id + '.\n' +
+    'DO NOT read any plan files. All context is provided below.\n\n' +
+    '## Task Specification\n' +
+    (task.enrichedContext || task.prompt || 'No specification provided') + '\n\n' +
+    '## Self-Review Status\n' + selfReviewText + '\n\n' +
+    '## Instructions\n' +
+    'Check: does the implementation match the task spec exactly? Nothing extra? Nothing missing?\n' +
+    'Verify against expectedEvidence: ' + (task.expectedEvidence || 'none') + '\n' +
+    'Check for forbiddenEvidence: ' + (task.forbiddenEvidence || 'none') + '\n' +
+    'Return APPROVE, ITERATE, or REJECT with specific issues.\n\n' +
+    contextHeader +
+    intakeNote +
+    '\n## ⚠️ REVIEW GUARDRAILS (HARD):\n' +
+    '1. Maximum 5 file reads total across this review.\n' +
+    '2. DO NOT read any file more than once. Content hasn\'t changed.\n' +
+    '3. FORBIDDEN commands: go build, go test, go vet, golangci-lint, grep, find. You are a reviewer, not a builder.\n' +
+    '4. Maximum 3 thinking blocks. Make your assessment and commit to it.\n' +
+    '5. If you need context beyond what is provided, flag it as a finding rather than exploring.'
+
+  return {prompt: prompt, model: model}
+}
+
+function buildGuardedCodePrompt(task, reviewType, diff) {
+  var model
+  if (reviewType === 'correctness' || reviewType === 'safety') {
+    model = 'sonnet'
+  } else {
+    model = 'haiku'
+  }
+
+  var prompt =
+    'Review ' + reviewType.toUpperCase() + ' for task ' + task.id + '.\n\n' +
+    '## Git Diff (ONLY review these changed lines)\n' + diff + '\n\n' +
+    '## Full File Contents (for context, do not review unchanged lines)\n' +
+    (task.fileContents ? formatFileContents(task.fileContents) : (task.files || []).join(', ')) + '\n\n' +
+    '## Instructions\n' +
+    '- CORRECTNESS: Logic errors, edge cases, error handling, concurrency safety.\n' +
+    '- SAFETY: Nil/null panics, resource leaks, security, data races.\n' +
+    '- SIMPLICITY: Over-engineering, dead code, style, Karpathy compliance.\n' +
+    'Flag findings with severity CRITICAL/HIGH/MEDIUM/LOW.\n\n' +
+    '## ⚠️ REVIEW GUARDRAILS (HARD):\n' +
+    '1. Maximum 5 file reads total across this review.\n' +
+    '2. DO NOT read any file more than once. Content hasn\'t changed.\n' +
+    '3. FORBIDDEN commands: go build, go test, go vet, golangci-lint, grep, find. You are a reviewer, not a builder.\n' +
+    '4. Maximum 3 thinking blocks. Make your assessment and commit to it.\n' +
+    '5. Only review the CHANGED lines shown in the git diff. Full files are for context only.'
+
+  return {prompt: prompt, model: model}
+}
+
+function constructDiff(task) {
+  return task.diffText || 'DIFF NOT AVAILABLE — review full file contents instead.'
+}
+
+function buildFinalReviewSummary(tasks, allFindings, specFailed) {
+  var lines = []
+  lines.push('## Per-Task Review Summary')
+  for (var i = 0; i < tasks.length; i++) {
+    var t = tasks[i]
+    lines.push('- Task ' + t.id + ': ' + (t.files || []).join(', '))
+  }
+  if (allFindings.length > 0) {
+    lines.push('\n## Total Findings: ' + allFindings.length)
+  }
+  if (specFailed.length > 0) {
+    lines.push('\n## Spec Failures: ' + specFailed.length)
+    for (var i = 0; i < specFailed.length; i++) {
+      lines.push('- ' + JSON.stringify(specFailed[i]))
+    }
+  }
+  return lines.join('\n')
+}
+
+// ===== Core per-task review orchestrator =====
+
+async function buildFullReviewStage(task) {
+  var selfReview = selfReviewMap[task.id]
+  var taskResult = {taskId: task.id, specVerdict: null, findings: [], stage: 'init'}
+
+  // Self-review status check (backward compatible)
+  if (selfReview) {
+    if (selfReview.status === 'FAILED' || selfReview.status === 'BLOCKED') {
+      taskResult.specFailed = {taskId: task.id, issues: ['Self-review: ' + selfReview.status], verdict: selfReview.status}
+      taskResult.stage = 'self-review-failed'
+      return taskResult
+    }
+    if (selfReview.status === 'NEEDS_CONTEXT') {
+      taskResult.specFailed = {taskId: task.id, issues: ['Needs context: ' + (selfReview.contextNeeded || 'unspecified')], verdict: 'NEEDS_CONTEXT'}
+      taskResult.stage = 'self-review-needs-context'
+      return taskResult
+    }
+  }
+
+  // Fast Gate issues check
+  if (fastGateIssues.length > 0) {
+    taskResult.stage = 'fast-gate-failed'
+    return taskResult
+  }
+
+  // Step 1: Spec Review (gated by complexity)
+  if (shouldSkipSpecReview(task)) {
+    taskResult.specVerdict = 'APPROVE'
+    taskResult.stage = 'spec-skipped'
+  } else {
+    var specPrompt = buildGuardedSpecPrompt(task)
+    var specResult = await agent(specPrompt.prompt, {
+      label: 'spec-' + task.id,
+      schema: SPEC_SCHEMA,
+      model: specPrompt.model
+    })
+    taskResult.specVerdict = specResult ? specResult.verdict : 'ERROR'
+    if (!specResult || specResult.verdict !== 'APPROVE') {
+      taskResult.specFailed = {taskId: task.id, issues: specResult ? specResult.issues : ['No result'], verdict: specResult ? specResult.verdict : 'ERROR'}
+      taskResult.stage = 'spec-failed'
+      return taskResult
+    }
+    taskResult.stage = 'spec-approved'
+  }
+
+  // Step 2: Code Review (only if spec approved, gated by complexity)
+  if (shouldSkipCodeReview(task)) {
+    taskResult.stage = 'code-skipped'
+    return taskResult
+  }
+
+  var diff = constructDiff(task)
+  var codeDepth = getCodeReviewDepth(task)
+
+  if (codeDepth === 'correctness-only') {
+    var corrPrompt = buildGuardedCodePrompt(task, 'correctness', diff)
+    var corrResult = await agent(corrPrompt.prompt, {
+      label: 'correctness-' + task.id,
+      schema: REVIEW_SCHEMA,
+      model: corrPrompt.model
+    })
+    if (corrResult && corrResult.findings) {
+      corrResult.findings.forEach(function(f) { f.taskId = task.id; f.reviewType = 'correctness' })
+      taskResult.findings = taskResult.findings.concat(corrResult.findings)
+    }
+    taskResult.stage = 'code-done'
+  } else if (codeDepth === 'full') {
+    var codeResults = await parallel([
+      function() {
+        var p = buildGuardedCodePrompt(task, 'correctness', diff)
+        return agent(p.prompt, {label: 'corr-' + task.id, schema: REVIEW_SCHEMA, model: p.model})
+      },
+      function() {
+        var p = buildGuardedCodePrompt(task, 'safety', diff)
+        return agent(p.prompt, {label: 'safety-' + task.id, schema: REVIEW_SCHEMA, model: p.model})
+      },
+      function() {
+        var p = buildGuardedCodePrompt(task, 'simplicity', diff)
+        return agent(p.prompt, {label: 'simp-' + task.id, schema: REVIEW_SCHEMA, model: p.model})
+      }
+    ])
+    var reviewTypes = ['correctness', 'safety', 'simplicity']
+    for (var j = 0; j < codeResults.length; j++) {
+      if (codeResults[j] && codeResults[j].findings) {
+        codeResults[j].findings.forEach(function(f) { f.taskId = task.id; f.reviewType = reviewTypes[j] })
+        taskResult.findings = taskResult.findings.concat(codeResults[j].findings)
+      }
+    }
+    taskResult.stage = 'code-done'
+  }
+
+  // Step 3: Adversarial Verify CRITICAL findings in this task (inline per task)
+  var taskCritical = taskResult.findings.filter(function(f) { return f.severity === 'CRITICAL' })
+  var verifiedLocal = []
+
+  if (taskCritical.length > 0) {
+    for (var k = 0; k < taskCritical.length; k++) {
+      var f = taskCritical[k]
+      if (shouldSkipAdversarial(task)) {
+        if (getComplexity(task) === 'medium') {
+          var vote = await agent(
+            'Try to REFUTE this finding. Default to refuted=false if uncertain.\n\nFinding: ' + f.description + '\nFile: ' + f.file + (f.line ? ' (line ' + f.line + ')' : ''),
+            {label: 'skeptic-' + k + '-' + (f.file || '').slice(-30), schema: SKEPTIC_SCHEMA, model: 'haiku'}
+          )
+          if (vote && vote.refuted) { f.severity = 'HIGH' }
+          else { verifiedLocal.push(f) }
+        } else {
+          verifiedLocal.push(f)
+        }
+        continue
+      }
+      var votes = await parallel([
+        function() { return agent('Try to REFUTE this finding.\n\nFinding: ' + f.description + '\nFile: ' + f.file + (f.line ? ' (line ' + f.line + ')' : ''), {label: 'skeptic-1-' + (f.file || '').slice(-20), schema: SKEPTIC_SCHEMA, model: 'haiku'}) },
+        function() { return agent('Try to REFUTE this finding.\n\nFinding: ' + f.description + '\nFile: ' + f.file + (f.line ? ' (line ' + f.line + ')' : ''), {label: 'skeptic-2-' + (f.file || '').slice(-20), schema: SKEPTIC_SCHEMA, model: 'haiku'}) },
+        function() { return agent('Try to REFUTE this finding.\n\nFinding: ' + f.description + '\nFile: ' + f.file + (f.line ? ' (line ' + f.line + ')' : ''), {label: 'skeptic-3-' + (f.file || '').slice(-20), schema: SKEPTIC_SCHEMA, model: 'haiku'}) }
+      ])
+      var validVotes = votes.filter(Boolean)
+      if (validVotes.length < 2) {
+        verifiedLocal.push({finding: f, verified: 'UNVERIFIED', reason: 'Only ' + validVotes.length + ' of 3 skeptics responded'})
+      } else {
+        var survived = validVotes.filter(function(v) { return !v.refuted }).length >= 2
+        if (survived) {
+          verifiedLocal.push(f)
+        } else {
+          f.severity = 'HIGH'
+        }
+      }
+    }
+  }
+
+  taskResult.verifiedCritical = verifiedLocal
+  return taskResult
+}
+
+// ===== Per-Task Independent Pipeline (P2) =====
 var allFindings = []
 var specFailed = []
 
-phase('Spec Review')
-var specResults = await pipeline(tasks,
-  // Stage 1: Spec Compliance Review (GATED per task)
-  function(task) {
-    // P1: Layer 2 gating — skip spec review for simple tasks
-    if (shouldSkipSpecReview(task)) {
-      return {verdict: 'APPROVE', issues: [], summary: 'Spec review skipped — task complexity: ' + getComplexity(task)}
-    }
-
-    var selfReview = selfReviewMap[task.id]
-    var concernNote = ''
-    if (selfReview) {
-      if (selfReview.status === 'FAILED' || selfReview.status === 'BLOCKED') {
-        specFailed.push({taskId: task.id, issues: ['Self-review: ' + selfReview.status], selfReview: selfReview})
-        return {verdict: 'REJECT', issues: ['Task ' + task.id + ' self-review status: ' + selfReview.status]}
-      }
-      if (selfReview.status === 'NEEDS_CONTEXT') {
-        specFailed.push({taskId: task.id, issues: ['Needs context: ' + (selfReview.contextNeeded || 'unspecified')], selfReview: selfReview})
-        return {verdict: 'REJECT', issues: ['NEEDS_CONTEXT: ' + (selfReview.contextNeeded || 'unspecified')]}
-      }
-      if (selfReview.status === 'DONE_WITH_CONCERNS' && selfReview.concerns && selfReview.concerns.length > 0) {
-        concernNote = '\n\nSELF-REVIEW CONCERNS (implementer flagged these):\n' + selfReview.concerns.map(function(c) { return '- ' + c }).join('\n')
-      }
-    }
-
-    // Build intake snapshot validation note
-    var intakeNote = ''
-    if (taskIntakeSnapshot && taskIntakeSnapshot[task.id]) {
-      intakeNote = '\n\nTASK INTAKE SNAPSHOT (original scope for this task):\n' + JSON.stringify(taskIntakeSnapshot[task.id], null, 2) + '\nVerify implementation stays within this scope.'
-    }
-
-    return agent(
-      'Spec compliance review for task ' + task.id + ' (' + (task.files || []).join(', ') + ').\n' +
-      'The implementation plan is at: ' + planPath + ' — Read this file to understand the full plan.\n' +
-      'Task requirement: ' + (task.prompt || '') + '\n' +
-      'Check: does the implementation match the task spec exactly? Nothing extra? Nothing missing?' +
-      contextHeader +
-      intakeNote +
-      concernNote + '\n\n' +
-      'Return APPROVE, ITERATE, or REJECT with specific issues. Use APPROVE when the task is fully correct and complete. Use ITERATE for minor issues that need adjustment. Use REJECT for significant problems that block the task.',
-      {label: 'spec-task-' + task.id, schema: SPEC_SCHEMA, model: 'sonnet'}
-    )
-  },
-  // Stage 2: Code Quality Review (only if spec APPROVE)
-  function(specResult, task) {
-    if (!specResult || specResult.verdict !== 'APPROVE') {
-      if (specResult && (specResult.verdict === 'REJECT' || specResult.verdict === 'ITERATE')) {
-        specFailed.push({taskId: task.id, issues: specResult.issues, verdict: specResult.verdict})
-      }
-      return null
-    }
-    // P1: Layer 3 complexity gating for code quality depth
-    if (shouldSkipCodeReview(task)) {
-      return null  // simple tasks skip code review entirely
-    }
-    var codeDepth = getCodeReviewDepth(task)
-    if (codeDepth === 'correctness-only') {
-      // Medium tasks: correctness-only (1 agent)
-      return parallel([
-        function() {
-          return agent('Review CORRECTNESS: ' + (task.files || []).join(', ') + '\nLogic errors, edge cases, error handling. Flag CRITICAL/HIGH/MEDIUM/LOW.',
-            {label: 'correctness-' + task.id, phase: 'Code Review', schema: REVIEW_SCHEMA, model: 'sonnet'})
-        }
-      ])
-    }
-    // Full: complex tasks get 3-agent parallel (correctness + safety + simplicity)
-    return parallel([
-      function() {
-        return agent('Review CORRECTNESS: ' + (task.files || []).join(', ') + '\nLogic errors, edge cases, error handling, concurrency safety. Flag CRITICAL/HIGH/MEDIUM/LOW.',
-          {label: 'correctness-' + task.id, phase: 'Code Review', schema: REVIEW_SCHEMA, model: 'sonnet'})
-      },
-      function() {
-        return agent('Review SAFETY: ' + (task.files || []).join(', ') + '\nNil/null panics, resource leaks, security, data races. Flag CRITICAL/HIGH/MEDIUM/LOW.',
-          {label: 'safety-' + task.id, phase: 'Code Review', schema: REVIEW_SCHEMA, model: 'sonnet'})
-      },
-      function() {
-        return agent('Review SIMPLICITY: ' + (task.files || []).join(', ') + '\nOver-engineering, dead code, style, Karpathy compliance. Flag CRITICAL/HIGH/MEDIUM/LOW.',
-          {label: 'simplicity-' + task.id, phase: 'Code Review', schema: REVIEW_SCHEMA, model: 'sonnet'})
-      }
-    ])
-  }
-)
-
-// Collect all findings from pipeline results
-for (var i = 0; i < specResults.length; i++) {
-  var result = specResults[i]
-  if (result && Array.isArray(result)) {
-    for (var j = 0; j < result.length; j++) {
-      if (result[j] && result[j].findings) {
-        result[j].findings.forEach(function(f) { f.taskId = tasks[i].id })
-        allFindings = allFindings.concat(result[j].findings)
-      }
-    }
-  } else if (result && result.findings) {
-    result.findings.forEach(function(f) { f.taskId = tasks[i].id })
-    allFindings = allFindings.concat(result.findings)
-  }
+// Enrich tasks with context before pipeline
+for (var i = 0; i < tasks.length; i++) {
+  tasks[i].riskLevel = computeTaskRisk(tasks[i], quickGateResults)
+  tasks[i].enrichedContext = enrichTaskForReview(tasks[i], planText, grillEvidence)
 }
 
-// ===== Adversarial Verification for CRITICAL findings =====
-var criticalFindings = allFindings.filter(function(f) { return f.severity === 'CRITICAL' })
+phase('Spec + Code Review')
+var pipelineResults = await pipeline(tasks,
+  function(task) { return task },
+  function(task) { return buildFullReviewStage(task) }
+)
+
+// Collect findings from pipeline results
 var verifiedCritical = []
-
-if (criticalFindings.length > 0) {
-  log('Adversarially verifying ' + criticalFindings.length + ' CRITICAL findings (3 skeptics each)')
-  phase('Adversarial Verify')
-
-  for (var k = 0; k < criticalFindings.length; k++) {
-    var f = criticalFindings[k]
-    // P1: complexity-gated adversarial verification
-    var isComplex = tasks.some(function(t) { return t.id === f.taskId && getComplexity(t) === 'complex' })
-    var isMedium = tasks.some(function(t) { return t.id === f.taskId && getComplexity(t) === 'medium' })
-
-    if (shouldSkipAdversarial({complexity: isComplex ? 'complex' : isMedium ? 'medium' : 'simple'})) {
-      // simple/medium: auto-confirm (medium gets 1 skeptic, simple auto-confirmed)
-      if (isMedium) {
-        var singleVote = await agent('Try to REFUTE this finding. Default to refuted=false if uncertain.\n\nFinding: ' + f.description + '\nFile: ' + f.file + (f.line ? ' (line ' + f.line + ')' : ''),
-          {label: 'skeptic-1-' + f.file, schema: SKEPTIC_SCHEMA, model: 'haiku'})
-        if (singleVote && singleVote.refuted) {
-          f.severity = 'HIGH'
-        } else {
-          verifiedCritical.push(f)
-        }
-      } else {
-        verifiedCritical.push(f)
-      }
-      continue  // skip the existing 3-skeptic block
-    }
-    // complex tasks: existing 3-skeptic logic runs (the code after this continue)
-    var votes = await parallel([
-      function() {
-        return agent('Try to REFUTE this finding. Look for reasons it might not be a real CRITICAL issue.\n\nFinding: ' + f.description + '\nFile: ' + f.file + (f.line ? ' (line ' + f.line + ')' : '') + '\n\nReturn refuted (boolean) and reason.',
-          {label: 'skeptic-1-' + f.file, schema: SKEPTIC_SCHEMA, model: 'haiku'})
-      },
-      function() {
-        return agent('Try to REFUTE this finding. Consider: is this really CRITICAL? Could it be a false positive?\n\nFinding: ' + f.description + '\nFile: ' + f.file + (f.line ? ' (line ' + f.line + ')' : ''),
-          {label: 'skeptic-2-' + f.file, schema: SKEPTIC_SCHEMA, model: 'haiku'})
-      },
-      function() {
-        return agent('Try to REFUTE this finding. Default to refuted=true if uncertain.\n\nFinding: ' + f.description + '\nFile: ' + f.file + (f.line ? ' (line ' + f.line + ')' : ''),
-          {label: 'skeptic-3-' + f.file, schema: SKEPTIC_SCHEMA, model: 'haiku'})
-      }
-    ])
-
-    var validVotes = votes.filter(Boolean)
-    if (validVotes.length < 2) {
-      // Not enough valid skeptic responses — flag for human review
-      verifiedCritical.push({finding: f, verified: 'UNVERIFIED', reason: 'Only ' + validVotes.length + ' of 3 skeptics responded'})
-    } else {
-      var survived = validVotes.filter(function(v) { return !v.refuted }).length >= 2
-      if (survived) {
-        verifiedCritical.push(f)
-      } else {
-        // Majority refuted — downgrade to HIGH (mutate in place, already in allFindings)
-        f.severity = 'HIGH'
-      }
-    }
+for (var i = 0; i < pipelineResults.length; i++) {
+  var result = pipelineResults[i]
+  if (!result) continue
+  if (result.specFailed) {
+    specFailed.push(result.specFailed)
+  }
+  if (result.findings && result.findings.length > 0) {
+    allFindings = allFindings.concat(result.findings)
+  }
+  if (result.verifiedCritical && result.verifiedCritical.length > 0) {
+    verifiedCritical = verifiedCritical.concat(result.verifiedCritical)
   }
 }
 
 // ===== Final Review =====
 phase('Final Review')
 
-// P1: Layer 4 conditional final review
 var skipFinal = shouldSkipFinalReview(tasks)
 var finalReview
 
 if (skipFinal) {
-  finalReview = {
-    verdict: 'APPROVE',
-    reasons: ['Final review skipped — ' + tasks.length + ' task(s) with no shared files'],
-    issues: [],
-    summary: 'Skipped: insufficient cross-task surface'
-  }
+  finalReview = {verdict: 'APPROVE', reasons: ['Final review skipped — ' + tasks.length + ' task(s) with no shared files'], issues: [], summary: 'Skipped: insufficient cross-task surface'}
 } else {
-  var finalContextNote = ''
-  if (contextSummary) {
-    finalContextNote += '\nCONFIRMED CONTEXT FACTS (cross-check against these):\n' + contextSummary + '\n'
-  }
-  if (taskIntakeSnapshot) {
-    finalContextNote += '\nORIGINAL TASK INTAKE SNAPSHOT (verify nothing was missed):\n' + JSON.stringify(taskIntakeSnapshot, null, 2) + '\n'
-  }
-  if (grillSummary) {
-    finalContextNote += '\nDESIGN/JUDGE GRILL SUMMARY:\n' + grillSummary + '\n'
-  }
+  var findingsSummary = allFindings.map(function(f) {
+    return '- [' + f.severity + '] ' + (f.file || '') + ': ' + (f.description || '').substring(0, 100)
+  }).join('\n')
+
+  var specFailedSummary = specFailed.map(function(sf) {
+    return '- Task ' + sf.taskId + ': ' + (sf.issues || []).join('; ')
+  }).join('\n')
 
   finalReview = await agent(
-    'FINAL REVIEW of the ENTIRE implementation.\n' +
-    'Changed files: ' + changedFiles.join(', ') + '\n' +
-    'All per-task reviews are complete. Now check the BIG PICTURE:\n' +
-    '1. Cross-task consistency — do the pieces fit together?\n' +
-    '2. Integration gaps — anything missing between tasks?\n' +
-    '3. Global anti-patterns — patterns to refactor across files?\n' +
-    '4. Overall correctness — does the complete implementation solve the problem?\n' +
-    '5. Scope verification — cross-check final implementation against original task intake snapshot scope.' +
-    finalContextNote + '\n\n' +
-    'Return APPROVE, ITERATE, or REJECT with specific issues and reasons. Use APPROVE when the full implementation is correct and complete. Use ITERATE for minor cross-task adjustments needed. Use REJECT for fundamental problems that block the entire implementation.',
-    {schema: {
-      type: 'object',
-      required: ['verdict', 'issues', 'reasons'],
-      properties: {
-        verdict: {type: 'string', enum: ['APPROVE', 'ITERATE', 'REJECT']},
-        issues: {type: 'array', items: {type: 'string'}},
-        reasons: {type: 'array', items: {type: 'string'}},
-        summary: {type: 'string'}
-      }
-    }, model: 'sonnet'}
+    'CROSS-TASK CONSISTENCY CHECK (summary-based, DO NOT re-read files):\n\n' +
+    '## Changed Files\n' + changedFiles.join(', ') + '\n\n' +
+    '## Per-Task Review Findings Summary\n' + findingsSummary + '\n\n' +
+    '## Spec Failures\n' + specFailedSummary + '\n\n' +
+    'Check for:\n' +
+    '1. Integration gaps — do findings from different tasks point to the same missing piece?\n' +
+    '2. Cross-task conflicts — do two tasks make incompatible changes?\n' +
+    '3. Duplicate patterns — any issue appearing in multiple tasks?\n' +
+    '4. Overall verdict: APPROVE (all verified), ITERATE (integration gaps found), REJECT (blocker)\n\n' +
+    'DO NOT read any files. This is a synthesis-only check of pre-verified findings.',
+    {
+      schema: {
+        type: 'object',
+        required: ['verdict', 'issues', 'reasons'],
+        properties: {
+          verdict: {type: 'string', enum: ['APPROVE', 'ITERATE', 'REJECT']},
+          issues: {type: 'array', items: {type: 'string'}},
+          reasons: {type: 'array', items: {type: 'string'}},
+          summary: {type: 'string'}
+        }
+      },
+      model: 'haiku'
+    }
   )
 }
 
@@ -444,7 +640,9 @@ return {
   layersApplied: layersAppliedValue,
   layersSkipped: layersSkippedValue,
   fastGateIssues: fastGateIssues,
+  fastGateResultsAvailable: fastGateResultsAvailable,
   estimatedTokensSaved: estimatedTokensSaved,
+  modelTiering: {haikuCount: 0, sonnetCount: 0},
   stage: stage,
   passed: passed,
   findings: verifiedCritical.concat(high).concat(medium).concat(low),
