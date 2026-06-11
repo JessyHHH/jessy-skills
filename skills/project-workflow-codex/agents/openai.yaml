@@ -1,0 +1,4 @@
+interface:
+  display_name: "Project Workflow Codex"
+  short_description: "Codex agents workflow for skills repositories"
+  default_prompt: "Use $project-workflow-codex to plan and execute this project change with Codex agents."

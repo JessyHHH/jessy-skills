@@ -6,7 +6,7 @@ each step autonomously. No human intervention required.
 
 ## Prerequisites
 
-- Hermes Agent installed (`which hermes`) and/or Claude Code installed (`which claude`)
+- Hermes Agent installed (`which hermes`), Claude Code installed (`which claude`), and/or Codex installed (`which codex`)
 - Git (`which git`)
 - Node.js + npm (`which node && which npm`)
 
@@ -38,7 +38,10 @@ bash install.sh
 
 This single command handles everything:
 - Backs up existing skills to `~/.hermes/skills.bak.*`
-- Copies all 84 skills to `~/.hermes/skills/`
+- Copies all skills to `~/.hermes/skills/`
+- Overwrites platform snapshots at `~/.jessy-skills-claude` and/or `~/.jessy-skills-codex`
+- Links Claude Code skills from `~/.jessy-skills-claude/skills` into `~/.claude/skills/`
+- Links Codex skills through `~/.agents/skills/jessy-skills -> ~/.jessy-skills-codex/skills` when `codex` is available
 - Cleans stale skills removed from the repo
 - Installs `hermes.sh` to `~/.jessy-skills/` (clean source-based, not inline)
 - Configures shell: zsh/bash/pwsh auto-detected
@@ -99,7 +102,8 @@ source ~/.zshrc  # or ~/.bashrc
 | Platform | Workflow Skill | Shell Integration | Skill Dir |
 |----------|---------------|-------------------|-----------|
 | Hermes | `project-workflow` (v7.0) | `~/.jessy-skills/hermes.sh` | `~/.hermes/skills/` |
-| Claude Code | `project-workflow-claude` (v2.8) | `CLAUDE.md` auto-load | `~/.claude/skills/` |
+| Claude Code | `project-workflow-claude` (v2.8) | `CLAUDE.md` auto-load | `~/.claude/skills/` → `~/.jessy-skills-claude/skills` |
+| Codex | `project-workflow-codex` (v0.1) | `AGENTS.md` auto-load | `~/.agents/skills/jessy-skills` → `~/.jessy-skills-codex/skills` |
 
 | Shell | Config File | Status |
 |-------|-------------|--------|
@@ -112,7 +116,20 @@ source ~/.zshrc  # or ~/.bashrc
 
 After install, restart Claude Code or run `/reload-skills` to activate skills. The project's `CLAUDE.md` boot layer auto-loads each session. The `project-workflow-claude` v2.8 skill is a modular orchestrator: 1 thin control plane + 7 independent execution skills. 4 active Workflow scripts (phase3-6) provide deterministic pipeline automation; Phase 0-2 use Skill+Agent direct execution (no Harness overhead). Model: Sonnet/Haiku only, no Opus.
 
-install.sh is safe for environments with other Claude Code plugins installed — it uses symlinks only, never deletes non-jessy-skills entries (superpowers, omc, skill-creator, etc. are preserved).
+install.sh is safe for environments with other Claude Code plugins installed. It overwrites only the managed snapshot `~/.jessy-skills-claude`, then refreshes symlinks for jessy-skills entries in `~/.claude/skills/`. Non-jessy-skills entries such as superpowers, omc, and skill-creator are preserved.
+
+### Codex Specific
+
+After install, restart Codex so it reloads `AGENTS.md` and skill discovery paths. The Codex branch entry point is `project-workflow-codex`: it keeps planning, orchestration, integration, and final audit in the main Codex session, then delegates bounded implementation/review/verification work to Codex agents instead of Claude Code `Workflow(...)` scripts.
+
+Codex skill discovery links:
+
+```bash
+test -d ~/.jessy-skills-codex/skills/project-workflow-codex
+test -L ~/.agents/skills/jessy-skills && readlink ~/.agents/skills/jessy-skills
+```
+
+The current repo can switch branches freely after install. Codex global discovery points at the copied snapshot, not the mutable checkout.
 
 ### Claude Code MCP Servers (Recommended, NOT Required)
 
@@ -143,9 +160,11 @@ The workflow auto-detects MCP availability (Context7, Firecrawl) and falls back 
 ## Report to User
 
 After install, tell the user:
-- 84 skills installed to `~/.hermes/skills/` and/or `~/.claude/skills/`
+- Skills installed to `~/.hermes/skills/`, `~/.claude/skills/`, and/or `~/.agents/skills/jessy-skills`
+- Claude/Codex snapshots are overwritten at `~/.jessy-skills-claude` and `~/.jessy-skills-codex` during global sync
 - Hermes: Shell integration at `~/.jessy-skills/hermes.sh` (sourced from config)
 - Claude Code: CLAUDE.md auto-loads; run `/reload-skills` to activate
-- Auto-loaded on every session: `project-workflow` (Hermes) / `project-workflow-claude` (Claude Code) + `karpathy-guidelines`
+- Codex: AGENTS.md auto-loads; run `/skills` or invoke `$project-workflow-codex`
+- Auto-loaded on every session: `project-workflow` (Hermes) / `project-workflow-claude` (Claude Code) / `project-workflow-codex` (Codex) + `karpathy-guidelines`
 - Context7 + Firecrawl CLIs installed and authenticated
 - Run `source ~/.zshrc` (or `~/.bashrc`, or `. $PROFILE`) or open a new terminal to activate

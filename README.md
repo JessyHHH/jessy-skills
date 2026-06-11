@@ -2,14 +2,15 @@
 
 ![Version](https://img.shields.io/badge/version-v2.8-blue)
 
-一个支持 [Claude Code](https://code.claude.com/) + [Hermes Agent](https://github.com/NousResearch/hermes-agent) 的多语言工作流技能集合。模块化流水线 — 1 个 orchestrator + 7 个 execution skills（含 HARD-GATE / Iron Law / Two-Stage Review），84+ 技能覆盖 Go/Vue/前端/工程/方法论全流程。
+一个支持 [Claude Code](https://code.claude.com/) + [Hermes Agent](https://github.com/NousResearch/hermes-agent) + Codex 的多语言工作流技能集合。模块化流水线 — Claude Code 使用 Workflow+Skills，Codex 使用 Codex agents+Skills（含 HARD-GATE / Iron Law / Two-Stage Review），84+ 技能覆盖 Go/Vue/前端/工程/方法论全流程。
 
 **v2.8 新特性：**
 - **Workflow 精简**: 只保留 4 个活跃 Workflow 脚本（phase3-consensus / phase4-implement / phase5-review / phase6-verify），Phase 0-2 使用 Skill+Agent 直接执行（无 Harness 开销）
 - **Phase 4 任务完成保证**: Stage 4 Completion Guarantee — 未完成任务自动重试（最多3轮），STUCK 任务明确返回原因
 - **阶段边界状态验证**: 7 个执行技能统一添加 Step 0 状态验证，`planning-implementation` 启动 skip-design 入口守卫
 - **错误硬化**: Edit Tool 安全规则 + Workflow Plain-JS 守卫 + Phase4 context enrichment 对齐 + 状态优雅降级 + 回归探针
-- **install.sh 安全**: 纯软链接安装到 `~/.claude/skills/`，永不删除外部插件 skill（superpowers/omc 等）
+- **Codex agents 分支**: 新增 `project-workflow-codex`，用 Codex executor/reviewer/verifier agents 替代 Claude Code `Workflow(...)` 脚本执行
+- **install.sh 安全**: 先覆盖同步平台快照 `~/.jessy-skills-claude` / `~/.jessy-skills-codex`，再从快照软链接到 `~/.claude/skills/` 和 `~/.agents/skills/`；不覆盖外部插件 skill（superpowers/omc 等）
 
 **v2.4 新特性：**
 - **全面移除 Opus**: 所有 Workflow subagent 使用 Sonnet/Haiku，复杂任务不再使用 Opus，大幅降低成本
@@ -39,7 +40,7 @@
 ```bash
 git clone https://github.com/JessyHHH/jessy-skills.git
 cd jessy-skills
-bash install.sh          # 自动检测 Hermes / Claude Code / 两者
+bash install.sh          # 自动检测 Hermes / Claude Code / Codex
 source ~/.bashrc         # Linux · macOS 用 ~/.zshrc
 
 # 安装工具 CLI（一步）
@@ -50,25 +51,24 @@ ctx7 login && firecrawl login  # 浏览器授权
 安装后：
 - **Hermes** 每次启动自动加载 `project-workflow` + `karpathy-guidelines`
 - **Claude Code** 每次启动自动加载 CLAUDE.md，`/reload-skills` 激活技能
+- **Codex** 读取 AGENTS.md；通过 `~/.agents/skills/jessy-skills -> ~/.jessy-skills-codex/skills` 发现 Codex 快照 skills
 - 自动识别 Go/Vue/Node/Skills Repository 项目
 
 ## 工作流概览
 
-| Phase | Hermes (`project-workflow`) | Claude Code (`project-workflow-claude` v2.8 modular orchestrator) |
-|-------|---------------------------|----------------------------------------|
-| 0 | `search_files` 检测项目类型 | `Glob` + `Grep` 检测项目类型 + **Task Intake Snapshot** + **Step 0 状态验证** |
-| 0.3 | `delegate_task` 分析 → CONTEXT.md | `Agent` 分析 → **CONTEXT.md (两层) + contextSummary** |
-| 0.5 | `skill_view()` 加载技能 | `Skill()` 加载技能 |
-| 1 | `clarify()` 设计对话 ⚡ | `AskUserQuestion()` + **Hard Grill Checklist (6项) + REQUIREMENT ECHO** ⚡ |
-| 2 | `write_file(.hermes/plans/)` | `Write(.claude/plans/)` + **扩展 task schema（12 字段）** |
-| 3 | `skill_view(ralplan)` → delegate_task | **Workflow(phase3-consensus)**: 3 角度并行 Judge Panel + context/task 合同验证 |
-| 4 | `delegate_task(tasks=[])` 并行 | **Workflow(phase4-implement)**: pipeline 实现 + 策略隔离 |
-| 4.5 | — | ★ **Master agent**: review worktree diff → merge-back |
-| 4.6 | — | ★ **Quick Gate**: grep expectedEvidence/forbiddenEvidence → fail-fast ⚡ |
-| 5 | `delegate_task` 审查 ⚡ | **Workflow(phase5-review)**: 每任务独立流水线 + 分层模型 + 上下文注入 + 反探索护栏 ⚡ |
-| 6 | `terminal()` 验证 ⚡ | `Bash()` + **Workflow(phase6-verify)**: Loop Until Dry + **evidenceChecks 语义验证** ⚡ |
-| 7 | `memory()` + `cronjob()` | `CronCreate()` + 文件记忆 |
-| 8 | 4-option 收尾菜单 ★ | 4-option 收尾菜单 ★ |
+| Phase | Hermes (`project-workflow`) | Claude Code (`project-workflow-claude`) | Codex (`project-workflow-codex`) |
+|-------|---------------------------|----------------------------------------|----------------------------------------|
+| 0 | `search_files` 检测项目类型 | `Glob` + `Grep` 检测项目类型 + **Task Intake Snapshot** | 读 branch/status/HEAD/AGENTS.md |
+| 0.3 | `delegate_task` 分析 → CONTEXT.md | `Agent` 分析 → **CONTEXT.md (两层) + contextSummary** | 生成 `.codex/context/knowledge.md` |
+| 0.5 | `skill_view()` 加载技能 | `Skill()` 加载技能 | 路由 Codex skills + domain skills |
+| 1 | `clarify()` 设计对话 ⚡ | `AskUserQuestion()` + **Hard Grill Checklist** ⚡ | 仅澄清无法推断的边界 |
+| 2 | `write_file(.hermes/plans/)` | `Write(.claude/plans/)` + **扩展 task schema** | 写 `.codex/plans/*-codex-plan-*.md` |
+| 3 | `skill_view(ralplan)` → delegate_task | **Workflow(phase3-consensus)** | Codex plan preflight |
+| 4 | `delegate_task(tasks=[])` 并行 | **Workflow(phase4-implement)** | Codex executor/worker agents |
+| 5 | `delegate_task` 审查 ⚡ | **Workflow(phase5-review)** | Codex code-reviewer/verifier agents |
+| 6 | `terminal()` 验证 ⚡ | `Bash()` + **Workflow(phase6-verify)** | 主 Codex fresh verification + final audit |
+| 7 | `memory()` + `cronjob()` | `CronCreate()` + 文件记忆 | Codex state/learning notes |
+| 8 | 4-option 收尾菜单 ★ | 4-option 收尾菜单 ★ | 分支/提交/PR 由用户授权后执行 |
 
 **出口可见性：** 每个 Phase 结束时输出 `Phase X complete. [skill] verified. → Phase Y`，Skill Expected 列在转换规则表中。
 
@@ -95,7 +95,8 @@ ctx7 login && firecrawl login  # 浏览器授权
 
 ## 核心设计
 
-- **双平台支持**：`project-workflow`（Hermes）+ `project-workflow-claude`（Claude Code，v2.8 modular orchestrator），共享 72 个 domain skills
+- **三平台支持**：`project-workflow`（Hermes）+ `project-workflow-claude`（Claude Code，v2.8 modular orchestrator）+ `project-workflow-codex`（Codex agents），共享根目录 `skills/`
+- **Codex 分支支持**：`project-workflow-codex` 用 Codex agents 执行实现、审阅和验证，不调用 Claude Code Workflow 脚本
 - **零硬编码**：项目类型从 go.mod/package.json/skills/SKILL.md 自动检测，skill 自动路由
 - **自驱动顺序**：Phase 0.3 先分析代码库生成项目知识，Phase 0.5 再加载技能
 - **CONTEXT.md 双层结构**（Knowledge + Instruction）：`[confirmed]`/`[auto]` 标签，子目录就近覆盖
@@ -140,7 +141,7 @@ project-workflow-claude v2.8 uses a thin orchestrator + 7 independent execution 
 - Phase 4 Completion Guarantee: unfinished tasks auto-retry (max 3 rounds), STUCK tasks return explicit reason
 - Phase 6 EXHAUSTED verdict: when max 10 iterations are reached without resolution, the loop exits cleanly with mandatoryNextAction
 - Error hardening: Edit safety rules + Plain-JS guardrails + Phase4 enrichment + state graceful degradation
-- install.sh: symlink-only to ~/.claude/skills, preserves external plugins (superpowers/omc/etc.)
+- install.sh: syncs Claude/Codex snapshots under `~/.jessy-skills-claude` and `~/.jessy-skills-codex`, then symlinks managed skills while preserving external plugins (superpowers/omc/etc.)
 - Regression probes: tests/test-regression-workflow-parse.sh + tests/test-controlled-edit-probe.sh
 
 ## 逃逸命令
