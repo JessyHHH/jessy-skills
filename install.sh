@@ -25,47 +25,76 @@ mkdir -p ~/.hermes/skills
 cp -r "$DOTFILES/skills/"* ~/.hermes/skills/
 echo "  ✓ Skills installed ($(ls "$DOTFILES/skills" | wc -l | tr -d ' ') skill dirs)"
 
-# === Install skills to Claude Code (symlink-based) ===
+# === Install skills to Claude Code (symlink-only, additive, never deletes external skills) ===
 if [ $HAS_CLAUDE -eq 1 ]; then
-    echo "→ Installing skills to Claude Code..."
+    echo "→ Installing skills to Claude Code (~/.claude/skills/)..."
     mkdir -p ~/.claude/skills
     CC_INSTALLED=0
+    CC_SKIPPED=0
+
+    # 1. Create/refresh symlinks for jessy-skills ONLY — never touch other entries
     for skill_dir in "$DOTFILES/skills/"*/; do
+        [ -d "$skill_dir" ] || continue
         skill_name=$(basename "$skill_dir")
         target="$HOME/.claude/skills/$skill_name"
 
-        # Skip if already a symlink to the same location
+        # Already a symlink pointing here? Skip.
         if [ -L "$target" ] && [ "$(readlink "$target")" = "$skill_dir" ]; then
+            CC_SKIPPED=$((CC_SKIPPED + 1))
             continue
         fi
 
-        # Remove existing non-symlink entry if present
-        if [ -e "$target" ] && [ ! -L "$target" ]; then
-            rm -rf "$target"
+        # Remove ONLY our own stale entry (symlink pointing elsewhere, or non-symlink we created)
+        if [ -L "$target" ]; then
+            # Symlink exists but points to a different jessy-skills location — refresh it
+            current_target="$(readlink "$target")"
+            if echo "$current_target" | grep -q "jessy-skills"; then
+                rm "$target"
+            else
+                # Symlink points to something NOT jessy-skills — don't touch, warn
+                echo "  ⚠ Skipping $skill_name (existing symlink to non-jessy-skills target: $current_target)"
+                CC_SKIPPED=$((CC_SKIPPED + 1))
+                continue
+            fi
+        elif [ -e "$target" ]; then
+            # Non-symlink exists — only remove if it looks like our old copy (has our marker)
+            if grep -q "jessy-skills" "$target/SKILL.md" 2>/dev/null; then
+                rm -rf "$target"
+            else
+                echo "  ⚠ Skipping $skill_name (existing non-jessy-skills directory)"
+                CC_SKIPPED=$((CC_SKIPPED + 1))
+                continue
+            fi
         fi
 
         # Create symlink
         ln -sfn "$skill_dir" "$target"
         CC_INSTALLED=$((CC_INSTALLED + 1))
     done
-    echo "  ✓ Claude Code skills installed ($CC_INSTALLED symlinks)"
-fi
 
-# === Clean stale skills ===
-echo "→ Checking for stale skills..."
-BUILTIN_PREFIXES="apple autonomous creative data-science devops email gaming github mcp media mlops note-taking productivity red-teaming research smart-home social-media software-development"
-for skill_dir in ~/.hermes/skills/*/; do
-    skill_name=$(basename "$skill_dir")
-    is_builtin=0
-    for prefix in $BUILTIN_PREFIXES; do
-        [[ "$skill_name" == "$prefix"* ]] && is_builtin=1 && break
+    echo "  ✓ Claude Code: $CC_INSTALLED symlinks created/refreshed, $CC_SKIPPED external entries preserved"
+
+    # 2. Clean stale jessy-skills symlinks (pointing to deleted project skill dirs)
+    STALE_REMOVED=0
+    for target in "$HOME/.claude/skills/"*; do
+        [ -L "$target" ] || continue  # only check symlinks
+        link_dest="$(readlink "$target")"
+        skill_name="$(basename "$target")"
+
+        # Only clean jessy-skills symlinks
+        if ! echo "$link_dest" | grep -q "jessy-skills"; then
+            continue
+        fi
+
+        # Symlink target no longer exists → stale
+        if [ ! -d "$link_dest" ]; then
+            rm "$target"
+            echo "  - Removed stale symlink: $skill_name → $link_dest (target missing)"
+            STALE_REMOVED=$((STALE_REMOVED + 1))
+        fi
     done
-    [ $is_builtin -eq 1 ] && continue
-    if [ ! -d "$DOTFILES/skills/$skill_name" ]; then
-        echo "  - Removing stale skill: $skill_name"
-        rm -rf "$skill_dir"
-    fi
-done
+    [ $STALE_REMOVED -gt 0 ] && echo "  ✓ Cleaned $STALE_REMOVED stale jessy-skills symlinks"
+fi
 
 # === Install shell integration (source-based, not inline) ===
 echo "→ Installing shell integration..."
@@ -204,12 +233,14 @@ if [ $HAS_CLAUDE -eq 1 ]; then
 
     # Install workflow scripts to global location (~/.claude/workflows/)
     # Workflow(name='...') auto-discovers scripts here — works from any project
+    # NOTE: Only phase3-6 are active. phase1-2 are kept as skeletons in project only (phased out in v2.8).
     WF_INSTALL="$HOME/.claude/workflows"
     if [ -d "$DOTFILES/.claude/workflows" ]; then
         mkdir -p "$WF_INSTALL"
         cp "$DOTFILES/.claude/workflows/"*.js "$WF_INSTALL/" 2>/dev/null || true
         echo "  ✓ Workflow scripts installed to $WF_INSTALL/ ($(ls "$WF_INSTALL" 2>/dev/null | wc -l | tr -d ' ') scripts)"
-        echo "  → Available as Workflow(name='phase1-detect-knowledge'), Workflow(name='phase2-plan-generate'), Workflow(name='phase3-consensus') etc. from any project"
+        echo "  → Active: Workflow(name='phase3-consensus'), Workflow(name='phase4-implement'), Workflow(name='phase5-review'), Workflow(name='phase6-verify')"
+        echo "  → Phase 0-2 use Skill+Agent direct execution (no Harness overhead)"
     fi
 
     # Create .claude/workflows symlink if running from within the repo

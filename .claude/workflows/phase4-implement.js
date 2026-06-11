@@ -25,6 +25,10 @@ for (var i = 0; i < tasks.length; i++) {
   t.forbiddenEvidence = t.forbiddenEvidence || ''
   t.patchBackStrategy = t.patchBackStrategy || ''
   t.mutatesFiles = !!t.mutatesFiles
+  t.fileContents = t.fileContents || {}
+  t.diffText = t.diffText || ''
+  t.grillDecisions = t.grillDecisions || []
+  t.planSections = t.planSections || ''
 }
 
 // --- 2. Pre-pipeline validation: mutating tasks must declare patchBackStrategy ---
@@ -99,6 +103,30 @@ function buildImplementerPrompt(task) {
       parts.push('Return a description of changes made. The harness will treat this as an external report. Include changedFiles in your response.')
     }
   }
+
+  // --- Enrichment: file contents, diff, grill decisions, plan sections ---
+  var fcKeys = Object.keys(task.fileContents || {})
+  if (fcKeys.length > 0) {
+    parts.push('\n## Current File Contents (captured at Workflow invocation — may be stale if a prior task modified this file)\n')
+    for (var i = 0; i < fcKeys.length; i++) {
+      var k = fcKeys[i]
+      parts.push('### ' + k + '\n```\n' + (task.fileContents[k] || '') + '\n```\n')
+    }
+  }
+  if (task.diffText) {
+    parts.push('\n## Git Diff (changed lines)\n```diff\n' + task.diffText + '\n```\n')
+  }
+  if (task.grillDecisions && task.grillDecisions.length > 0) {
+    parts.push('\n## Design Decisions (from Grill)\n')
+    for (var j = 0; j < task.grillDecisions.length; j++) {
+      parts.push('- ' + task.grillDecisions[j] + '\n')
+    }
+  }
+  if (task.planSections) {
+    parts.push('\n## Task Section from Implementation Plan\n' + task.planSections + '\n')
+  }
+
+  parts.push('\n**IMPORTANT:** These file contents were captured before task execution began. Always Read the target file fresh immediately before calling Edit to get the current exact content. Do NOT rely solely on the injected file contents for Edit old_string construction.')
 
   return parts.join('\n')
 }

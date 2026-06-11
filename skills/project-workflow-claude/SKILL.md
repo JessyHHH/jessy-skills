@@ -67,6 +67,17 @@ Workflow scripts are pure orchestrators — they dispatch subagents but do no fi
 
 ---
 
+## Workflow Script Authoring Rules
+
+Workflow scripts are **plain JavaScript ONLY**. TypeScript syntax (type annotations, interfaces, generics) will cause parse errors. See `skills/reviewing-implementation/SKILL.md` for the full **Workflow Script Rules (HARD — Plain JavaScript Only)**.
+
+Key points:
+- Type constraints must use JSON Schema objects, not TS type annotations.
+- Run `node --check <scriptPath>` before submitting to `Workflow()`.
+- On parse error: inspect reported line, remove all TS syntax, retry.
+
+---
+
 ## Global Rules
 
 1. **Design before code.** No file is edited before design is approved.

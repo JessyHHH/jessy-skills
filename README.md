@@ -5,11 +5,11 @@
 一个支持 [Claude Code](https://code.claude.com/) + [Hermes Agent](https://github.com/NousResearch/hermes-agent) 的多语言工作流技能集合。模块化流水线 — 1 个 orchestrator + 7 个 execution skills（含 HARD-GATE / Iron Law / Two-Stage Review），84+ 技能覆盖 Go/Vue/前端/工程/方法论全流程。
 
 **v2.8 新特性：**
-- **Phase 1-2 Workflow 脚本前移**: 新增 `phase1-detect-knowledge.js` 和 `phase2-plan-generate.js`，Phase 1-2 具有确定性脚本编排（结构化输入/输出、进度可见性、可恢复性检查点）
+- **Workflow 精简**: 只保留 4 个活跃 Workflow 脚本（phase3-consensus / phase4-implement / phase5-review / phase6-verify），Phase 0-2 使用 Skill+Agent 直接执行（无 Harness 开销）
 - **Phase 4 任务完成保证**: Stage 4 Completion Guarantee — 未完成任务自动重试（最多3轮），STUCK 任务明确返回原因
 - **阶段边界状态验证**: 7 个执行技能统一添加 Step 0 状态验证，`planning-implementation` 启动 skip-design 入口守卫
-- **Phase 4→5 上下文去重**: Phase 4 输出 `perTaskDiffs` + `fileContentsSnapshots`，Phase 5 直接消费，消除磁盘重读
-- **Phase 6 循环合约强化**: `mandatoryNextAction` 枚举 + `totalIterations` 追踪 + max 10 迭代硬上限 + `EXHAUSTED` 裁决
+- **错误硬化**: Edit Tool 安全规则 + Workflow Plain-JS 守卫 + Phase4 context enrichment 对齐 + 状态优雅降级 + 回归探针
+- **install.sh 安全**: 纯软链接安装到 `~/.claude/skills/`，永不删除外部插件 skill（superpowers/omc 等）
 
 **v2.4 新特性：**
 - **全面移除 Opus**: 所有 Workflow subagent 使用 Sonnet/Haiku，复杂任务不再使用 Opus，大幅降低成本
@@ -87,7 +87,7 @@ ctx7 login && firecrawl login  # 浏览器授权
 - **CONTEXT.md 双层上下文**: Knowledge Layer（架构/实体/接口）+ Instruction Layer（约定/命令/不变量），`[confirmed]`/`[auto]` 标签
 - **Phase 1 深度 Grill**: Ambiguity Register + Assumption Ledger，可变深度退出条件，不固定四问
 - **Phase 0 快照**: Task Intake Snapshot 从源头锁定 scope
-- **Workflow 脚本驱动**: 6 个确定性 JS 脚本 (pipeline/parallel/loop/adversarial verify + knowledge detect + plan generate)
+- **Workflow 脚本驱动**: 4 个确定性 JS 脚本 (phase3-6 only, Phase 0-2 使用 Skill+Agent 直接执行)
 - **Phase 4.5 工作树审查**: harness-managed 隔离 → master agent merge-back
 - **Phase 5 Hard Gate**: finalReview APPROVE/ITERATE/REJECT 统一裁定
 - **Phase 6 语义证据**: evidenceChecks (5 种类型: file-exists/text-present/text-absent/command-output-present/command-output-absent)
@@ -120,13 +120,13 @@ project-workflow-claude v2.8 uses a thin orchestrator + 7 independent execution 
 | **verifying-completion** | Phase 6 | Loop Until Dry verification, evidenceChecks |
 | **finishing-development** | Phase 7-8 | Retrospective, memory compression, branch cleanup |
 
-**6 Workflow Scripts:**
-- `phase1-detect-knowledge.js` — Phase 1 Steps 5-7 (知识分析 + 技能选择 + 上下文摘要)
-- `phase2-plan-generate.js` — Phase 2 Steps 2-4 (计划生成 + schema 验证 + 上下文收集)
+**4 Workflow Scripts (phase3-6 only):**
 - `phase3-consensus.js` — Judge Panel (3 angles parallel) + context/task contract validation + scope/ambiguity blocking
 - `phase4-implement.js` — Pipeline implement + isolation strategies (no-isolation/harness-managed/external-report) + changedFiles threading + Completion Guarantee (max 3 retries, STUCK reason)
-- `phase5-review.js` — **4-layer complexity-gated review**: Layer 1 Fast Gate (bash) → Layer 2 Standard (spec, gated) → Layer 3 Deep (code quality, gated) → Layer 4 Final (cross-task, conditional). Outputs layersApplied, layersSkipped, estimatedTokensSaved. Consumes perTaskDiffs + fileContentsSnapshots from Phase 4 (no disk re-read)
+- `phase5-review.js` — **4-layer complexity-gated review**: Layer 1 Fast Gate (bash) → Layer 2 Standard (spec, gated) → Layer 3 Deep (code quality, gated) → Layer 4 Final (cross-task, conditional). Outputs layersApplied, layersSkipped, estimatedTokensSaved.
 - `phase6-verify.js` — Loop Until Dry verification + evidenceChecks evaluation (5 types) + Quick Gate audit trail + grill evidence cross-reference + mandatoryNextAction enum + totalIterations tracking + max 10 iteration hard limit + EXHAUSTED verdict
+
+**Phase 0-2**: Skill+Agent 直接执行（无 Harness 开销）。Phase 0 检测环境，Phase 1 Grill 需求，Phase 2 写 plan，只有 Phase 3 共识审查才首次进入 Workflow。
 
 **Key Properties:**
 - Each execution skill is <500 lines with Exit Contract sections
@@ -139,6 +139,9 @@ project-workflow-claude v2.8 uses a thin orchestrator + 7 independent execution 
 - Phase 5 layered review: ~50-60% token reduction for mixed-complexity runs
 - Phase 4 Completion Guarantee: unfinished tasks auto-retry (max 3 rounds), STUCK tasks return explicit reason
 - Phase 6 EXHAUSTED verdict: when max 10 iterations are reached without resolution, the loop exits cleanly with mandatoryNextAction
+- Error hardening: Edit safety rules + Plain-JS guardrails + Phase4 enrichment + state graceful degradation
+- install.sh: symlink-only to ~/.claude/skills, preserves external plugins (superpowers/omc/etc.)
+- Regression probes: tests/test-regression-workflow-parse.sh + tests/test-controlled-edit-probe.sh
 
 ## 逃逸命令
 

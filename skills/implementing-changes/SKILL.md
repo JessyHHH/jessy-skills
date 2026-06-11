@@ -157,3 +157,30 @@ Recommended next step:
 2. Return to /implementing-changes if Quick Gate found issues.
 3. /verifying-completion — only if review is explicitly skipped (not recommended).
 ```
+
+---
+
+## Edit Tool Safety Rules (HARD — MUST FOLLOW)
+
+When calling the Edit tool to modify files, follow these rules exactly. Violating them causes "String to replace not found" or "No changes to make" errors that waste time and tokens.
+
+### Before Edit
+1. **Fresh Read required.** Read the target file immediately before constructing the Edit call. Do NOT rely on memory, stale plan line numbers, or previous reads from earlier turns.
+2. **Exact old_string.** Copy `old_string` byte-for-byte from the Read output. Check: indentation (tabs vs spaces), surrounding whitespace, punctuation, and leading keywords (`type`, `func`, `var`, `const`, `package`, `import`).
+3. **Unique anchor.** Include at least 2-3 lines of surrounding context to make the match unique. A single short line may appear multiple times in the file.
+
+### On Edit Failure
+4. **"String to replace not found":** Re-read the file at the target location. Copy the exact text from the fresh Read into `old_string`. Do NOT guess indentation. Do NOT retry the same old_string.
+5. **"No changes to make" (old_string equals new_string):** The change already exists. Skip this edit — do NOT retry. Report success with evidence that the target content is already present.
+6. **After 2 consecutive failures on the same file:** Switch to using Bash (Python, sed, or awk) instead of the Edit tool. The Edit tool requires exact byte-for-byte matching which may fail on edge cases.
+
+### After Edit
+7. **Verify the change.** Read the modified location to confirm the edit was applied correctly before marking the task complete.
+
+### Verification Gate
+
+After completing a task that used Edit:
+1. Run `bash tests/test-controlled-edit-probe.sh` to confirm that exact-string matching patterns are correct.
+2. If the probe fails, re-run the edit task with fresh file reads.
+
+The regression probe validates the exact-string matching contract -- it confirms that `old_string` must include the full keyword (e.g., `type Retriever interface {` not just `Retriever interface {`).

@@ -165,3 +165,30 @@ Recommended next step:
 2. /implementing-changes — if findings need implementation fixes.
 3. Stop here — keep review findings as-is.
 ```
+
+---
+
+## Workflow Script Rules (HARD — Plain JavaScript Only)
+
+When writing or reviewing Workflow scripts (code passed to the `Workflow()` tool), these rules apply:
+
+### Forbidden in Workflow Scripts
+- TypeScript type annotations: `const x: string[] = ...`, `function f(a: number): void {}`
+- TypeScript interfaces: `interface MyResult { ... }`
+- TypeScript generics: `Array<string>`, `Promise<Result>`, `<T>`
+- TypeScript type assertions: `x as string`, `<string>x`
+- TypeScript enums: `enum Color { Red, Green }`
+- Union types in executable positions: `type Mode = "A" | "B"` (in JSON Schema use plain JS: `{ type: 'string', enum: ['A', 'B'] }`)
+
+### Required in Workflow Scripts
+- ALL scripts must be plain JavaScript (ES2020)
+- Use `const`, `var`, `function` — no type annotations
+- Use JSON Schema objects for structured output: `{ type: 'object', properties: { name: { type: 'string' } } }` — these are plain JS objects, NOT TypeScript
+- After authoring a script, run `node --check <scriptPath>` before passing to `Workflow()`
+
+### On Parse Error
+If `Workflow()` returns "Invalid workflow script: Script parse error", inspect the reported line and surrounding lines for:
+- Type annotations (`: string`, `: number[]`)
+- Arrow functions with typed parameters
+- Interface/type declarations
+- Remove ALL TypeScript syntax from the offending lines and retry.

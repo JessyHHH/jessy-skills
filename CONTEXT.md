@@ -1,10 +1,10 @@
-<!-- ⚠️ Auto-generated | Commit: 48c7517ad891fb0947f616d6ff9ed9e8d6576b2f | Date: 2026-06-10 | skills-repository -->
+<!-- ⚠️ Auto-generated | Commit: 00027b6d2cff4a816bfb99e31284da7052ae9f23 | Date: 2026-06-11 | skills-repository -->
 
 <!-- KNOWLEDGE_START -->
 ## Architecture
 [auto] Monorepo of 84 AI Agent skills, each defined under `skills/*/SKILL.md` using the agentskills.io YAML frontmatter open standard. 23 top-level category directories organize skills by domain.
-[confirmed] Core workflow: `project-workflow-claude` v2.7 modular orchestrator + 7 execution skills + `karpathy-guidelines` — a thin control plane (227 lines) that delegates to independent execution skills with Hard Gates and Iron Law.
-[auto] Workflow automation scripts reside in `~/.claude/workflows/` (phase3-consensus.js, phase4-implement.js, phase5-review.js, phase6-verify.js) — deterministic JS orchestrators executed via the Workflow tool.
+[confirmed] Core workflow: `project-workflow-claude` v2.8 modular orchestrator + 7 execution skills + `karpathy-guidelines` — a thin control plane that delegates to independent execution skills with Hard Gates and Iron Law. Phase 0-2 use Skill+Agent direct execution; Phase 3-6 use Workflow scripts for Harness orchestration.
+[auto] Workflow automation scripts reside in `~/.claude/workflows/` (phase3-consensus.js, phase4-implement.js, phase5-review.js, phase6-verify.js) — 4 deterministic JS orchestrators for Phase 3-6, executed via the Workflow tool. Phase 0-2 use Skill+Agent direct execution (no Harness overhead).
 [auto] Installation via `bash install.sh`; verification via `bash tests/test-*.sh`.
 [auto] Platform overlay: `skills/project-workflow-claude/references/claude-routing.md` maps Claude Code-specific task signals and codebase signals to workflow phases and skills.
 
@@ -19,11 +19,11 @@
 | Entity | Location | Description |
 |--------|----------|-------------|
 | Skills (84) | `skills/*/SKILL.md` | AI Agent skill definitions across 23 categories |
-| Workflow scripts | `~/.claude/workflows/phase{3,4,5,6}-*.js` | Pipeline phase automation (consensus, implement, review, verify) |
-| Modular execution skills (7) | `skills/{detecting-environment,designing-solutions,planning-implementation,implementing-changes,reviewing-implementation,verifying-completion,finishing-development}/SKILL.md` | v2.7 thin orchestrator delegation targets |
+| Workflow scripts | `~/.claude/workflows/phase{3,4,5,6}-*.js` | Pipeline phase automation (consensus, implement, review, verify). 4 active scripts — Phase 0-2 use Skill+Agent. |
+| Modular execution skills (7) | `skills/{detecting-environment,designing-solutions,planning-implementation,implementing-changes,reviewing-implementation,verifying-completion,finishing-development}/SKILL.md` | v2.8 thin orchestrator delegation targets |
 | State contracts | `skills/project-workflow-claude/references/{workflow-state-contract,transition-rules,handoff-contract}.md` | Modular skill baton-pass contracts |
-| Install script | `install.sh` | Repository setup/bootstrap with global sync |
-| Tests | `tests/test-*.sh` | Integrity verification scripts |
+| Install script | `install.sh` | Repository setup/bootstrap with global sync. Symlink-only to ~/.claude/skills, preserves external plugins. |
+| Tests | `tests/test-*.sh` | Integrity verification scripts + regression probes (workflow parse, controlled edit) |
 | Context spec | `skills/project-workflow-claude/references/context-md-spec.md` | Canonical CONTEXT.md format specification v1.0 |
 | Routing overlay | `skills/project-workflow-claude/references/claude-routing.md` | Claude Code platform-specific signal routing |
 | Iron Law | `skills/project-workflow-claude/references/iron-law.md` | Verification discipline (NO COMPLETION CLAIMS WITHOUT FRESH VERIFICATION EVIDENCE) |

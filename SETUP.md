@@ -99,7 +99,7 @@ source ~/.zshrc  # or ~/.bashrc
 | Platform | Workflow Skill | Shell Integration | Skill Dir |
 |----------|---------------|-------------------|-----------|
 | Hermes | `project-workflow` (v7.0) | `~/.jessy-skills/hermes.sh` | `~/.hermes/skills/` |
-| Claude Code | `project-workflow-claude` (v2.7) | `CLAUDE.md` auto-load | `~/.claude/skills/` |
+| Claude Code | `project-workflow-claude` (v2.8) | `CLAUDE.md` auto-load | `~/.claude/skills/` |
 
 | Shell | Config File | Status |
 |-------|-------------|--------|
@@ -110,9 +110,9 @@ source ~/.zshrc  # or ~/.bashrc
 
 ### Claude Code Specific
 
-After install, restart Claude Code or run `/reload-skills` to activate skills. The project's `CLAUDE.md` boot layer auto-loads each session. The `project-workflow-claude` v2.7 skill is a modular orchestrator: 1 thin control plane (227 lines) + 7 independent execution skills (detecting-environment, designing-solutions, planning-implementation, implementing-changes, reviewing-implementation, verifying-completion, finishing-development). 4 Workflow scripts (phase3-consensus, phase4-implement, phase5-review, phase6-verify) provide deterministic pipeline automation. Model: Sonnet/Haiku only, no Opus.
+After install, restart Claude Code or run `/reload-skills` to activate skills. The project's `CLAUDE.md` boot layer auto-loads each session. The `project-workflow-claude` v2.8 skill is a modular orchestrator: 1 thin control plane + 7 independent execution skills. 4 active Workflow scripts (phase3-6) provide deterministic pipeline automation; Phase 0-2 use Skill+Agent direct execution (no Harness overhead). Model: Sonnet/Haiku only, no Opus.
 
-**Workflow Scripts:** 4 deterministic JS scripts in `.claude/workflows/` are included in the repository. The SKILL.md references them via relative paths from the project root. No additional installation needed beyond cloning the repo.
+install.sh is safe for environments with other Claude Code plugins installed — it uses symlinks only, never deletes non-jessy-skills entries (superpowers, omc, skill-creator, etc. are preserved).
 
 ### Claude Code MCP Servers (Recommended, NOT Required)
 
@@ -131,14 +131,14 @@ The workflow auto-detects MCP availability and falls back to native WebFetch/Web
 
 ## Launch Mode
 
-project-workflow-claude v2.7 is a modular orchestrator — thin control plane + 7 independent execution skills.
+project-workflow-claude v2.8 is a modular orchestrator — thin control plane + 7 independent execution skills.
 
 ```bash
 claude                          # Start Claude Code normally
 /project-workflow-claude        # Run the workflow
 ```
 
-The workflow auto-detects MCP availability (Context7, Firecrawl) and falls back to native WebFetch/WebSearch when MCP servers are not available.
+The workflow auto-detects MCP availability (Context7, Firecrawl) and falls back to native WebFetch/WebSearch when MCP servers are not available. 4 active Workflow scripts (phase3-6) provide deterministic pipeline automation. Phase 0-2 use Skill+Agent direct execution (no Harness overhead).
 
 ## Report to User
 
