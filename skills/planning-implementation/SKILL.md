@@ -19,6 +19,20 @@ Convert the approved design into a concrete implementation plan and validate it 
 
 ## Procedure
 
+### Step 0: State Validation
+
+Read `.claude/state/project-workflow-state.json`.
+
+Verify required fields per `skills/project-workflow-claude/references/state-validation.md`.
+
+**Required for this phase:** `contextSummaryPath`
+
+- If any required field is missing or null: BLOCK. Report exactly what's missing.
+- If `escapeHatchesUsed` is missing from state file: default to `[]` (backward compat).
+- If all required fields present: continue to Step 1.
+
+After checking contextSummaryPath, check: if BOTH `specPath` AND `grillEvidencePath` are null AND `"skip design"` NOT in `escapeHatchesUsed` → BLOCK with: "No design spec found. Run /designing-solutions first, or say 'skip design' to proceed with task-intake.json only."
+
 ### Step 1: Read the Approved Design Spec
 
 Read the design spec from `.claude/specs/<design>.md`. Extract:

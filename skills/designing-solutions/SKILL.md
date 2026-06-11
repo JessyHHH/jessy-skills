@@ -22,6 +22,20 @@ Before writing or editing any file, present approach and get user approval. Simp
 
 ## Procedure
 
+### Step 0: State Validation
+
+Read `.claude/state/project-workflow-state.json`.
+
+Verify required fields per `skills/project-workflow-claude/references/state-validation.md`.
+
+**Required for this phase:** `contextSummaryPath`
+
+- If any required field is missing or null: BLOCK. Report exactly what's missing.
+- If `escapeHatchesUsed` is missing from state file: default to `[]` (backward compat).
+- If all required fields present: continue to Step 1.
+
+[Step 0/9] State Validation — state validated
+
 ### Step 1: Explore First (Timebox 60 Seconds)
 
 - Read top-level files matching task keywords.
@@ -29,7 +43,7 @@ Before writing or editing any file, present approach and get user approval. Simp
 - If the codebase already answers a question, skip that question -- never re-ask what's in the repo.
 - Hard limit: 60 seconds. Move on when the timer expires.
 
-### Step 2: Requirement Echo
+[Step 1/9] Explore First — exploration complete
 
 Print a structured restatement of every requirement extracted from:
 - User's original message
@@ -50,6 +64,8 @@ Complete and correct? (yes/no)"
 Ask the user: "Complete and correct?" before proceeding to the first Grill question.
 - If the user says no: update the requirements list.
 - If the user says yes: the echoed requirements become the authoritative scope baseline.
+
+[Step 2/9] Requirement Echo — requirements confirmed
 
 ### Step 3: Grill -- Variable-Depth Requirements Crystallization
 
@@ -76,18 +92,26 @@ The Grill is one question at a time with recommended answers. Depth is driven by
 
 **Exit criteria:** The Grill exits when the Hard Grill Checklist in `references/grill-checklist.md` passes. ALL checklist items must be PASS before proceeding.
 
+[Step 3/9] Grill — requirements crystallized (N resolved, M assumed)
+
 ### Step 4: Persist Grill Evidence
 
 After ALL checklist items pass and before writing the spec, delegate writing `.claude/state/grill-evidence.json` to a subagent. The required JSON shape is defined in `references/grill-checklist.md`.
+
+[Step 4/9] Persist Grill Evidence — grill evidence saved
 
 ### Step 5: Propose Approaches
 
 Propose 2-3 approaches with trade-offs and a clear recommendation.
 
+[Step 5/9] Propose Approaches — approaches presented
+
 ### Step 6: Write Design Spec
 
 Delegate writing the design spec to a subagent:
 `Agent(description='Write design spec', prompt='Write the design spec to .claude/specs/YYYY-MM-DD-<topic>-design.md following the template in skills/designing-solutions/references/design-spec-template.md. Content: [spec content from Grill and approach proposal].', subagent_type='general-purpose')`
+
+[Step 6/9] Write Design Spec — spec written
 
 ### Step 7: Self-Review (Before User Review)
 
@@ -100,6 +124,8 @@ d. **AMBIGUITY CHECK** -- Requirements with two interpretations: pick one, make 
 
 Never show an unreviewed spec to the user.
 
+[Step 7/9] Self-Review — spec self-reviewed, no issues found
+
 ### Step 8: Skill Re-Check (After Design Approved)
 
 - Re-scan codebase + task signals against routing tables.
@@ -107,13 +133,15 @@ Never show an unreviewed spec to the user.
 - Load missing ones via `Skill(skill='<name>')`.
 - Post-design codebase context may surface additional needed skills.
 
+[Step 8/9] Skill Re-Check — skills up to date
+
 ### Step 9: Approval
 
 Present spec to the user for confirmation using sectioned design approval: present section-by-section, get user confirmation per section. This ensures each design section (scope, approach, verification, risks) receives explicit user sign-off.
 
 On approval: auto-transition per Exit Contract.
 
-## Exit Announcement
+[Step 9/9] Approval — design approved
 
 ```
 "Grill mode complete:

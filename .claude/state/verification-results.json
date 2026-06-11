@@ -1,0 +1,22 @@
+{
+  "timestamp": "2026-06-11T00:00:00Z",
+  "allPassed": true,
+  "dryRounds": 2,
+  "projectType": "skills-repo",
+  "checkResults": [
+    {"name": "strategic-thinking-tests", "exitCode": 0, "stdout": "32 passed, 0 failed"},
+    {"name": "workflow-syntax", "exitCode": 0, "stdout": "6 scripts OK"},
+    {"name": "whitespace", "exitCode": 0, "stdout": "clean"},
+    {"name": "frontmatter", "exitCode": 0, "stdout": "31 frontmatter blocks"},
+    {"name": "script-count", "exitCode": 0, "stdout": "6 workflow scripts"}
+  ],
+  "evidenceChecks": [
+    {"id": "all-scripts-parse", "passed": true},
+    {"id": "skills-step-0", "passed": true},
+    {"id": "skip-design-guard", "passed": true},
+    {"id": "completion-guarantee", "passed": true},
+    {"id": "phase6-contract", "passed": true},
+    {"id": "orchestrator-v28", "passed": true},
+    {"id": "install-scripts", "passed": true}
+  ]
+}

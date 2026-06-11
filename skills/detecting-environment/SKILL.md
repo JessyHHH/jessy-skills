@@ -18,6 +18,18 @@ Detect project type, tooling, context artifacts, and task-specific skills before
 
 ## Procedure
 
+### Step 0: State Validation
+
+Read `.claude/state/project-workflow-state.json`.
+
+Verify required fields per `skills/project-workflow-claude/references/state-validation.md`.
+
+**Required for this phase:** `taskIntakePath`
+
+- If any required field is missing or null: BLOCK. Report exactly what's missing.
+- If `escapeHatchesUsed` is missing from state file: default to `[]` (backward compat).
+- If all required fields present: continue to Step 1.
+
 ### Step 1: Detect Project Type
 
 Check in order, first match wins. Use Glob with Bash fallback as noted.

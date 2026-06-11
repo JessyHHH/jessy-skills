@@ -1,4 +1,4 @@
-<!-- ⚠️ Auto-generated | Commit: ea3e7e62d7c41286e43ad72ccd02d36f7a219717 | Date: 2026-06-10 | Skills Repository -->
+<!-- ⚠️ Auto-generated | Commit: 48c7517ad891fb0947f616d6ff9ed9e8d6576b2f | Date: 2026-06-10 | Skills Repository -->
 
 # Skills Repository — Knowledge Layer
 

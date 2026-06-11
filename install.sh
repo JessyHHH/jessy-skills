@@ -209,7 +209,7 @@ if [ $HAS_CLAUDE -eq 1 ]; then
         mkdir -p "$WF_INSTALL"
         cp "$DOTFILES/.claude/workflows/"*.js "$WF_INSTALL/" 2>/dev/null || true
         echo "  ✓ Workflow scripts installed to $WF_INSTALL/ ($(ls "$WF_INSTALL" 2>/dev/null | wc -l | tr -d ' ') scripts)"
-        echo "  → Available as Workflow(name='phase3-consensus') etc. from any project"
+        echo "  → Available as Workflow(name='phase1-detect-knowledge'), Workflow(name='phase2-plan-generate'), Workflow(name='phase3-consensus') etc. from any project"
     fi
 
     # Create .claude/workflows symlink if running from within the repo
@@ -226,10 +226,10 @@ if [ $HAS_CLAUDE -eq 1 ]; then
 
     echo "  ✓ Claude Code integration ready"
 
-    # project-workflow-claude v2.7 — modular execution skills
-    echo "  ℹ project-workflow-claude v2.7 uses modular execution skills"
+    # project-workflow-claude v2.8 — modular execution skills
+    echo "  ℹ project-workflow-claude v2.8 — modular execution skills"
     echo "  → 1 orchestrator + 7 execution skills"
-    echo "  → 4 Workflow scripts included (.claude/workflows/)"
+    echo "  → 6 Workflow scripts included (.claude/workflows/)"
     echo "  → Auto-detects Context7/Firecrawl MCP (falls back to WebFetch/WebSearch)"
     echo "  → Iron Law: skills/project-workflow-claude/references/iron-law.md"
 

@@ -1,121 +1,60 @@
 {
-  "timestamp": "2026-06-10T00:00:00Z",
-  "session": "phase5-optimization",
   "ambiguityRegister": [
     {
-      "id": "A1",
-      "question": "P2 pipeline structure — Plan A (per-task independent pipeline) vs Plan B (keep existing structure)?",
-      "status": "answered",
-      "impact": "Phase 5 wall clock time: max(task review time) vs sum of all tasks",
-      "recommendedAnswer": "Plan A: pipeline(tasks, enrichStage, reviewStage) — two-stage form where enrichStage is no-op and reviewStage runs spec→code→adversarial per task independently. Wall clock ≈ max(single task spec+code+adversarial time) + overhead",
-      "decision": "Plan A (corrected to two-stage form per Phase 3 review)"
+      "id": "A1-designing-solutions-workflow",
+      "question": "Should designing-solutions get a Workflow script?",
+      "status": "assumed",
+      "impact": "Would add deterministic output schema but lose AskUserQuestion interaction capability",
+      "recommendedAnswer": "No — designing-solutions needs AskUserQuestion for user interaction, which Workflow scripts cannot call",
+      "decision": "Keep designing-solutions as pure Skill (no Workflow). Strengthen entry/exit guards instead.",
+      "ledgerEntry": "S1-design-interactive"
     },
     {
-      "id": "A2",
-      "question": "Guardrail granularity — hard numeric limits vs soft constraints?",
-      "status": "answered",
-      "impact": "Whether agents re-read files 12+ times (observed in session 36064b31 task-02)",
-      "recommendedAnswer": "Option 1: 5 file reads max, no build/test/grep, 3 thinking blocks max",
-      "decision": "Option 1 — hard numeric limits"
+      "id": "A2-pipeline-orchestrator",
+      "question": "Should we create a single top-level Workflow that orchestrates all 7 phases?",
+      "status": "deferred-out-of-scope",
+      "impact": "Would provide deterministic phase sequencing but increase maintenance burden and reduce flexibility for standalone-skill mode",
+      "recommendedAnswer": "Defer — 7 individual skills with strengthened handoff contracts provide sufficient determinism without the overhead",
+      "decision": "Deferred out of scope for this iteration"
     },
     {
-      "id": "A3",
-      "question": "Model tiering — Haiku or Sonnet for spec review with injected context?",
+      "id": "A3-phase6-loop-control",
+      "question": "Should the loop-until-dry logic live inside phase6-verify.js or remain in the master agent?",
       "status": "answered",
-      "impact": "~45% token cost difference per spec review agent",
-      "recommendedAnswer": "Haiku default for spec review; Sonnet when Quick Gate marks task as high-risk (missing >=2 expectedEvidence)",
-      "decision": "Haiku default, Sonnet upgrade for high-risk"
+      "impact": "Changes ownership of retry tracking from agent memory to deterministic script execution",
+      "recommendedAnswer": "Move into phase6-verify.js — the script should own the loop counter and return shouldContinue",
+      "decision": "Move loop-until-dry into phase6-verify.js. Master agent runs checks, passes results; script tracks dryRounds and exits after 2 consecutive clean rounds."
     },
     {
-      "id": "A4",
-      "question": "Implement all P0+P1+P2 this run or split into phases?",
+      "id": "A4-context-duplication",
+      "question": "How should Phase 4 output be passed to Phase 5 without re-reading files?",
       "status": "answered",
-      "impact": "Whether P2 refactor is done now or later",
-      "recommendedAnswer": "All in one run — P2 structural refactor is a one-time change",
-      "decision": "All P0+P1+P2 implemented this run"
+      "impact": "Changes Phase 5 input contract and Phase 4 output contract",
+      "recommendedAnswer": "Phase 4 outputs per-task diffText + fileContents snapshot. Phase 5 reads this directly instead of re-reading files from disk.",
+      "decision": "Phase 4 selfReviewStatus already includes changedFiles. Add per-task diffText and fileContentsSnapshot to the output. Phase 5's buildFullReviewStage reads these from the task object instead of disk."
     }
   ],
   "assumptionLedger": [
     {
-      "id": "S1",
-      "assumption": "With injected spec text + file contents, Haiku is sufficient for spec compliance review (checklist-style)",
-      "evidence": "Qodo benchmark: Haiku 4.5 Thinking outperformed Sonnet 4.5 on code review quality (7.29 vs 6.60) for single-pass reviews",
-      "confidence": "high",
-      "correctionPath": "If spec review false-negative rate increases, upgrade to Sonnet for tasks with >3 file dependencies"
+      "id": "S1-design-interactive",
+      "assumption": "designing-solutions will always be triggered by the orchestrator or user explicitly; the strengthened entry guards in planning-implementation will catch cases where design was skipped",
+      "evidence": "Session 60b27dfc shows design was sometimes skipped; the skip-design escape hatch already exists in transition-rules.md",
+      "confidence": "High",
+      "correctionPath": "If users frequently skip design and encounter issues, add a pre-design checklist to planning-implementation that validates requirements are sufficiently specified before proceeding"
     },
     {
-      "id": "S2",
-      "assumption": "pipeline(tasks, enrichStage, reviewStage) with per-task independent execution won't cause file conflicts",
-      "evidence": "Task files are generally disjoint in well-structured plans; current session's 5 tasks had distinct file sets",
-      "confidence": "medium",
-      "correctionPath": "File-overlap check at enrichment time + serialization for shared-file tasks. Master agent logs warning, enrichment step documents overlap in task._sharedFilesWarning."
+      "id": "S2-workflow-compatibility",
+      "assumption": "All 4 existing Workflow scripts (phase3-consensus, phase4-implement, phase5-review, phase6-verify) remain compatible with their current call signatures",
+      "evidence": "Changes are additive (new fields in output, stricter loop control) — existing call sites pass the same required fields",
+      "confidence": "High",
+      "correctionPath": "If a workflow script breaks, roll back the specific change and add backward-compatible wrapper"
     },
     {
-      "id": "S3",
-      "assumption": "5 file reads is sufficient when spec + file contents are injected into the agent prompt",
-      "evidence": "task-01 completed spec review in 111s with 7 calls; injected context should reduce this further",
-      "confidence": "medium",
-      "correctionPath": "If found insufficient, adjust to 8 file reads"
+      "id": "S3-skill-creator-compliance",
+      "assumption": "Following the skill-creator:skill-creator guidelines will produce maintainable, well-triggered skills",
+      "evidence": "skill-creator is the official Anthropic skill creation framework; its progressive disclosure model (metadata → body → resources) is the standard",
+      "confidence": "High",
+      "correctionPath": "If trigger rates are low after deployment, run the description optimization loop from skill-creator"
     }
-  ],
-  "checklistResults": {
-    "ambiguityRegisterPrinted": true,
-    "assumptionLedgerPrinted": true,
-    "openAmbiguitiesAddressed": true,
-    "successCriteriaObservable": true,
-    "constraintsDocumented": true,
-    "selfGrade": "PASS: spec is implementable without basic questions"
-  },
-  "requirementEcho": [
-    "Context injection: Master pre-extracts plan content and injects into agent prompt (replaces file exploration)",
-    "Anti-exploration guardrails: 5 file reads max, no build/test/grep, 3 thinking blocks max per agent",
-    "Tiered model selection: Haiku for checklist reviews (spec/simplicity/final), Sonnet for deep reasoning (correctness/safety)",
-    "Strongly Recommended Fast Gate: advisory warning when fastGateResults is null, not blocking",
-    "Git-diff-based code review: reviewers see pre-computed diffText, not raw file paths",
-    "Per-task independent pipeline: pipeline(tasks, enrichStage, reviewStage) — two-stage form, each task flows independently"
-  ],
-  "scopeStatement": "Modify phase5-review.js (full refactor for P0+P1+P2) and SKILL.md Phase 5 section. Keep Phase 3/4/6 scripts unchanged.",
-  "successCriteria": [
-    "cmd: node -c ~/.claude/workflows/phase5-review.js exits 0",
-    "semantic: spec review agents receive injected context (no file exploration needed)",
-    "semantic: Haiku used for spec review (default), Sonnet for correctness/safety code review",
-    "semantic: Fast Gate logs advisory warning if fastGateResults is null (not blocking error)",
-    "semantic: per-task pipeline: pipeline(enrichStage, reviewStage) — tasks run independently",
-    "semantic: code reviewers receive pre-computed task.diffText instead of full file paths"
-  ],
-  "phase3Findings": {
-    "verdict": "ITERATE",
-    "score": 6,
-    "resolvedFindings": [
-      {
-        "id": "F1",
-        "severity": "CRITICAL",
-        "issue": "pipeline() API mismatch",
-        "resolution": "Use two-stage pipeline(enrichStage, reviewStage) — proven API shape"
-      },
-      {
-        "id": "F2",
-        "severity": "HIGH",
-        "issue": "Git-diff acquisition mechanism absent",
-        "resolution": "Master agent pre-computes task.diffText — injected as wf arg"
-      },
-      {
-        "id": "F3",
-        "severity": "HIGH",
-        "issue": "Fast Gate backward compat break",
-        "resolution": "Soft Fast Gate: advisory warn, not blocking error"
-      },
-      {
-        "id": "F4",
-        "severity": "MEDIUM",
-        "issue": "Risk S2 circular non-mitigation",
-        "resolution": "File-overlap check at enrichment time + serialization for shared files"
-      }
-    ],
-    "acceptedLowFindings": [
-      "Wall-clock formula is approximation not bound — accepted, will use ~ prefix",
-      "phase() display granularity lost — accepted, new architecture trades UI for speed"
-    ]
-  },
-  "phase3Update": "Plan updated 2026-06-10 with F1-F4 resolutions. See phase3Findings for details."
+  ]
 }

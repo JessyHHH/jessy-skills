@@ -1,0 +1,30 @@
+{
+  "requestSummary": "Fix /project-workflow-claude v2.7 — analyze session 60b27dfc friction points and fill gaps in Phase 1-3 (detect, design, plan) that lack Workflow scripts. Research Claude Code official workflow best practices from code.claude.com/docs. Improve handoff smoothness across the 7-skill pipeline.",
+  "repoRoot": "/home/huangzexi/personal/jessy-skills",
+  "approvedInScope": [
+    "Add Workflow scripts for Phase 1-3 (or justify why some phases should NOT use Workflow)",
+    "Improve phase-to-phase handoff mechanism (state validation, context passing)",
+    "Reduce redundant context re-reading between implement and review phases",
+    "Fix loop control for Phase 6 verify (make Workflow-enforced instead of agent-tracked)",
+    "Add state file validation at phase boundaries",
+    "Research and apply Claude Code official workflow best practices",
+    "Update orchestrator SKILL.md and child skills as needed"
+  ],
+  "approvedOutOfScope": [
+    "Rewriting the entire workflow from scratch",
+    "Changing the 7-skill architecture to a different model",
+    "Modifying Phase 4-6 workflow scripts beyond necessary fixes"
+  ],
+  "sourceEvidence": [
+    "Session 60b27dfc-1bd3-4db3-9e43-1d286d3d2e0c analysis — 541 lines, 5.3MB session, identified 6 friction categories",
+    "Claude Code official docs at code.claude.com/docs/en/workflows",
+    "Anthropic 'Building Effective Agents' guide — 5 foundational patterns",
+    "Community workflow-cookbook — 6 verified orchestration patterns"
+  ],
+  "constraints": [
+    "Workflow scripts are pure orchestrators — no file I/O, no Bash, no AskUserQuestion",
+    "Design phase is highly interactive and creative — NOT suitable for full Workflow",
+    "Detect phase needs file system access — partially suitable for Workflow",
+    "Must maintain backward compatibility with existing phase3/4/5/6 workflow scripts"
+  ]
+}

@@ -19,6 +19,18 @@ Execute the `json:tasks` block from an approved implementation plan using a dete
 
 ## Procedure
 
+### Step 0: State Validation
+
+Read `.claude/state/project-workflow-state.json`.
+
+Verify required fields per `skills/project-workflow-claude/references/state-validation.md`.
+
+**Required for this phase:** `planPath`
+
+- If any required field is missing or null: BLOCK. Report exactly what's missing.
+- If `escapeHatchesUsed` is missing from state file: default to `[]` (backward compat).
+- If all required fields present: continue to Step 1.
+
 ### 1. Read State and Load Tasks
 
 Read `.claude/state/project-workflow-state.json` to locate the plan path. Open the plan file and extract the `json:tasks` fenced code block. Parse to obtain the tasks array. Each task includes the expanded schema with `id`, `prompt`, `files`, `complexity`, `mutatesFiles`, `contextRefs`, `intakeRefs`, `grillRefs`, `expectedEvidence`, `forbiddenEvidence`, and `patchBackStrategy`.
@@ -63,6 +75,18 @@ The script uses `pipeline()` (streaming, no barrier):
 - **Stage 1 (Implement):** `agent(task.prompt, {model, isolation})` per task. `buildImplementerPrompt()` embeds `fileContents`, `grillDecisions`, and `planSections` when present, falling back to `contextRefs`/`grillRefs` references when absent. Complexity drives model: `simple` -> Haiku, `medium`/`complex` -> Sonnet. `patchBackStrategy='harness-managed'` -> `isolation='worktree'`, `no-isolation` -> `isolation='none'`.
 - **Stage 2 (Quick Verify):** `agent(verify, {phase: 'Quick Verify', schema})` per task.
 - **Stage 3 (Self-Review):** Each implementer reports `DONE` / `DONE_WITH_CONCERNS` / `NEEDS_CONTEXT` / `BLOCKED`.
+- **Stage 4 (Completion Guarantee):** Failsafe loop: collects tasks with status NOT in [`DONE`, `DONE_WITH_CONCERNS`], retries them with a simplified implement+quick-verify pipeline (no self-review), fresh agent, different approach prompt. Maximum 3 retry rounds per task (`MAX_RETRY_ROUNDS = 3`). After exhaustion marks remaining as `STUCK` with `stuckReason` and adds them to `selfReviewStatus` for Phase 5 visibility.
+
+### 4b. Completion Guarantee — Compensation Loop
+
+After the Workflow script completes, inspect the returned `selfReviewStatus`:
+
+1. **Identify stuck tasks:** Filter for objects where `status === 'STUCK'`. Log each stuck task's `taskId` and `stuckReason`.
+2. **If stuck tasks exist:**
+   - **`NEEDS_CONTEXT` tasks:** Enrich with the missing context (re-read files, re-fetch grill decisions, re-load plan sections). Re-invoke `Workflow(name='phase4-implement', args={tasks: [stuck tasks only]})`.
+   - **`BLOCKED` tasks:** Report block reason to the user for manual resolution. Do not retry automatically.
+3. **Compensation cap:** Max 2 compensation loops. After 2 loops, any still-stuck tasks are reported to the user regardless of reason.
+4. **Stuck task visibility:** Ensure `stuckReason` is preserved in the `selfReviewStatus` for Phase 5 (`reviewing-implementation`) consumption. The per-task `stuckReason` field feeds directly into the review pipeline.
 
 ### 5. Worktree Review (Phase 4.5)
 

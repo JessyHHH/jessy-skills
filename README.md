@@ -1,16 +1,15 @@
 # jessy-skills — Multi-Language AI Engineering Skills
 
-![Version](https://img.shields.io/badge/version-v2.7-blue)
+![Version](https://img.shields.io/badge/version-v2.8-blue)
 
 一个支持 [Claude Code](https://code.claude.com/) + [Hermes Agent](https://github.com/NousResearch/hermes-agent) 的多语言工作流技能集合。模块化流水线 — 1 个 orchestrator + 7 个 execution skills（含 HARD-GATE / Iron Law / Two-Stage Review），84+ 技能覆盖 Go/Vue/前端/工程/方法论全流程。
 
-**v2.7 新特性：**
-- **模块化技能架构**: 1 个 thin orchestrator + 7 个独立 execution skills，每个子技能 <500 行，Exit Contract 结构
-- **per-task 独立流水线**: spec→code→adversarial review 并行执行，任务间不再相互阻塞
-- **分层模型选择**: Haiku 用于清单式审查（spec/simplicity/final/adversarial），Sonnet 用于深度推理（correctness/safety），~60-70% token 节省
-- **上下文注入 + 反探索护栏**: Master agent 预先提取 spec 段落和文件内容注入 agent prompt，硬限制 5 次文件读取 / 无 build/test/grep / 最多 3 个 thinking block
-- **Git-diff 式代码审查**: 审查 agent 只看变更行，不看全文。预计算的 diff 由 Master agent 注入
-- **快速门控强化**: 强烈推荐 Fast Gate 在 Phase 5 工作流脚本运行前启动（脚本记录建议性警告，但不打断执行）
+**v2.8 新特性：**
+- **Phase 1-2 Workflow 脚本前移**: 新增 `phase1-detect-knowledge.js` 和 `phase2-plan-generate.js`，Phase 1-2 具有确定性脚本编排（结构化输入/输出、进度可见性、可恢复性检查点）
+- **Phase 4 任务完成保证**: Stage 4 Completion Guarantee — 未完成任务自动重试（最多3轮），STUCK 任务明确返回原因
+- **阶段边界状态验证**: 7 个执行技能统一添加 Step 0 状态验证，`planning-implementation` 启动 skip-design 入口守卫
+- **Phase 4→5 上下文去重**: Phase 4 输出 `perTaskDiffs` + `fileContentsSnapshots`，Phase 5 直接消费，消除磁盘重读
+- **Phase 6 循环合约强化**: `mandatoryNextAction` 枚举 + `totalIterations` 追踪 + max 10 迭代硬上限 + `EXHAUSTED` 裁决
 
 **v2.4 新特性：**
 - **全面移除 Opus**: 所有 Workflow subagent 使用 Sonnet/Haiku，复杂任务不再使用 Opus，大幅降低成本
@@ -55,9 +54,9 @@ ctx7 login && firecrawl login  # 浏览器授权
 
 ## 工作流概览
 
-| Phase | Hermes (`project-workflow`) | Claude Code (`project-workflow-claude` v2.7 modular orchestrator) |
+| Phase | Hermes (`project-workflow`) | Claude Code (`project-workflow-claude` v2.8 modular orchestrator) |
 |-------|---------------------------|----------------------------------------|
-| 0 | `search_files` 检测项目类型 | `Glob` + `Grep` 检测项目类型 + **Task Intake Snapshot** |
+| 0 | `search_files` 检测项目类型 | `Glob` + `Grep` 检测项目类型 + **Task Intake Snapshot** + **Step 0 状态验证** |
 | 0.3 | `delegate_task` 分析 → CONTEXT.md | `Agent` 分析 → **CONTEXT.md (两层) + contextSummary** |
 | 0.5 | `skill_view()` 加载技能 | `Skill()` 加载技能 |
 | 1 | `clarify()` 设计对话 ⚡ | `AskUserQuestion()` + **Hard Grill Checklist (6项) + REQUIREMENT ECHO** ⚡ |
@@ -73,18 +72,22 @@ ctx7 login && firecrawl login  # 浏览器授权
 
 **出口可见性：** 每个 Phase 结束时输出 `Phase X complete. [skill] verified. → Phase Y`，Skill Expected 列在转换规则表中。
 
-### project-workflow-claude v2.7 模块化架构
+### project-workflow-claude v2.8 模块化架构
 - **Modular Skill Orchestrator**: 1 个 thin orchestrator + 7 个独立 execution skills，每个 <500 行
 - **Exit Contract**: 每个 execution skill 定义明确的入口/出口合同，上下游技能独立验证
+- **Step 0 状态验证**: 7 个执行技能统一添加状态检查，`planning-implementation` 启动 skip-design 入口守卫
 - **Hard Grill Checklist**: 6 项强制自查（PASS/FAIL），逐条确认才能退出 Phase 1
 - **REQUIREMENT ECHO**: 需求回放确认步骤，在 Grill 前回显所有需求给用户确认
 - **Phase 5 Layered Review**: 4 层复杂度门控 — 简单跳过→中等仅正确性→复杂全量，预计节省 50-60% token
 - **Phase 4.6 Quick Gate**: fail-fast 快速门（git diff + grep expectedEvidence + grep forbiddenEvidence）
+- **Phase 4 Completion Guarantee**: 未完成任务自动重试（最多 3 轮），STUCK 任务明确返回原因
+- **Phase 4→5 上下文去重**: perTaskDiffs + fileContentsSnapshots，Phase 5 直接消费，消除磁盘重读
+- **Phase 6 Loop Contract**: mandatoryNextAction 枚举 + totalIterations 追踪 + max 10 迭代硬上限 + EXHAUSTED 裁决
 - **Grill Evidence Persistence**: `.claude/state/grill-evidence.json` 持久化，Phase 4.6/6 可审计
 - **CONTEXT.md 双层上下文**: Knowledge Layer（架构/实体/接口）+ Instruction Layer（约定/命令/不变量），`[confirmed]`/`[auto]` 标签
 - **Phase 1 深度 Grill**: Ambiguity Register + Assumption Ledger，可变深度退出条件，不固定四问
 - **Phase 0 快照**: Task Intake Snapshot 从源头锁定 scope
-- **Workflow 脚本驱动**: 4 个确定性 JS 脚本 (pipeline/parallel/loop/adversarial verify)
+- **Workflow 脚本驱动**: 6 个确定性 JS 脚本 (pipeline/parallel/loop/adversarial verify + knowledge detect + plan generate)
 - **Phase 4.5 工作树审查**: harness-managed 隔离 → master agent merge-back
 - **Phase 5 Hard Gate**: finalReview APPROVE/ITERATE/REJECT 统一裁定
 - **Phase 6 语义证据**: evidenceChecks (5 种类型: file-exists/text-present/text-absent/command-output-present/command-output-absent)
@@ -92,7 +95,7 @@ ctx7 login && firecrawl login  # 浏览器授权
 
 ## 核心设计
 
-- **双平台支持**：`project-workflow`（Hermes）+ `project-workflow-claude`（Claude Code，v2.7 modular orchestrator），共享 72 个 domain skills
+- **双平台支持**：`project-workflow`（Hermes）+ `project-workflow-claude`（Claude Code，v2.8 modular orchestrator），共享 72 个 domain skills
 - **零硬编码**：项目类型从 go.mod/package.json/skills/SKILL.md 自动检测，skill 自动路由
 - **自驱动顺序**：Phase 0.3 先分析代码库生成项目知识，Phase 0.5 再加载技能
 - **CONTEXT.md 双层结构**（Knowledge + Instruction）：`[confirmed]`/`[auto]` 标签，子目录就近覆盖
@@ -102,9 +105,9 @@ ctx7 login && firecrawl login  # 浏览器授权
 - **Ralph 循环**：任何验证失败 → 自动修复 → 重新验证，直到全部通过
 - **Phase 出口可见**：每个 Phase 宣告用了什么 skill（`Phase X complete. [skill] verified. → Phase Y`）
 
-## v2.7 Modular Architecture
+## v2.8 Modular Architecture
 
-project-workflow-claude v2.7 uses a thin orchestrator + 7 independent execution skills.
+project-workflow-claude v2.8 uses a thin orchestrator + 7 independent execution skills.
 
 | Skill | Role | Key Deliverable |
 |------|------|-----------------|
@@ -117,20 +120,25 @@ project-workflow-claude v2.7 uses a thin orchestrator + 7 independent execution 
 | **verifying-completion** | Phase 6 | Loop Until Dry verification, evidenceChecks |
 | **finishing-development** | Phase 7-8 | Retrospective, memory compression, branch cleanup |
 
-**4 Workflow Scripts:**
+**6 Workflow Scripts:**
+- `phase1-detect-knowledge.js` — Phase 1 Steps 5-7 (知识分析 + 技能选择 + 上下文摘要)
+- `phase2-plan-generate.js` — Phase 2 Steps 2-4 (计划生成 + schema 验证 + 上下文收集)
 - `phase3-consensus.js` — Judge Panel (3 angles parallel) + context/task contract validation + scope/ambiguity blocking
-- `phase4-implement.js` — Pipeline implement + isolation strategies (no-isolation/harness-managed/external-report) + changedFiles threading
-- `phase5-review.js` — **4-layer complexity-gated review**: Layer 1 Fast Gate (bash) → Layer 2 Standard (spec, gated) → Layer 3 Deep (code quality, gated) → Layer 4 Final (cross-task, conditional). Outputs layersApplied, layersSkipped, estimatedTokensSaved
-- `phase6-verify.js` — Loop Until Dry verification + evidenceChecks evaluation (5 types) + Quick Gate audit trail + grill evidence cross-reference
+- `phase4-implement.js` — Pipeline implement + isolation strategies (no-isolation/harness-managed/external-report) + changedFiles threading + Completion Guarantee (max 3 retries, STUCK reason)
+- `phase5-review.js` — **4-layer complexity-gated review**: Layer 1 Fast Gate (bash) → Layer 2 Standard (spec, gated) → Layer 3 Deep (code quality, gated) → Layer 4 Final (cross-task, conditional). Outputs layersApplied, layersSkipped, estimatedTokensSaved. Consumes perTaskDiffs + fileContentsSnapshots from Phase 4 (no disk re-read)
+- `phase6-verify.js` — Loop Until Dry verification + evidenceChecks evaluation (5 types) + Quick Gate audit trail + grill evidence cross-reference + mandatoryNextAction enum + totalIterations tracking + max 10 iteration hard limit + EXHAUSTED verdict
 
 **Key Properties:**
 - Each execution skill is <500 lines with Exit Contract sections
+- Step 0 state validation on all 7 execution skills — prevents out-of-order invocation
 - Scripts are deterministic — support caching and resume
 - Iron Law: `skills/project-workflow-claude/references/iron-law.md` — standalone verification discipline
 - Scripts CANNOT do file I/O, Bash, or Read — master agent pre-computes file evidence
 - MCP-aware: auto-detects Context7/Firecrawl, falls back to WebFetch/WebSearch
-- Verdicts unified: APPROVE/ITERATE/REJECT (present tense) across Phase 3 and Phase 5
+- Verdicts unified: APPROVE/ITERATE/REJECT (present tense) across Phase 3, Phase 5, and Phase 6 (EXHAUSTED)
 - Phase 5 layered review: ~50-60% token reduction for mixed-complexity runs
+- Phase 4 Completion Guarantee: unfinished tasks auto-retry (max 3 rounds), STUCK tasks return explicit reason
+- Phase 6 EXHAUSTED verdict: when max 10 iterations are reached without resolution, the loop exits cleanly with mandatoryNextAction
 
 ## 逃逸命令
 
@@ -175,7 +183,7 @@ project-workflow-claude v2.7 uses a thin orchestrator + 7 independent execution 
 
 ### 工作流
 - `project-workflow` — 11-Phase 自驱动流水线（核心，v7.0，Hermes）
-- `project-workflow-claude` — 模块化流水线（v2.7，Claude Code，1 orchestrator + 7 execution skills + Workflow 脚本驱动 + Hard Grill Checklist + Layered Review + Quick Gate + CONTEXT.md 双层上下文）
+- `project-workflow-claude` — 模块化流水线（v2.8，Claude Code，1 orchestrator + 7 execution skills + Workflow 脚本驱动 + Hard Grill Checklist + Layered Review + Quick Gate + CONTEXT.md 双层上下文）
 - `karpathy-guidelines` — LLM 编码五条纪律
 - `deep-interview` — 苏格拉底式需求澄清
 - `ralplan` — 多 agent 共识计划
@@ -279,10 +287,11 @@ jessy-skills/
 │   └── hermes.sh           # Shell function
 └── skills/
     ├── project-workflow/   # Core workflow (v7.0)
-    ├── project-workflow-claude/ # Claude Code workflow (v2.7 modular orchestrator)
+    ├── project-workflow-claude/ # Claude Code workflow (v2.8 modular orchestrator)
     │   └── references/
     │       ├── context-md-spec.md   # CONTEXT.md format spec
     │       ├── iron-law.md          # Verification discipline
+    │       ├── state-validation.md  # Step 0 state validation spec
     │       ├── claude-routing.md    # Claude Code skill routing overlay
     │       └── setup.md             # MCP setup guide
     ├── detecting-environment/  # ★ Phase 0-0.5: project detection, CONTEXT.md

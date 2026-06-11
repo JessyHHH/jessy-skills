@@ -17,6 +17,18 @@ Complete the development workflow with structured learning, optional memory comp
 
 ## Procedure
 
+### Step 0: State Validation
+
+Read `.claude/state/project-workflow-state.json`.
+
+Verify required fields per `skills/project-workflow-claude/references/state-validation.md`.
+
+**Required for this phase:** `verificationResultsPath`
+
+- If any required field is missing or null: BLOCK. Report exactly what's missing.
+- If `escapeHatchesUsed` is missing from state file: default to `[]` (backward compat).
+- If all required fields present: continue to Step 1.
+
 ### 1. Reconfirm Verification
 
 Before any outward-facing or destructive operation, verify that Phase 6 results are still current — no new code has been committed or changed since verification.

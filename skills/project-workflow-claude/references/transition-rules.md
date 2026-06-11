@@ -37,7 +37,7 @@ Stop and ask the user when:
 
 - `quick` or `fast`: reduce interview/review depth but keep verification gates.
 - `deep` or `careful`: use full-depth review and verification.
-- `skip design`: route to `planning-implementation` only when the user provides approved requirements or a spec.
+- `skip design`: route to `planning-implementation` when the user provides approved requirements or a spec. Records `"skip design"` in `escapeHatchesUsed` in the state file.
 - `skip plan`: route to `implementing-changes` only when tasks are already explicit.
 - `no review`: skip `reviewing-implementation` only after warning the user.
 - `I'll test`: skip `verifying-completion` only after recording that the user owns verification.

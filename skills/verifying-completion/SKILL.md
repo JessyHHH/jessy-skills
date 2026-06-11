@@ -21,6 +21,18 @@ Enforce the Iron Law: NO COMPLETION CLAIMS WITHOUT FRESH VERIFICATION EVIDENCE. 
 
 ## Procedure
 
+### Step 0: State Validation
+
+Read `.claude/state/project-workflow-state.json`.
+
+Verify required fields per `skills/project-workflow-claude/references/state-validation.md`.
+
+**Required for this phase:** `reviewResultsPath`
+
+- If any required field is missing or null: BLOCK. Report exactly what's missing.
+- If `escapeHatchesUsed` is missing from state file: default to `[]` (backward compat).
+- If all required fields present: continue to Step 1.
+
 ### 1. Load the Iron Law
 
 Read `skills/project-workflow-claude/references/iron-law.md` to enforce the complete verification discipline: Gate Function, Red Flags, Rationalization Prevention, TDD Red-Green Verification, Agent Delegation Verification, and Evidence Standard.
@@ -59,6 +71,7 @@ Workflow(
     projectType: '<go|vue|node|skills-repo>',
     checkResults: [...],
     dryRounds: <current>,
+    totalIterations: <cumulative count from master, defaults to 0>,
     evidenceChecks: [...],
     quickGateEvidence: <from quick-gate-results.json>,
     grillEvidencePath: '<.claude/state/grill-evidence.json>'
@@ -66,15 +79,23 @@ Workflow(
 )
 ```
 
-### 5. Loop Until Dry
+### 5. Loop Until Dry (Mechanical Loop Contract)
 
-The script returns `{allPassed, dryRounds, shouldContinue}`.
+The script returns `{allPassed, dryRounds, totalIterations, mandatoryNextAction, verdict, remainingFailures, evidenceFailures, phase, quickGateAudit, grillEvidenceAvailable}`.
 
-- `shouldContinue=false, allPassed=true` -> DONE (Iron Law satisfied, 2 consecutive dry rounds).
-- `shouldContinue=true` -> Master re-runs ALL Bash checks -> re-invoke script with updated `checkResults` and current `dryRounds` value.
-- **Safety cap:** 10 total invocations. Report to user if cap reached.
+Read `mandatoryNextAction` to determine the next step:
 
-If `allPassed=false` after the cap, report the failing checks and do NOT proceed to `finishing-development`.
+- **`RE_RUN_CHECKS`**: Fixes were applied or dry rounds are in progress. Master MUST re-run ALL Bash checks and re-invoke the script with updated `checkResults`, evidence, and incremented `totalIterations`.
+- **`DONE`**: Verification complete or exhausted. Master MUST exit the loop.
+
+The `verdict` field indicates final state:
+- **`PASSED`**: All checks passed with 2 consecutive dry rounds. Proceed.
+- **`EXHAUSTED`**: Max iterations (10) reached with remaining failures. Do NOT proceed to `finishing-development`.
+- **`IN_PROGRESS`**: Loop still active, continue re-running checks.
+
+**Safety cap:** The script enforces a hard cap at `totalIterations >= 10`. When the cap triggers and failures remain, `mandatoryNextAction` is `DONE` with `verdict='EXHAUSTED'`.
+
+If `allPassed=false` after exhaustion, report the failing checks and do NOT proceed to `finishing-development`.
 
 ### 6. Persist Verification Results
 

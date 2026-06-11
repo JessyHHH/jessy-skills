@@ -1,9 +1,9 @@
-⚠️ Auto-generated | Commit: ea3e7e62d7c41286e43ad72ccd02d36f7a219717 | Date: 2026-06-10 | skills-repository
+<!-- ⚠️ Auto-generated | Commit: 48c7517ad891fb0947f616d6ff9ed9e8d6576b2f | Date: 2026-06-10 | skills-repository -->
 
 <!-- KNOWLEDGE_START -->
 ## Architecture
 [auto] Monorepo of 84 AI Agent skills, each defined under `skills/*/SKILL.md` using the agentskills.io YAML frontmatter open standard. 23 top-level category directories organize skills by domain.
-[confirmed] Core workflow: `project-workflow-claude` v2.7 modular orchestrator + 7 execution skills + `karpathy-guidelines` — a thin control plane that delegates to independent execution skills with Hard Gates and Iron Law.
+[confirmed] Core workflow: `project-workflow-claude` v2.7 modular orchestrator + 7 execution skills + `karpathy-guidelines` — a thin control plane (227 lines) that delegates to independent execution skills with Hard Gates and Iron Law.
 [auto] Workflow automation scripts reside in `~/.claude/workflows/` (phase3-consensus.js, phase4-implement.js, phase5-review.js, phase6-verify.js) — deterministic JS orchestrators executed via the Workflow tool.
 [auto] Installation via `bash install.sh`; verification via `bash tests/test-*.sh`.
 [auto] Platform overlay: `skills/project-workflow-claude/references/claude-routing.md` maps Claude Code-specific task signals and codebase signals to workflow phases and skills.
@@ -48,7 +48,7 @@
 - `skills/methodology/` — 4 skills: api-design-first, data-model-first, error-taxonomy, prior-research
 - `skills/project/` — 2 skills: jessy-self-iterate, mixclaw-cron-review
 - `skills/project-workflow/` — 1 skill: shared base workflow (language-agnostic)
-- `skills/project-workflow-claude/` — 1 skill: Claude Code-specific workflow (v2.7 modular orchestrator + 7 execution skills) with references/
+- `skills/project-workflow-claude/` — 1 skill: Claude Code-specific workflow (v2.7 modular orchestrator + 7 execution skills) with 7 references/
 - `skills/ralph/` — 1 skill: Ralph agent mode
 - `skills/ralplan/` — 1 skill: Ralplan planning mode
 - `skills/tools/` — 2 skills: context7-docs, firecrawl-web

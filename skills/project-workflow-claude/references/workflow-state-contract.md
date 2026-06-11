@@ -7,7 +7,7 @@
 ```json
 {
   "workflow": "project-workflow-claude",
-  "version": "v2.7",
+  "version": "v2.8",
   "runMode": "full-workflow | standalone-skill | resume",
   "handoffPolicy": "auto-continue | prompt-next-step",
   "currentSkill": "detecting-environment",
@@ -21,7 +21,8 @@
   "planPath": null,
   "quickGateResultsPath": null,
   "reviewResultsPath": null,
-  "verificationResultsPath": null
+  "verificationResultsPath": null,
+  "escapeHatchesUsed": []
 }
 ```
 

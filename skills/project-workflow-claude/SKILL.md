@@ -1,7 +1,7 @@
 ---
 name: project-workflow-claude
 description: "Use when starting any development task — auto-detects project type, loads matching skills, drives 11-phase pipeline from design through verified completion. Hard Gates + Iron Law."
-version: "v2.7"
+version: "v2.8"
 author: "jessyhuang"
 metadata:
   standalone: true
@@ -17,7 +17,7 @@ triggers:
   - "write code"
 ---
 
-# Project Workflow Claude v2.7 — Modular Orchestrator
+# Project Workflow Claude v2.8 — Modular Orchestrator
 
 **Core design:** Thin orchestrator that delegates each phase to a dedicated modular execution skill. The master agent is a supervisor — it routes, monitors, and transitions, but never implements directly. All heavy lifting (environment detection, design, planning, implementation, review, verification, finishing) lives in child skills.
 
@@ -52,10 +52,12 @@ All 7 skills support two modes: full workflow (`handoffPolicy=auto-continue`, au
 
 ## Workflow Scripts
 
-Four deterministic JS scripts power Phases 4-6. They run via the `Workflow` tool and are installed to `~/.claude/workflows/` by `install.sh`:
+Six deterministic JS scripts power Phases 1-6. They run via the `Workflow` tool and are installed to `~/.claude/workflows/` by `install.sh`:
 
 | Script | Purpose |
 |--------|---------|
+| `phase1-detect-knowledge` | Detect project environment, analyze context artifacts, smart skill selection |
+| `phase2-plan-generate` | Generate concrete implementation plan with expanded task schema |
 | `phase3-consensus` | Judge Panel review (architecture, risk, feasibility) |
 | `phase4-implement` | Parallel task pipeline (implement + quick verify + self-review) |
 | `phase5-review` | Per-task independent review pipeline (spec → code → adversarial → final) |
@@ -73,6 +75,7 @@ Workflow scripts are pure orchestrators — they dispatch subagents but do no fi
 4. **Iron Law.** NO completion claims without fresh verification evidence. The full Iron Law (Gate Function, Red Flags, Rationalization Prevention, TDD Verification, Agent Delegation Verification, Evidence Standard) is in `references/iron-law.md`.
 5. **Lazy loading.** No skills pre-loaded except `karpathy-guidelines`. Skills are loaded on signal match by the detecting-environment skill.
 6. **Auto-transition.** When `handoffPolicy=auto-continue`, proceed to the next skill without waiting for the user.
+7. **Task Completion Guarantee.** No task transitions without fresh state validation. Each skill must validate required state fields before proceeding.
 
 ---
 
@@ -116,7 +119,7 @@ When the user triggers this skill:
    ```json
    {
      "workflow": "project-workflow-claude",
-     "version": "v2.7",
+     "version": "v2.8",
      "runMode": "full-workflow",
      "handoffPolicy": "auto-continue",
      "currentSkill": "detecting-environment",
@@ -130,7 +133,8 @@ When the user triggers this skill:
      "planPath": null,
      "quickGateResultsPath": null,
      "reviewResultsPath": null,
-     "verificationResultsPath": null
+     "verificationResultsPath": null,
+     "escapeHatchesUsed": []
    }
    ```
    The full state contract is documented in `references/workflow-state-contract.md`.
@@ -225,3 +229,4 @@ All references live under `skills/project-workflow-claude/references/`:
 | `context-md-spec.md` | CONTEXT.md format specification — two-layer marker structure, evidence tags, update rules |
 | `claude-routing.md` | Claude Code platform routing overlay (task signals and codebase signals to skill mapping) |
 | `setup.md` | Recommended MCP servers (Context7, Firecrawl), fallback behavior, DeepSeek API notes |
+| `state-validation.md` | State file validation rules, required fields, type constraints, cross-field invariants |
