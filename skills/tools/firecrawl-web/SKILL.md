@@ -1,12 +1,6 @@
 ---
 name: firecrawl-web
-- description: "DEPRECATED → 使用 prior-research。Search, scrape, and crawl the web via Firecrawl CLI."
-version: "1.0"
-author: "jessyhuang"
-metadata:
-  hermes:
-    tags: [web, scrape, search, research, firecrawl, tool]
-    auto_load: true
+description: "DEPRECATED: use prior-research instead. Search, scrape, and crawl the web via Firecrawl CLI."
 ---
 
 # Firecrawl — Web Search & Scraping via CLI

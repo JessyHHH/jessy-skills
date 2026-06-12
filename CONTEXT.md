@@ -1,15 +1,15 @@
-<!-- ⚠️ Auto-generated | Commit: 00027b6d2cff4a816bfb99e31284da7052ae9f23 | Date: 2026-06-11 | skills-repository -->
+<!-- ⚠️ Auto-generated | Commit: fdd0e7692854ad89cecd81763f526b0bd2f588a3 | Date: 2026-06-12 | skills-repository -->
 
 <!-- KNOWLEDGE_START -->
 ## Architecture
-[auto] Monorepo of 84 AI Agent skills, each defined under `skills/*/SKILL.md` using the agentskills.io YAML frontmatter open standard. 23 top-level category directories organize skills by domain.
+[auto] Monorepo of 85 AI Agent skills, each defined under `skills/*/SKILL.md` using YAML frontmatter. 23 top-level category directories organize skills by domain.
 [confirmed] Core workflow: `project-workflow-claude` v2.8 modular orchestrator + 7 execution skills + `karpathy-guidelines` — a thin control plane that delegates to independent execution skills with Hard Gates and Iron Law. Phase 0-2 use Skill+Agent direct execution; Phase 3-6 use Workflow scripts for Harness orchestration.
 [auto] Workflow automation scripts reside in `~/.claude/workflows/` (phase3-consensus.js, phase4-implement.js, phase5-review.js, phase6-verify.js) — 4 deterministic JS orchestrators for Phase 3-6, executed via the Workflow tool. Phase 0-2 use Skill+Agent direct execution (no Harness overhead).
 [auto] Installation via `bash install.sh`; verification via `bash tests/test-*.sh`.
 [auto] Platform overlay: `skills/project-workflow-claude/references/claude-routing.md` maps Claude Code-specific task signals and codebase signals to workflow phases and skills.
 
 ## Entity Map
-- **Skill**: A self-contained AI capability defined by `skills/<name>/SKILL.md` with YAML frontmatter (name, description, version, metadata) and operational instructions in markdown body.
+- **Skill**: A self-contained AI capability defined by `skills/<name>/SKILL.md` with YAML frontmatter (`name`, `description`; optional loader-compatible metadata only when needed) and operational instructions in markdown body.
 - **Workflow Script**: Deterministic JS scripts (`~/.claude/workflows/phase*-*.js`) that drive project-workflow-claude pipeline phases 3-6. Pure orchestrators — no file I/O, Bash, or Read capabilities.
 - **Reference**: Supplementary documentation under `skills/<name>/references/` consumed by skills at runtime (e.g., `claude-routing.md`, `iron-law.md`, `context-md-spec.md`).
 - **Test**: Shell scripts under `tests/` that verify repository integrity (YAML frontmatter compliance, file structure, reference existence).
@@ -18,7 +18,7 @@
 ## Entities
 | Entity | Location | Description |
 |--------|----------|-------------|
-| Skills (84) | `skills/*/SKILL.md` | AI Agent skill definitions across 23 categories |
+| Skills (85) | `skills/*/SKILL.md` | AI Agent skill definitions across 23 categories |
 | Workflow scripts | `~/.claude/workflows/phase{3,4,5,6}-*.js` | Pipeline phase automation (consensus, implement, review, verify). 4 active scripts — Phase 0-2 use Skill+Agent. |
 | Modular execution skills (7) | `skills/{detecting-environment,designing-solutions,planning-implementation,implementing-changes,reviewing-implementation,verifying-completion,finishing-development}/SKILL.md` | v2.8 thin orchestrator delegation targets |
 | State contracts | `skills/project-workflow-claude/references/{workflow-state-contract,transition-rules,handoff-contract}.md` | Modular skill baton-pass contracts |
@@ -31,13 +31,13 @@
 | Project root | `/home/huangzexi/personal/jessy-skills` | Canonical workspace path |
 
 ## Key Interfaces
-[auto] `SKILL.md` files follow the agentskills.io open standard: YAML frontmatter with `name`, `description`, `version`, `metadata` fields, followed by markdown body with operational instructions.
+[auto] `SKILL.md` files use YAML frontmatter with `name` and `description`, followed by markdown body with operational instructions. New Codex-facing edits prefer only those required fields to avoid loader incompatibilities.
 [auto] Workflow scripts consume JSON args (`{planContent, tasks, checkResults, projectType, ...}`) from the Workflow tool and return structured results (`{verdict, score, findings, allPassed, dryRounds, ...}`) for pipeline handoff.
 [auto] CONTEXT.md uses two-layer marker structure: `<!-- KNOWLEDGE_START -->`/`<!-- KNOWLEDGE_END -->` (machine-managed facts) and `<!-- INSTRUCTION_START -->`/`<!-- INSTRUCTION_END -->` (human-managed guidance). All claims tagged `[confirmed]` or `[auto]`.
 [auto] CLAUDE.md uses `<!-- AUTO_START: <Section> -->`/`<!-- AUTO_END: <Section> -->` markers for machine-managed blocks.
 
 ## Package Map
-- `skills/` — 84 skill definitions in 23 category directories (flat within each category)
+- `skills/` — 85 skill definitions in 23 category directories (flat within each category)
 - `skills/analyze/` — 1 skill: repository analysis
 - `skills/code-review/` — 1 skill: comprehensive code review
 - `skills/deep-interview/` — 1 skill: Socratic deep interview
@@ -62,8 +62,8 @@
 - `tests/` — Repository-level test scripts
 
 ## Confidence
-[auto] Architecture and entity structure: High (verified via direct file inspection of 84 SKILL.md files across 23 directories).
-[auto] Skill count (84): High (confirmed by `find skills -name "SKILL.md" -type f | wc -l`).
+[auto] Architecture and entity structure: High (verified via direct file inspection of 85 SKILL.md files across 23 directories).
+[auto] Skill count (85): High (confirmed by `find skills -name "SKILL.md" -type f | wc -l`).
 [auto] Workflow script count (4): High (confirmed by listing `~/.claude/workflows/`).
 [auto] Category breakdown: High (verified by directory traversal of skills/ tree).
 <!-- KNOWLEDGE_END -->

@@ -1,12 +1,6 @@
 ---
 name: context7-docs
-- description: "DEPRECATED → 使用 prior-research。Fetch up-to-date library documentation and code examples via Context7 CLI."
-version: "1.0"
-author: "jessyhuang"
-metadata:
-  hermes:
-    tags: [docs, library, context7, tool]
-    auto_load: false
+description: "DEPRECATED: use prior-research instead. Fetch up-to-date library documentation and code examples via Context7 CLI."
 ---
 
 # Context7 — Real-Time Library Documentation

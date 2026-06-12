@@ -1,7 +1,6 @@
 ---
 name: reviewing-implementation
-description: Use after implementation changes exist and before final verification. Runs two-stage review in the required order: spec compliance first, code quality second, with per-task pipeline, tiered models, context injection, quick-gate risk handling, and Workflow(name='phase5-review'). Hands off to verifying-completion in full-workflow mode.
-version: "v2.7"
+description: "Use after implementation changes exist and before final verification. Runs two-stage review in the required order: spec compliance first, code quality second, with per-task pipeline, tiered models, context injection, quick-gate risk handling, and Workflow(name='phase5-review'). Hands off to verifying-completion in full-workflow mode."
 ---
 
 # Reviewing Implementation

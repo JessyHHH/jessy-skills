@@ -122,6 +122,15 @@ install.sh is safe for environments with other Claude Code plugins installed. It
 
 After install, restart Codex so it reloads `AGENTS.md` and skill discovery paths. The Codex branch entry point is `project-workflow-codex`: it keeps planning, orchestration, integration, and final audit in the main Codex session, then delegates bounded implementation/review/verification work to Codex agents instead of Claude Code `Workflow(...)` scripts.
 
+Codex configuration should use the current hooks feature flag:
+
+```toml
+[features]
+hooks = true
+```
+
+Do not use the deprecated `codex_hooks = true` key.
+
 Codex skill discovery links:
 
 ```bash
@@ -165,6 +174,7 @@ After install, tell the user:
 - Hermes: Shell integration at `~/.jessy-skills/hermes.sh` (sourced from config)
 - Claude Code: CLAUDE.md auto-loads; run `/reload-skills` to activate
 - Codex: AGENTS.md auto-loads; run `/skills` or invoke `$project-workflow-codex`
+- Codex config: use `[features].hooks = true` if hooks are enabled
 - Auto-loaded on every session: `project-workflow` (Hermes) / `project-workflow-claude` (Claude Code) / `project-workflow-codex` (Codex) + `karpathy-guidelines`
 - Context7 + Firecrawl CLIs installed and authenticated
 - Run `source ~/.zshrc` (or `~/.bashrc`, or `. $PROFILE`) or open a new terminal to activate

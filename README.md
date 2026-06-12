@@ -2,7 +2,13 @@
 
 ![Version](https://img.shields.io/badge/version-v2.8-blue)
 
-一个支持 [Claude Code](https://code.claude.com/) + [Hermes Agent](https://github.com/NousResearch/hermes-agent) + Codex 的多语言工作流技能集合。模块化流水线 — Claude Code 使用 Workflow+Skills，Codex 使用 Codex agents+Skills（含 HARD-GATE / Iron Law / Two-Stage Review），84+ 技能覆盖 Go/Vue/前端/工程/方法论全流程。
+一个支持 [Claude Code](https://code.claude.com/) + [Hermes Agent](https://github.com/NousResearch/hermes-agent) + Codex 的多语言工作流技能集合。模块化流水线 — Claude Code 使用 Workflow+Skills，Codex 使用 Codex agents+Skills（含 HARD-GATE / Iron Law / Two-Stage Review），85 个技能覆盖 Go/Vue/前端/工程/方法论全流程。
+
+**v2.8.1 修复：**
+- **Codex skill 加载修复**: 修复 `reviewing-implementation`、`context7-docs`、`firecrawl-web` 的 YAML frontmatter，避免 Codex 启动时跳过加载。
+- **Skill frontmatter 收敛**: 新增/更新的 Codex skill frontmatter 优先只保留 `name` 和 `description`；详细版本、作者、平台信息放正文或引用文件。
+- **Codex hooks 配置更新**: Codex 配置使用 `[features].hooks = true`，不再使用已弃用的 `[features].codex_hooks`。
+- **Codex/Hermes 边界澄清**: Codex 主入口是 `project-workflow-codex`，Hermes 主入口是 `project-workflow`；Codex 共享同一 `skills/` 仓库和 domain skills，但不自动运行 Hermes workflow。
 
 **v2.8 新特性：**
 - **Workflow 精简**: 只保留 4 个活跃 Workflow 脚本（phase3-consensus / phase4-implement / phase5-review / phase6-verify），Phase 0-2 使用 Skill+Agent 直接执行（无 Harness 开销）
@@ -51,7 +57,7 @@ ctx7 login && firecrawl login  # 浏览器授权
 安装后：
 - **Hermes** 每次启动自动加载 `project-workflow` + `karpathy-guidelines`
 - **Claude Code** 每次启动自动加载 CLAUDE.md，`/reload-skills` 激活技能
-- **Codex** 读取 AGENTS.md；通过 `~/.agents/skills/jessy-skills -> ~/.jessy-skills-codex/skills` 发现 Codex 快照 skills
+- **Codex** 读取 AGENTS.md；通过 `~/.agents/skills/jessy-skills -> ~/.jessy-skills-codex/skills` 发现 Codex 快照 skills；配置 hooks 时使用 `[features].hooks = true`
 - 自动识别 Go/Vue/Node/Skills Repository 项目
 
 ## 工作流概览
@@ -97,6 +103,7 @@ ctx7 login && firecrawl login  # 浏览器授权
 
 - **三平台支持**：`project-workflow`（Hermes）+ `project-workflow-claude`（Claude Code，v2.8 modular orchestrator）+ `project-workflow-codex`（Codex agents），共享根目录 `skills/`
 - **Codex 分支支持**：`project-workflow-codex` 用 Codex agents 执行实现、审阅和验证，不调用 Claude Code Workflow 脚本
+- **平台边界清晰**：Codex 不自动运行 Hermes 的 `project-workflow`；只在显式调用或文档兼容性检查时读取它
 - **零硬编码**：项目类型从 go.mod/package.json/skills/SKILL.md 自动检测，skill 自动路由
 - **自驱动顺序**：Phase 0.3 先分析代码库生成项目知识，Phase 0.5 再加载技能
 - **CONTEXT.md 双层结构**（Knowledge + Instruction）：`[confirmed]`/`[auto]` 标签，子目录就近覆盖
@@ -183,7 +190,7 @@ project-workflow-claude v2.8 uses a thin orchestrator + 7 independent execution 
 - **Phase 7.3 后台 cron**：每 2h 跨 session 模式提取；memory ≥90% 自动压缩为 skill，memory 保留触发器自动加载
 - **Phase 8 收尾**：结构化分支完成 — 验证→环境检测→4选项菜单→执行→清理
 
-## 包含的技能（55+）
+## 包含的技能（85）
 
 ### 工作流
 - `project-workflow` — 11-Phase 自驱动流水线（核心，v7.0，Hermes）
@@ -277,6 +284,17 @@ bash install.sh
 
 或在 Hermes 内：`hermes skills update`
 
+## Skill 维护规范
+
+- `SKILL.md` frontmatter 至少包含 `name` 和 `description`；为了兼容 Codex skill loader，新改动优先只保留这两个字段。
+- `description` 遇到冒号、括号、引号或长句时使用双引号包裹，避免 YAML 解析歧义。
+- 过长的 `SKILL.md` 应把细节拆到 `references/`，主体保留触发条件、核心流程和按需读取指引。
+- 修改后运行：
+  ```bash
+  python3 /home/huangzexi/.codex/skills/.system/skill-creator/scripts/quick_validate.py <skill-dir>
+  git diff --check
+  ```
+
 ## 目录结构
 
 ```
@@ -298,6 +316,11 @@ jessy-skills/
     │       ├── state-validation.md  # Step 0 state validation spec
     │       ├── claude-routing.md    # Claude Code skill routing overlay
     │       └── setup.md             # MCP setup guide
+    ├── project-workflow-codex/  # Codex workflow (Codex agents, no Claude Workflow scripts)
+    │   └── references/
+    │       ├── agent-execution.md
+    │       ├── contract-template.md
+    │       └── validation.md
     ├── detecting-environment/  # ★ Phase 0-0.5: project detection, CONTEXT.md
     ├── designing-solutions/    # ★ Phase 1: Hard Grill Checklist, REQUIREMENT ECHO
     ├── planning-implementation/# ★ Phase 2-3: plan, Judge Panel consensus
