@@ -15,7 +15,16 @@ Core rule:
 Codex main agent owns routing, state, phase transitions, and final claims.
 Codex agents own bounded execution, review, or verification tasks.
 Do not invoke Claude Code Workflow scripts from this skill.
+Do not rely on hooks, OMX, or oh-my-codex.
 Do not trust agent success reports without independent verification.
+```
+
+Model routing:
+
+```text
+Main Codex session: configured outside this skill, recommended gpt-5.5.
+Execution, test, repair, and debugging agents: executor, worker, test-engineer, build-fixer, debugger -> gpt-5.3-codex.
+Review and plan/completion verification agents: code-reviewer, verifier -> gpt-5.4-mini.
 ```
 
 ## State Files
@@ -143,6 +152,7 @@ Spawn Codex agents only for bounded tasks with clear ownership. Prefer:
 
 ```text
 executor / worker: implementation
+build-fixer / debugger: failing build, lint, typecheck, or reproduction diagnosis
 code-reviewer: independent review
 verifier: completion evidence
 test-engineer: focused test coverage

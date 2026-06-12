@@ -42,6 +42,7 @@ This single command handles everything:
 - Overwrites platform snapshots at `~/.jessy-skills-claude` and/or `~/.jessy-skills-codex`
 - Links Claude Code skills from `~/.jessy-skills-claude/skills` into `~/.claude/skills/`
 - Links Codex skills through `~/.agents/skills/jessy-skills -> ~/.jessy-skills-codex/skills` when `codex` is available
+- Copies repo-managed Codex agents from `~/.jessy-skills-codex/codex/agents/*.toml` to `~/.codex/agents/`
 - Cleans stale skills removed from the repo
 - Installs `hermes.sh` to `~/.jessy-skills/` (clean source-based, not inline)
 - Configures shell: zsh/bash/pwsh auto-detected
@@ -122,20 +123,27 @@ install.sh is safe for environments with other Claude Code plugins installed. It
 
 After install, restart Codex so it reloads `AGENTS.md` and skill discovery paths. The Codex branch entry point is `project-workflow-codex`: it keeps planning, orchestration, integration, and final audit in the main Codex session, then delegates bounded implementation/review/verification work to Codex agents instead of Claude Code `Workflow(...)` scripts.
 
-Codex configuration should use the current hooks feature flag:
+Codex does not need hooks, OMX, or oh-my-codex for this workflow. `install.sh` installs native Codex agent templates to `~/.codex/agents/` and preserves unrelated user agents.
+
+Codex agent model routing:
+
+| Agent | Model |
+|-------|-------|
+| `executor`, `worker`, `test-engineer`, `build-fixer`, `debugger` | `gpt-5.3-codex` |
+| `code-reviewer`, `verifier` | `gpt-5.4-mini` |
+
+Keep the main Codex session model in your own Codex config, recommended:
 
 ```toml
-[features]
-hooks = true
+model = "gpt-5.5"
 ```
-
-Do not use the deprecated `codex_hooks = true` key.
 
 Codex skill discovery links:
 
 ```bash
 test -d ~/.jessy-skills-codex/skills/project-workflow-codex
 test -L ~/.agents/skills/jessy-skills && readlink ~/.agents/skills/jessy-skills
+ls ~/.codex/agents/executor.toml ~/.codex/agents/code-reviewer.toml
 ```
 
 The current repo can switch branches freely after install. Codex global discovery points at the copied snapshot, not the mutable checkout.
@@ -174,7 +182,7 @@ After install, tell the user:
 - Hermes: Shell integration at `~/.jessy-skills/hermes.sh` (sourced from config)
 - Claude Code: CLAUDE.md auto-loads; run `/reload-skills` to activate
 - Codex: AGENTS.md auto-loads; run `/skills` or invoke `$project-workflow-codex`
-- Codex config: use `[features].hooks = true` if hooks are enabled
+- Codex agents: `~/.codex/agents` gets repo-managed templates; execution/test/repair agents use `gpt-5.3-codex`, review/plan-verification agents use `gpt-5.4-mini`; no hooks/OMX/oh-my-codex required
 - Auto-loaded on every session: `project-workflow` (Hermes) / `project-workflow-claude` (Claude Code) / `project-workflow-codex` (Codex) + `karpathy-guidelines`
 - Context7 + Firecrawl CLIs installed and authenticated
 - Run `source ~/.zshrc` (or `~/.bashrc`, or `. $PROFILE`) or open a new terminal to activate

@@ -131,6 +131,16 @@ if [ $HAS_CODEX -eq 1 ]; then
     mkdir -p "$HOME/.agents/skills"
     ln -sfn "$CODEX_SYNC_HOME/skills" "$HOME/.agents/skills/jessy-skills"
     echo "  ✓ Global Codex skills linked: ~/.agents/skills/jessy-skills → $CODEX_SYNC_HOME/skills"
+
+    # Install repo-managed native Codex agents. Only these templates are
+    # overwritten; unrelated user agents in ~/.codex/agents are preserved.
+    if [ -d "$CODEX_SYNC_HOME/codex/agents" ]; then
+        mkdir -p "$HOME/.codex/agents"
+        cp "$CODEX_SYNC_HOME/codex/agents/"*.toml "$HOME/.codex/agents/"
+        echo "  ✓ Codex agent templates installed to ~/.codex/agents"
+        echo "  → Execution/test/repair/debugging: gpt-5.3-codex; review/verification: gpt-5.4-mini"
+    fi
+
     echo "  ℹ Codex reads AGENTS.md at session start; restart Codex if this is a fresh install"
 fi
 
@@ -297,6 +307,7 @@ if [ $HAS_CLAUDE -eq 1 ]; then
 fi
 if [ $HAS_CODEX -eq 1 ]; then
     echo "  Codex: skills linked to ~/.agents/skills/jessy-skills/"
+    echo "  Codex agents installed to ~/.codex/agents/"
     echo "  Codex snapshot: $CODEX_SYNC_HOME"
     echo "  Run /skills or invoke \$project-workflow-codex in Codex"
 fi

@@ -35,20 +35,21 @@ Entry point: `skills/project-workflow-codex/SKILL.md`.
 ```text
 ~/.jessy-skills-codex/skills
 ~/.agents/skills/jessy-skills -> ~/.jessy-skills-codex/skills
+~/.codex/agents/*.toml
 ```
 
-That keeps global Codex skills stable when the working repo switches branches. Re-running `install.sh` overwrites the snapshot and refreshes only the managed symlink.
+That keeps global Codex skills stable when the working repo switches branches. Re-running `install.sh` overwrites the snapshot, refreshes only the managed skill symlink, and overwrites only the repo-managed Codex agent templates.
 
-## Config
+## Agent Templates
 
-When Codex hooks are enabled, use the current feature flag:
+This repository ships native Codex agent templates in `codex/agents/`. `install.sh` copies them to `~/.codex/agents/` when the `codex` CLI is available.
 
-```toml
-[features]
-hooks = true
-```
+| Agent | Purpose | Model |
+| --- | --- | --- |
+| `executor`, `worker`, `test-engineer`, `build-fixer`, `debugger` | Execution, implementation, documentation edits, tests, build fixes, debugging | `gpt-5.3-codex` |
+| `code-reviewer`, `verifier` | Code review and plan/completion verification | `gpt-5.4-mini` |
 
-`codex_hooks = true` is deprecated and should be removed from `~/.codex/config.toml`.
+These templates do not depend on hooks, OMX, or oh-my-codex. They only control spawned Codex agents. Keep the main Codex session model in your own `~/.codex/config.toml`; this workflow expects the main model to be `gpt-5.5`.
 
 ## Skill Compatibility
 

@@ -2,6 +2,10 @@
 
 Use Codex agents as the execution plane for `project-workflow-codex`.
 
+This workflow uses native Codex agents from `~/.codex/agents/`. The repository
+templates live in `codex/agents/` and are installed by `install.sh`. Hooks, OMX,
+and oh-my-codex are not part of the execution path.
+
 ## Spawn Rules
 
 - Spawn agents only after Phase 3 preflight passes.
@@ -12,13 +16,17 @@ Use Codex agents as the execution plane for `project-workflow-codex`.
 
 ## Role Map
 
-| Need | Agent role |
-| --- | --- |
-| Implement a bounded patch | `executor` or `worker` |
-| Review diff against plan | `code-reviewer` |
-| Validate claims and evidence | `verifier` |
-| Improve tests | `test-engineer` |
-| Diagnose failing checks | `debugger` or `build-fixer` |
+| Need | Agent role | Model |
+| --- | --- | --- |
+| Implement a bounded patch | `executor` or `worker` | `gpt-5.3-codex` |
+| Improve or assess tests | `test-engineer` | `gpt-5.3-codex` |
+| Fix build, lint, typecheck, or toolchain failures | `build-fixer` | `gpt-5.3-codex` |
+| Diagnose failing checks or reproductions | `debugger` | `gpt-5.3-codex` |
+| Review diff against plan | `code-reviewer` | `gpt-5.4-mini` |
+| Validate claims and evidence | `verifier` | `gpt-5.4-mini` |
+
+The main Codex session model is configured outside the agent templates and is
+expected to be `gpt-5.5` for this repository workflow.
 
 ## Prompt Contract
 
