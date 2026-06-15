@@ -41,7 +41,7 @@
 ]
 ```
 
-## Agent Execution Map
+## Subagent Execution Map
 - parallel_groups:
 - serial_dependencies:
 - integration_owner: main Codex agent

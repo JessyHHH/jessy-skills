@@ -3,6 +3,10 @@ set -e
 DOTFILES="$(cd "$(dirname "$0")" && pwd)"
 CLAUDE_SYNC_HOME="$HOME/.jessy-skills-claude"
 CODEX_SYNC_HOME="$HOME/.jessy-skills-codex"
+CODEX_DISCOVERY_SKILLS=(
+    "project-workflow-codex"
+    "karpathy-guidelines"
+)
 echo "Installing jessy-skills from: $DOTFILES"
 echo ""
 
@@ -127,12 +131,29 @@ if [ $HAS_CODEX -eq 1 ]; then
     echo "→ Installing skills to Codex..."
     sync_repo_snapshot "$CODEX_SYNC_HOME" "Codex"
 
-    # User-global discovery points at the Codex snapshot, not this mutable repo.
-    mkdir -p "$HOME/.agents/skills"
-    ln -sfn "$CODEX_SYNC_HOME/skills" "$HOME/.agents/skills/jessy-skills"
-    echo "  ✓ Global Codex skills linked: ~/.agents/skills/jessy-skills → $CODEX_SYNC_HOME/skills"
+    # Keep Codex's startup skill index small. The full skill snapshot remains at
+    # $CODEX_SYNC_HOME/skills for workflow routing and explicit path loads.
+    CODEX_DISCOVERY_HOME="$CODEX_SYNC_HOME/codex/skill-discovery"
+    rm -rf "$CODEX_DISCOVERY_HOME"
+    mkdir -p "$CODEX_DISCOVERY_HOME"
+    CODEX_DISCOVERY_INSTALLED=0
+    for skill_name in "${CODEX_DISCOVERY_SKILLS[@]}"; do
+        skill_dir="$CODEX_SYNC_HOME/skills/$skill_name"
+        if [ -d "$skill_dir" ]; then
+            ln -sfn "$skill_dir" "$CODEX_DISCOVERY_HOME/$skill_name"
+            CODEX_DISCOVERY_INSTALLED=$((CODEX_DISCOVERY_INSTALLED + 1))
+        else
+            echo "  ⚠ Codex discovery skill missing from snapshot: $skill_name"
+        fi
+    done
 
-    # Install repo-managed native Codex agents. Only these templates are
+    # User-global discovery points at the curated Codex index, not all 85 skills.
+    mkdir -p "$HOME/.agents/skills"
+    ln -sfn "$CODEX_DISCOVERY_HOME" "$HOME/.agents/skills/jessy-skills"
+    echo "  ✓ Global Codex entry skills linked: ~/.agents/skills/jessy-skills → $CODEX_DISCOVERY_HOME ($CODEX_DISCOVERY_INSTALLED skills)"
+    echo "  ℹ Full Codex skill snapshot remains available at $CODEX_SYNC_HOME/skills"
+
+    # Install repo-managed native Codex custom agent templates. Only these templates are
     # overwritten; unrelated user agents in ~/.codex/agents are preserved.
     if [ -d "$CODEX_SYNC_HOME/codex/agents" ]; then
         mkdir -p "$HOME/.codex/agents"
@@ -306,8 +327,8 @@ if [ $HAS_CLAUDE -eq 1 ]; then
     echo "  Run /reload-skills in Claude Code to activate"
 fi
 if [ $HAS_CODEX -eq 1 ]; then
-    echo "  Codex: skills linked to ~/.agents/skills/jessy-skills/"
-    echo "  Codex agents installed to ~/.codex/agents/"
+    echo "  Codex: entry skills linked to ~/.agents/skills/jessy-skills/"
+    echo "  Codex custom agent templates installed to ~/.codex/agents/"
     echo "  Codex snapshot: $CODEX_SYNC_HOME"
     echo "  Run /skills or invoke \$project-workflow-codex in Codex"
 fi

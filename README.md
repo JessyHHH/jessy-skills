@@ -2,12 +2,12 @@
 
 ![Version](https://img.shields.io/badge/version-v2.8-blue)
 
-一个支持 [Claude Code](https://code.claude.com/) + [Hermes Agent](https://github.com/NousResearch/hermes-agent) + Codex 的多语言工作流技能集合。模块化流水线 — Claude Code 使用 Workflow+Skills，Codex 使用 Codex agents+Skills（含 HARD-GATE / Iron Law / Two-Stage Review），85 个技能覆盖 Go/Vue/前端/工程/方法论全流程。
+一个支持 [Claude Code](https://code.claude.com/) + [Hermes Agent](https://github.com/NousResearch/hermes-agent) + Codex 的多语言工作流技能集合。模块化流水线 — Claude Code 使用 Workflow+Skills，Codex 使用 Codex subagents+Skills（含 HARD-GATE / Iron Law / Two-Stage Review），85 个技能覆盖 Go/Vue/前端/工程/方法论全流程。
 
 **v2.8.1 修复：**
 - **Codex skill 加载修复**: 修复 `reviewing-implementation`、`context7-docs`、`firecrawl-web` 的 YAML frontmatter，避免 Codex 启动时跳过加载。
 - **Skill frontmatter 收敛**: 新增/更新的 Codex skill frontmatter 优先只保留 `name` 和 `description`；详细版本、作者、平台信息放正文或引用文件。
-- **Codex 原生 agents 模型路由**: 仓库托管 `codex/agents/*.toml`，安装到 `~/.codex/agents`；执行/测试/修复类 agent 使用 `gpt-5.3-codex`，审查/计划验证类 agent 使用 `gpt-5.4-mini`，不依赖 hooks/OMX/oh-my-codex。
+- **Codex 原生 subagents 模型路由**: 仓库托管 `codex/agents/*.toml`，安装到 `~/.codex/agents`；执行/测试/修复类 subagent 使用 `gpt-5.3-codex`，审查/计划验证类 subagent 使用 `gpt-5.4-mini`，不依赖 hooks/OMX/oh-my-codex。
 - **Codex/Hermes 边界澄清**: Codex 主入口是 `project-workflow-codex`，Hermes 主入口是 `project-workflow`；Codex 共享同一 `skills/` 仓库和 domain skills，但不自动运行 Hermes workflow。
 
 **v2.8 新特性：**
@@ -15,7 +15,7 @@
 - **Phase 4 任务完成保证**: Stage 4 Completion Guarantee — 未完成任务自动重试（最多3轮），STUCK 任务明确返回原因
 - **阶段边界状态验证**: 7 个执行技能统一添加 Step 0 状态验证，`planning-implementation` 启动 skip-design 入口守卫
 - **错误硬化**: Edit Tool 安全规则 + Workflow Plain-JS 守卫 + Phase4 context enrichment 对齐 + 状态优雅降级 + 回归探针
-- **Codex agents 分支**: 新增 `project-workflow-codex`，用 Codex executor/reviewer/verifier agents 替代 Claude Code `Workflow(...)` 脚本执行
+- **Codex subagents 分支**: 新增 `project-workflow-codex`，用 Codex executor/reviewer/verifier subagents 替代 Claude Code `Workflow(...)` 脚本执行
 - **install.sh 安全**: 先覆盖同步平台快照 `~/.jessy-skills-claude` / `~/.jessy-skills-codex`，再从快照软链接到 `~/.claude/skills/` 和 `~/.agents/skills/`；Codex agent 模板复制到 `~/.codex/agents/`，不覆盖外部插件 skill（superpowers/omc 等）或用户自定义 agent
 
 **v2.4 新特性：**
@@ -57,7 +57,7 @@ ctx7 login && firecrawl login  # 浏览器授权
 安装后：
 - **Hermes** 每次启动自动加载 `project-workflow` + `karpathy-guidelines`
 - **Claude Code** 每次启动自动加载 CLAUDE.md，`/reload-skills` 激活技能
-- **Codex** 读取 AGENTS.md；通过 `~/.agents/skills/jessy-skills -> ~/.jessy-skills-codex/skills` 发现 Codex 快照 skills；通过 `~/.codex/agents/*.toml` 使用仓库托管的原生 agents，无需 hooks/OMX/oh-my-codex
+- **Codex** 读取 AGENTS.md；通过 `~/.agents/skills/jessy-skills -> ~/.jessy-skills-codex/codex/skill-discovery` 只发现核心入口 skills，完整快照保留在 `~/.jessy-skills-codex/skills` 供工作流按需读取；通过 `~/.codex/agents/*.toml` 使用仓库托管的原生 agents，无需 hooks/OMX/oh-my-codex
 - 自动识别 Go/Vue/Node/Skills Repository 项目
 
 ## 工作流概览
@@ -70,19 +70,19 @@ ctx7 login && firecrawl login  # 浏览器授权
 | 1 | `clarify()` 设计对话 ⚡ | `AskUserQuestion()` + **Hard Grill Checklist** ⚡ | 仅澄清无法推断的边界 |
 | 2 | `write_file(.hermes/plans/)` | `Write(.claude/plans/)` + **扩展 task schema** | 写 `.codex/plans/*-codex-plan-*.md` |
 | 3 | `skill_view(ralplan)` → delegate_task | **Workflow(phase3-consensus)** | Codex plan preflight |
-| 4 | `delegate_task(tasks=[])` 并行 | **Workflow(phase4-implement)** | Codex executor/worker agents |
-| 5 | `delegate_task` 审查 ⚡ | **Workflow(phase5-review)** | Codex code-reviewer/verifier agents |
+| 4 | `delegate_task(tasks=[])` 并行 | **Workflow(phase4-implement)** | Codex executor/worker subagents |
+| 5 | `delegate_task` 审查 ⚡ | **Workflow(phase5-review)** | Codex code-reviewer/verifier subagents |
 | 6 | `terminal()` 验证 ⚡ | `Bash()` + **Workflow(phase6-verify)** | 主 Codex fresh verification + final audit |
 | 7 | `memory()` + `cronjob()` | `CronCreate()` + 文件记忆 | Codex state/learning notes |
 | 8 | 4-option 收尾菜单 ★ | 4-option 收尾菜单 ★ | 分支/提交/PR 由用户授权后执行 |
 
 **出口可见性：** 每个 Phase 结束时输出 `Phase X complete. [skill] verified. → Phase Y`，Skill Expected 列在转换规则表中。
 
-### Codex Agent 模型路由
+### Codex Subagent 模型路由
 
-`install.sh` 会把仓库内 `codex/agents/*.toml` 安装到 `~/.codex/agents/`。这些是 Codex 原生 agents，不依赖 hooks、OMX 或 oh-my-codex。
+`install.sh` 会把仓库内 `codex/agents/*.toml` 安装到 `~/.codex/agents/`。这些是 Codex 原生 custom agent 模板，用于 subagent workflow，不依赖 hooks、OMX 或 oh-my-codex。
 
-| Agent | 用途 | 模型 |
+| Subagent | 用途 | 模型 |
 |-------|------|------|
 | `executor`, `worker`, `test-engineer`, `build-fixer`, `debugger` | 执行、代码/文档修改、测试、构建修复、调试 | `gpt-5.3-codex` |
 | `code-reviewer`, `verifier` | 代码审查、计划/完成度验证 | `gpt-5.4-mini` |
@@ -112,9 +112,9 @@ ctx7 login && firecrawl login  # 浏览器授权
 
 ## 核心设计
 
-- **三平台支持**：`project-workflow`（Hermes）+ `project-workflow-claude`（Claude Code，v2.8 modular orchestrator）+ `project-workflow-codex`（Codex agents），共享根目录 `skills/`
-- **Codex 分支支持**：`project-workflow-codex` 用 Codex agents 执行实现、审阅和验证，不调用 Claude Code Workflow 脚本
-- **Codex 模型边界**：主会话模型由用户 Codex 配置管理，推荐 `gpt-5.5`；仓库托管子 agents 只允许 `gpt-5.3-codex` 和 `gpt-5.4-mini`
+- **三平台支持**：`project-workflow`（Hermes）+ `project-workflow-claude`（Claude Code，v2.8 modular orchestrator）+ `project-workflow-codex`（Codex subagents），共享根目录 `skills/`
+- **Codex 分支支持**：`project-workflow-codex` 用 Codex subagents 执行实现、审阅和验证，不调用 Claude Code Workflow 脚本
+- **Codex 模型边界**：主会话模型由用户 Codex 配置管理，推荐 `gpt-5.5`；仓库托管子 agent 模板只允许 `gpt-5.3-codex` 和 `gpt-5.4-mini`
 - **平台边界清晰**：Codex 不自动运行 Hermes 的 `project-workflow`；只在显式调用或文档兼容性检查时读取它
 - **零硬编码**：项目类型从 go.mod/package.json/skills/SKILL.md 自动检测，skill 自动路由
 - **自驱动顺序**：Phase 0.3 先分析代码库生成项目知识，Phase 0.5 再加载技能
@@ -160,8 +160,8 @@ project-workflow-claude v2.8 uses a thin orchestrator + 7 independent execution 
 - Phase 4 Completion Guarantee: unfinished tasks auto-retry (max 3 rounds), STUCK tasks return explicit reason
 - Phase 6 EXHAUSTED verdict: when max 10 iterations are reached without resolution, the loop exits cleanly with mandatoryNextAction
 - Error hardening: Edit safety rules + Plain-JS guardrails + Phase4 enrichment + state graceful degradation
-- install.sh: syncs Claude/Codex snapshots under `~/.jessy-skills-claude` and `~/.jessy-skills-codex`, then symlinks managed skills while preserving external plugins (superpowers/omc/etc.)
-- Codex agents: installs repo-managed `codex/agents/*.toml` to `~/.codex/agents`; no hooks/OMX/oh-my-codex dependency.
+- install.sh: syncs Claude/Codex snapshots under `~/.jessy-skills-claude` and `~/.jessy-skills-codex`, then symlinks managed skills while preserving external plugins (superpowers/omc/etc.); Codex discovery exposes only core entry skills to avoid startup skill-index context budget overflow.
+- Codex subagents: installs repo-managed custom agent templates from `codex/agents/*.toml` to `~/.codex/agents`; no hooks/OMX/oh-my-codex dependency.
 - Regression probes: tests/test-regression-workflow-parse.sh + tests/test-controlled-edit-probe.sh
 
 ## 逃逸命令
@@ -331,7 +331,7 @@ jessy-skills/
     │       ├── state-validation.md  # Step 0 state validation spec
     │       ├── claude-routing.md    # Claude Code skill routing overlay
     │       └── setup.md             # MCP setup guide
-    ├── project-workflow-codex/  # Codex workflow (Codex agents, no Claude Workflow scripts)
+    ├── project-workflow-codex/  # Codex workflow (Codex subagents, no Claude Workflow scripts)
     │   └── references/
     │       ├── agent-execution.md
     │       ├── contract-template.md

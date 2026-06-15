@@ -1,30 +1,30 @@
 ---
 name: project-workflow-codex
-description: "Use when Codex should run the project workflow with Codex agents instead of Claude Code Workflow scripts: discover the repo, route skills, clarify scope, write a plan contract, spawn Codex executor/reviewer/verifier agents for implementation, and perform final audit with fresh evidence."
+description: "Run the Codex project workflow: discover repo, route skills, plan, delegate to Codex subagents, review, and verify with fresh evidence."
 ---
 
 # Project Workflow Codex
 
 ## Overview
 
-Run the jessy-skills development workflow in Codex using skills plus Codex agents. This is the Codex-native branch of the Claude Code `Workflow(...) + Skill(...)` design: the control plane stays in the main Codex session, while execution is delegated to Codex agents with explicit ownership, artifacts, and verification.
+Run the jessy-skills development workflow in Codex using skills plus Codex subagents. This is the Codex-native branch of the Claude Code `Workflow(...) + Skill(...)` design: the control plane stays in the main Codex session, while execution is delegated to Codex subagents with explicit ownership, artifacts, watchdogs, and verification.
 
 Core rule:
 
 ```text
 Codex main agent owns routing, state, phase transitions, and final claims.
-Codex agents own bounded execution, review, or verification tasks.
+Codex subagents own bounded exploration, execution, review, or verification tasks.
 Do not invoke Claude Code Workflow scripts from this skill.
 Do not rely on hooks, OMX, or oh-my-codex.
-Do not trust agent success reports without independent verification.
+Do not trust subagent success reports without independent verification.
 ```
 
 Model routing:
 
 ```text
 Main Codex session: configured outside this skill, recommended gpt-5.5.
-Execution, test, repair, and debugging agents: executor, worker, test-engineer, build-fixer, debugger -> gpt-5.3-codex.
-Review and plan/completion verification agents: code-reviewer, verifier -> gpt-5.4-mini.
+Execution, test, repair, and debugging subagents: executor, worker, test-engineer, build-fixer, debugger -> gpt-5.3-codex.
+Review and plan/completion verification subagents: code-reviewer, verifier -> gpt-5.4-mini.
 ```
 
 ## State Files
@@ -57,6 +57,14 @@ Next:
   - <allowed next phase>
 ```
 
+## Skill Discovery Budget
+
+Codex startup should expose only entry skills such as `project-workflow-codex`
+and `karpathy-guidelines`. Full domain skills stay in the installed snapshot
+under `~/.jessy-skills-codex/skills` and should be loaded by explicit path only
+after routing confirms they are relevant. Do not require all repository skills
+to be present in the model-visible startup skills list.
+
 ## Phase 0: Discovery
 
 Read and record:
@@ -70,6 +78,7 @@ CLAUDE.md if present
 README.md / SETUP.md / install.sh when relevant
 skills/project-workflow-codex/SKILL.md
 skills/project-workflow-claude/SKILL.md only for compatibility questions
+~/.jessy-skills-codex/skills when checking installed domain skill inventory
 ```
 
 Never revert unrelated user changes. If the worktree is dirty, list dirty files and decide whether they are in scope before editing.
@@ -97,7 +106,10 @@ Always include:
 Codex: project-workflow-codex, karpathy-guidelines
 ```
 
-Add domain skills only when task signals justify them. Read `references/agent-execution.md` before spawning agents and `references/validation.md` before final claims.
+Add domain skills only when task signals justify them. If a routed domain skill
+is absent from the startup skill list, read it from `~/.jessy-skills-codex/skills/<skill>/SKILL.md`
+or the repository `skills/<skill>/SKILL.md`. Read `references/agent-execution.md`
+before spawning agents and `references/validation.md` before final claims.
 
 ## Phase 1: Clarify
 
@@ -141,16 +153,17 @@ baseCommit matches HEAD or drift is documented
 expected and forbidden files are explicit
 each task has a disjoint write set where possible
 verification commands are runnable or skipped with reason
-agent roles are bounded
+subagent roles are bounded
 ```
 
-Verdict must be `PASS`, `PASS_WITH_RISK`, or `FAIL`. Do not spawn implementation agents on `FAIL`.
+Verdict must be `PASS`, `PASS_WITH_RISK`, or `FAIL`. Do not spawn implementation subagents on `FAIL`.
 
-## Phase 4: Codex Agent Execution
+## Phase 4: Codex Subagent Execution
 
-Spawn Codex agents only for bounded tasks with clear ownership. Prefer:
+Spawn Codex subagents only for bounded tasks with clear ownership. Prefer:
 
 ```text
+explorer: read-heavy codebase exploration, risk discovery, or context gathering
 executor / worker: implementation
 build-fixer / debugger: failing build, lint, typecheck, or reproduction diagnosis
 code-reviewer: independent review
@@ -158,7 +171,18 @@ verifier: completion evidence
 test-engineer: focused test coverage
 ```
 
-Each agent prompt must include:
+Use subagents deliberately:
+
+```text
+Codex does not spawn subagents automatically.
+Prompt explicitly when parallel subagent work is intended.
+Prefer parallel subagents for read-heavy work: exploration, tests, triage, log analysis, and summarization.
+Default to one writer subagent for implementation.
+Allow multiple writer subagents only when write sets are disjoint and named in the plan.
+Keep agents.max_depth at 1 unless recursive delegation is explicitly required.
+```
+
+Each subagent prompt must include:
 
 ```text
 plan path
@@ -167,9 +191,20 @@ forbidden files
 expected output shape
 instruction to preserve unrelated changes
 instruction to list changed files and verification run
+instruction to return progress or a blocker instead of waiting silently
 ```
 
-The main agent integrates results, resolves conflicts, and performs direct verification. See `references/agent-execution.md`.
+Runtime watchdog:
+
+```text
+If a subagent has no visible progress for the expected first update window:
+1. Inspect the subagent thread with `/agent` when available.
+2. Send one steering prompt with the exact next action and requested output.
+3. If it remains idle, stop or close that subagent and record BLOCKED_AGENT evidence.
+4. Respawn with a narrower read-only or single-file scope, or ask the user before the main session takes over implementation.
+```
+
+The main agent integrates results, resolves conflicts, closes completed subagent threads when no longer needed, and performs direct verification. See `references/agent-execution.md`.
 
 ## Phase 5: Review
 
@@ -181,7 +216,7 @@ code quality second
 verification adequacy third
 ```
 
-For small changes, the main agent may review directly. For broader changes, spawn a `code-reviewer` agent with the plan path and diff, then independently validate findings before acting on them.
+For small changes, the main agent may review directly. For broader changes, spawn a `code-reviewer` subagent with the plan path and diff, then independently validate findings before acting on them.
 
 ## Phase 6: Verify
 
@@ -192,7 +227,7 @@ git diff --check
 bash tests/test-*.sh
 ```
 
-If a command cannot run, record the exact reason. Do not claim completion from agent reports alone.
+If a command cannot run, record the exact reason. Do not claim completion from subagent reports alone.
 
 ## Final Audit
 

@@ -11,11 +11,11 @@ Skills repository for Hermes, Claude Code, and Codex.
 
 ## Codex Workflow
 
-Use `project-workflow-codex` for project changes that should run through Codex agents instead of Claude Code `Workflow(...)` scripts.
+Use `project-workflow-codex` for project changes that should run through Codex subagents instead of Claude Code `Workflow(...)` scripts.
 
-Codex owns planning, agent orchestration, integration, and final audit. Spawned Codex agents own bounded implementation, review, or verification tasks. Do not trust agent success reports without fresh local evidence.
+Codex owns planning, subagent orchestration, integration, and final audit. Spawned Codex subagents own bounded implementation, review, or verification tasks. Do not trust subagent success reports without fresh local evidence.
 
-Codex native agent templates are managed in `codex/agents/` and installed to `~/.codex/agents/` by `install.sh`. Execution, test, repair, and debugging agents (`executor`, `worker`, `test-engineer`, `build-fixer`, `debugger`) use `gpt-5.3-codex`; review and plan/completion verification agents (`code-reviewer`, `verifier`) use `gpt-5.4-mini`. Keep the main Codex model configured separately as `gpt-5.5`.
+Codex native custom agent templates are managed in `codex/agents/` and installed to `~/.codex/agents/` by `install.sh`. Execution, test, repair, and debugging subagents (`executor`, `worker`, `test-engineer`, `build-fixer`, `debugger`) use `gpt-5.3-codex`; review and plan/completion verification subagents (`code-reviewer`, `verifier`) use `gpt-5.4-mini`. Keep the main Codex model configured separately as `gpt-5.5`.
 
 Do not use hooks, OMX, or oh-my-codex for this repository's Codex workflow.
 
