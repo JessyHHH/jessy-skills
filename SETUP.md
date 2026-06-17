@@ -41,7 +41,7 @@ This single command handles everything:
 - Copies all skills to `~/.hermes/skills/`
 - Overwrites platform snapshots at `~/.jessy-skills-claude` and/or `~/.jessy-skills-codex`
 - Links Claude Code skills from `~/.jessy-skills-claude/skills` into `~/.claude/skills/`
-- Links Codex skills through `~/.agents/skills/jessy-skills -> ~/.jessy-skills-codex/skills` when `codex` is available
+- Links Codex entry skills through `~/.agents/skills/jessy-skills -> ~/.jessy-skills-codex/codex/skill-discovery` when `codex` is available
 - Copies repo-managed Codex agents from `~/.jessy-skills-codex/codex/agents/*.toml` to `~/.codex/agents/`
 - Cleans stale skills removed from the repo
 - Installs `hermes.sh` to `~/.jessy-skills/` (clean source-based, not inline)
@@ -104,7 +104,7 @@ source ~/.zshrc  # or ~/.bashrc
 |----------|---------------|-------------------|-----------|
 | Hermes | `project-workflow` (v7.0) | `~/.jessy-skills/hermes.sh` | `~/.hermes/skills/` |
 | Claude Code | `project-workflow-claude` (v2.8) | `CLAUDE.md` auto-load | `~/.claude/skills/` → `~/.jessy-skills-claude/skills` |
-| Codex | `project-workflow-codex` (v0.1) | `AGENTS.md` auto-load | `~/.agents/skills/jessy-skills` → `~/.jessy-skills-codex/skills` |
+| Codex | `project-workflow-codex` (v0.1) | `AGENTS.md` auto-load | `~/.agents/skills/jessy-skills` → `~/.jessy-skills-codex/codex/skill-discovery` |
 
 | Shell | Config File | Status |
 |-------|-------------|--------|
@@ -147,6 +147,23 @@ ls ~/.codex/agents/executor.toml ~/.codex/agents/code-reviewer.toml
 ```
 
 The current repo can switch branches freely after install. Codex global discovery points at the copied snapshot, not the mutable checkout.
+
+If Codex prints `Skill descriptions were shortened to fit the 2% skills context budget`,
+the total number of enabled global skills/plugins is still too high. The jessy-skills
+installer only exposes two Codex entry skills (`project-workflow-codex` and
+`karpathy-guidelines`) through the `jessy-skills` symlink, but Codex will also index
+any other directories already present under `~/.agents/skills`.
+
+Check the active discovery set:
+
+```bash
+readlink ~/.agents/skills/jessy-skills
+find ~/.agents/skills -mindepth 1 -maxdepth 1 -printf '%f\n' | sort
+```
+
+To make the warning go away, disable unused global skills by moving them out of
+`~/.agents/skills`, then restart Codex. Keep `jessy-skills` enabled if you want the
+Codex project workflow available.
 
 ### Claude Code MCP Servers (Recommended, NOT Required)
 
