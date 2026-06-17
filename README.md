@@ -2,7 +2,7 @@
 
 ![Version](https://img.shields.io/badge/version-v2.8-blue)
 
-一个支持 [Claude Code](https://code.claude.com/) + [Hermes Agent](https://github.com/NousResearch/hermes-agent) 的多语言工作流技能集合。模块化流水线 — 1 个 orchestrator + 7 个 execution skills（含 HARD-GATE / Iron Law / Two-Stage Review），84+ 技能覆盖 Go/Vue/前端/工程/方法论全流程。
+一个支持 [Claude Code](https://code.claude.com/) + [Hermes Agent](https://github.com/NousResearch/hermes-agent) 的多语言工作流技能集合。模块化流水线 — 1 个 orchestrator + 7 个 execution skills（含 HARD-GATE / Iron Law / Two-Stage Review），85+ 技能覆盖 Go/Vue/前端/工程/方法论全流程。
 
 **v2.8 新特性：**
 - **Workflow 精简**: 只保留 4 个活跃 Workflow 脚本（phase3-consensus / phase4-implement / phase5-review / phase6-verify），Phase 0-2 使用 Skill+Agent 直接执行（无 Harness 开销）
@@ -249,6 +249,7 @@ project-workflow-claude v2.8 uses a thin orchestrator + 7 independent execution 
 ### 通用
 - `analyze` — 代码深度分析
 - `code-review` — 代码审查
+- `sync-ccswitch-config` — 同步 Claude Code 配置到 cc-switch 数据库（plugins/MCP/marketplaces/env），防止 provider 切换后丢失
 
 ## Shell 集成
 
@@ -314,7 +315,7 @@ jessy-skills/
     ├── vue/                #  8 Vue frontend skills
     ├── frontend/           #  3 frontend tools
     ├── engineering/        # 10 engineering workflow skills
-    ├── tools/              #  2 tools (deprecated)
+    ├── tools/              #  3 tools (sync-ccswitch-config, context7-docs, firecrawl-web)
     ├── project/            #  2 project-specific
     ├── deep-interview/
     ├── ralplan/

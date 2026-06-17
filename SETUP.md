@@ -38,7 +38,7 @@ bash install.sh
 
 This single command handles everything:
 - Backs up existing skills to `~/.hermes/skills.bak.*`
-- Copies all 84 skills to `~/.hermes/skills/`
+- Copies all 85 skills to `~/.hermes/skills/`
 - Cleans stale skills removed from the repo
 - Installs `hermes.sh` to `~/.jessy-skills/` (clean source-based, not inline)
 - Configures shell: zsh/bash/pwsh auto-detected
@@ -143,7 +143,7 @@ The workflow auto-detects MCP availability (Context7, Firecrawl) and falls back 
 ## Report to User
 
 After install, tell the user:
-- 84 skills installed to `~/.hermes/skills/` and/or `~/.claude/skills/`
+- 85 skills installed to `~/.hermes/skills/` and/or `~/.claude/skills/`
 - Hermes: Shell integration at `~/.jessy-skills/hermes.sh` (sourced from config)
 - Claude Code: CLAUDE.md auto-loads; run `/reload-skills` to activate
 - Auto-loaded on every session: `project-workflow` (Hermes) / `project-workflow-claude` (Claude Code) + `karpathy-guidelines`
