@@ -5,11 +5,13 @@
 一个支持 [Claude Code](https://code.claude.com/) + [Hermes Agent](https://github.com/NousResearch/hermes-agent) 的多语言工作流技能集合。模块化流水线 — 1 个 orchestrator + 7 个 execution skills（含 HARD-GATE / Iron Law / Two-Stage Review），86+ 技能覆盖 Go/Vue/前端/工程/方法论全流程。
 
 **v2.9 新特性：**
-- **Agent() 直接调度**: 弃用所有 Agent() 调度（-1405 行），改为 Master 驱动的 `Agent()` 直接调度。Master 监督所有 sub-agent、做所有决策（重试/跳过/阻塞）
-- **Phase 3**: 3 并行 Judge agent + 1 合成 agent（架构/风险/可行性并行打分）
-- **Phase 4**: 串行 Agent() 每任务（实现→验证→自审），Master 处理 Completion Guarantee 循环
-- **Phase 5**: 串行 Agent() 每任务（spec→code→adversarial），复杂度门控模型，Master 收集裁定
-- **Phase 6**: Master Bash 验证 + Agent 修复 + 重验，loop-until-dry，10 次硬上限
+- **Agent() 直接调度**: 弃用所有 Workflow 脚本（-1405 行），Master 驱动 `Agent()` 直接调度 + 决策
+- **智能并行**: Phase 0 (分析→并行写 CONTEXT+CLAUDE)、Phase 4 (文件重叠检测并行批处理)、Phase 6 (并行修复)
+- **两步智能路由**: 项目+全局双源技能候选池 → Master 判断筛选，按需加载
+- **Matt Pocock Grill 协议**: Phase 1 嵌入 `grill-me` skill（6 种强制性问题模式 + 停火条件）
+- **LSP 环境检测**: Phase 0 自动检测 `gopls-lsp`/`typescript-lsp`/`pyright-lsp`，按项目类型推荐
+- **Context 并行写入**: Phase 0 分析→两个 Agent 并行写 CONTEXT.md/knowledge.md + CLAUDE.md
+- **Phase 7.3 手动化**: 记忆压缩改为按需触发（移除自动 cron）
 
 **v2.4 新特性：**
 - **全面移除 Opus**: 所有 Agent subagent 使用 Sonnet/Haiku，复杂任务不再使用 Opus，大幅降低成本

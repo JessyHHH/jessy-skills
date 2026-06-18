@@ -111,7 +111,7 @@ source ~/.zshrc  # or ~/.bashrc
 
 ### Claude Code Specific
 
-After install, restart Claude Code or run `/reload-skills` to activate skills. The project's `CLAUDE.md` boot layer auto-loads each session. The `project-workflow-claude` v2.8 skill is a modular orchestrator: 1 thin control plane + 7 independent execution skills. 4 active Workflow scripts (phase3-6) provide deterministic pipeline automation; Phase 0-2 use Skill+Agent direct execution (no Harness overhead). Model: Sonnet/Haiku only, no Opus.
+After install, restart Claude Code or run `/reload-skills` to activate skills. The project's `CLAUDE.md` boot layer auto-loads each session. The `project-workflow-claude` v2.9 skill is a modular orchestrator: 1 thin control plane + 7 independent execution skills, all using Agent() direct dispatch (no Workflow scripts). Phase 0 auto-detects LSP plugins (gopls-lsp/typescript-lsp/pyright-lsp) and recommends missing ones. Model: Sonnet/Haiku only, no Opus.
 
 install.sh is safe for environments with other Claude Code plugins installed — it uses symlinks only, never deletes non-jessy-skills entries (superpowers, omc, skill-creator, etc. are preserved).
 
