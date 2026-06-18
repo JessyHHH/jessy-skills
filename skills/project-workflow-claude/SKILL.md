@@ -38,12 +38,12 @@ The control plane reads the workflow state file, determines which skill to invok
 
 ## Execution Skills (in pipeline order)
 
-1. `detecting-environment` — Project type, language version, tooling, MCP availability, context artifacts, smart skill selection. Covers legacy Phases 0, 0.3, 0.5.
+1. `detecting-environment` — Project type, language version, tooling, MCP availability, context artifacts (parallel write: CONTEXT.md/knowledge.md + CLAUDE.md via 2 agents), smart skill selection. Covers legacy Phases 0, 0.3, 0.5.
 2. `designing-solutions` — Requirement echo, variable-depth Grill (Ambiguity Register + Assumption Ledger), approach proposal, spec writing. Covers legacy Phase 1.
 3. `planning-implementation` — Concrete plan with expanded task schema, consensus review via 3 parallel Judge agents + synthesis. Covers legacy Phases 2, 3.
-4. `implementing-changes` — Serial Agent() dispatch per task (implement→verify→self-review), Completion Guarantee loop, worktree review, quick gate. Covers legacy Phases 4, 4.5, 4.6.
+4. `implementing-changes` — Intelligent parallel Agent() dispatch (file-overlap-aware: disjoint files parallel, shared files serial) per task (implement→verify→self-review), Completion Guarantee loop, worktree review, quick gate. Covers legacy Phases 4, 4.5, 4.6.
 5. `reviewing-implementation` — Master-driven serial review: spec→code→adversarial per task, complexity-gated models, final cross-task review. Covers legacy Phase 5.
-6. `verifying-completion` — Master-driven loop-until-dry: Bash verification + Agent fix dispatch, dryRounds tracking, hard cap at 10 iterations. Covers legacy Phase 6.
+6. `verifying-completion` — Master-driven loop-until-dry: Bash verification + parallel Agent fix dispatch (file-overlap-gated), dryRounds tracking, hard cap at 10 iterations. Covers legacy Phase 6.
 7. `finishing-development` — Retrospective, learning, branch finish, PR/push. Covers legacy Phases 7, 8.
 
 All 7 skills support two modes: full workflow (`handoffPolicy=auto-continue`, auto-transition to next) and standalone (`handoffPolicy=prompt-next-step`, prompt user for next action). See `references/handoff-contract.md` for the complete handoff table.
@@ -59,8 +59,9 @@ Execution skills use `Agent()` directly — no Workflow scripts. Master supervis
 | Pattern | Used By | Description |
 |---------|---------|-------------|
 | **Parallel Judges** | Phase 3 | 3 judges (architecture/risk/feasibility) dispatched simultaneously, then 1 synthesis agent |
-| **Serial Per-Task** | Phase 4, 5 | Tasks processed one-at-a-time to avoid file conflicts. Each task: implement→verify→self-review (Phase 4) or spec→code→adversarial (Phase 5) |
-| **Loop Until Dry** | Phase 6 | Master runs Bash checks → dispatches fix agents for failures → re-runs checks. 2 consecutive clean rounds = done. Hard cap at 10 iterations. |
+| **File-Overlap-Aware Parallel** | Phase 0, 4, 6 | Master checks file overlap: tasks/fixes touching disjoint files run in parallel; shared files → serial/merged. Phase 0: analysis→parallel write (CONTEXT+CLAUDE). Phase 4: tasks per batch. Phase 6: fix agents. |
+| **Serial Per-Task** | Phase 4 (inner), 5 | Within each task: implement→verify→self-review (Phase 4) or spec→code→adversarial (Phase 5). Inner stages are serial; outer dispatch is overlap-aware parallel. |
+| **Loop Until Dry** | Phase 6 | Master runs Bash checks → dispatches parallel fix agents → re-runs checks. 2 consecutive clean rounds = done. Hard cap at 10 iterations. |
 
 ### Model Selection
 

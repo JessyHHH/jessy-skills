@@ -111,11 +111,18 @@ else:
   // Master dispatches fix agents, then continues loop
 ```
 
-#### 4c. Fix Dispatch (When Failures Exist)
+#### 4c. Fix Dispatch (Intelligent Parallel by File Overlap)
 
-Master dispatches fix agents for each failure:
+Master groups failures by affected files, then dispatches fix agents in parallel for non-overlapping fixes:
 
-**Command failures:** Dispatch 1 Agent per failed check:
+**Group failures:** Command failures often report the file (e.g., `go vet: auth.go:42`). Evidence failures explicitly name paths. Extract file paths from failure output. Build a file→failure map.
+
+**Dispatch strategy:**
+- **No file overlap between failures** → dispatch all fix agents in parallel
+- **Failures share files** → merge into a single agent (fix everything in one pass)
+- **Unknown file** (no path extractable) → dispatch as standalone agent
+
+**Command failure agent:**
 ```
 Agent('Check "' + failure.name + '" failed.
 Command: ' + failure.command + '
@@ -125,7 +132,7 @@ Fix the issue with MINIMAL changes. Do NOT redesign or refactor.',
   { isolation: 'worktree', model: 'sonnet' })
 ```
 
-**Evidence failures:** Dispatch 1 Agent per failed evidence:
+**Evidence failure agent:**
 ```
 Agent('Evidence check "' + ef.id + '" (' + ef.type + ': ' + ef.description + ') failed.
 Details: ' + (ef.details || '(none)') + '
@@ -133,7 +140,7 @@ Fix the issue with MINIMAL changes.',
   { isolation: 'worktree', model: 'sonnet' })
 ```
 
-After all fix agents complete, Master re-runs the loop body (Step 4b) with fresh Bash checks and re-evaluated evidence.
+After all fix agents complete (waited via barrier), Master re-runs the loop body (Step 4b) with fresh Bash checks and re-evaluated evidence.
 
 ### 6. Persist Verification Results
 

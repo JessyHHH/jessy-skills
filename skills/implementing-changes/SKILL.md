@@ -58,15 +58,22 @@ expectedEvidenceText = expectedEvidence.map(e => `- ${e}`).join('\n')
 forbiddenEvidenceText = forbiddenEvidence.map(e => `- ${e}`).join('\n')
 ```
 
-### 4. Execute Implementation (Master-Driven Serial Agent Dispatch)
+### 4. Execute Implementation (Master-Driven Intelligent Parallel Dispatch)
 
-Announce "**Phase 4: Implement** — Master-driven serial Agent dispatch."
+Announce "**Phase 4: Implement** — Master-driven Agent dispatch with file-overlap-aware parallelism."
 
-Master processes tasks **sequentially** (one at a time, to avoid file conflicts). For each task, Master dispatches 3 agents in series: Implement → Quick Verify → Self-Review.
+Master groups tasks by file overlap: tasks with disjoint file sets run in parallel; tasks sharing files run sequentially in dependency order.
 
-#### 4a. Per-Task Dispatch Loop
+#### 4a. Pre-Dispatch: Check File Overlap
 
-For each task in `enrichedTasks`:
+Before dispatching any task, Master scans all `task.files` arrays:
+
+1. **Build a file→task map:** `{ 'src/auth.go': ['T1', 'T3'], 'src/api.go': ['T2'] }`
+2. **No shared files between T1 and T2** → can run in parallel
+3. **T1 and T3 both touch src/auth.go** → must run sequentially (T1 first, T3 after)
+4. **Group tasks into batches:** tasks within a batch have zero file overlap → dispatch in parallel. Batches run sequentially.
+
+#### 4b. Per-Task Dispatch
 
 **Stage 1 — Implement:**
 Model: `simple` tasks → haiku, `medium`/`complex` → sonnet.

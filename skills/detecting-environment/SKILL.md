@@ -94,10 +94,18 @@ Follow the context artifact model in `references/context-artifact-model.md`.
    - Match -- announce "Context artifacts fresh (commit <sha>), skipping analysis."
    - No match or no file -- proceed to analysis
 
-2. **Analyze and write** (delegate to a single Agent subagent):
-   - **Go project:** Analyze architecture: error handling patterns, DI approach, concurrency model, testing conventions. Map key entities with source paths. Write CONTEXT.md (root) following the format spec in `skills/project-workflow-claude/references/context-md-spec.md` with KNOWLEDGE_START/KNOWLEDGE_END and INSTRUCTION_START/INSTRUCTION_END markers. Write `.claude/context/knowledge.md` (full overwrite). Header: `<!-- Auto-generated | Commit: <sha> | Date: <iso> | Go <version> -->`.
-   - **Vue/Node project:** Analyze component tree, routing, state management, testing setup. Map key components with source paths. Write CONTEXT.md (root) and `.claude/context/knowledge.md` (full overwrite). Header format as above with appropriate project type.
-   - **Skills Repository:** Analyze SKILL.md inventory by category, reference integrity, directory structure. Write CONTEXT.md (root) and `.claude/context/knowledge.md`. Also check/create CLAUDE.md: if absent, write full skeleton with AUTO_START/AUTO_END markers for Project and Commands sections; if present, inspect AUTO markers and update or surface warnings per `references/context-artifact-model.md`.
+2. **Analyze and write** (pipeline: 1 analysis agent → 2 parallel write agents):
+   
+   **Stage A — Analysis Agent** (1 agent, scans codebase once):
+   - **Go project:** Analyze architecture: error handling patterns, DI approach, concurrency model, testing conventions. Map key entities with source paths. Output structured analysis JSON (entities, interfaces, package map, CLAUDE.md AUTO block content).
+   - **Vue/Node project:** Analyze component tree, routing, state management, testing setup. Output structured analysis JSON.
+   - **Skills Repository:** Analyze SKILL.md inventory by category, reference integrity, directory structure. Output structured analysis JSON with CLAUDE.md AUTO block content.
+   
+   **Stage B — Parallel Write Agents** (2 agents, consume analysis JSON):
+   - **Agent B1:** Write CONTEXT.md (root) + `.claude/context/knowledge.md` (full overwrite). Follow `skills/project-workflow-claude/references/context-md-spec.md` for CONTEXT.md format (KNOWLEDGE_START/END + INSTRUCTION_START/END markers). Header: `<!-- Auto-generated | Commit: <sha> | Date: <iso> | <type> -->`.
+   - **Agent B2:** Update CLAUDE.md. If absent: write full skeleton with AUTO_START/AUTO_END markers for Project and Commands sections. If present: inspect AUTO markers and update content from analysis JSON. Surface warnings for malformed markers.
+   
+   Dispatch B1 and B2 in parallel after Stage A completes.
 
 3. **Cross-validation** (lightweight):
    - Sample 3-5 source paths from analysis — use `Read(file_path='<path>')` to verify existence
