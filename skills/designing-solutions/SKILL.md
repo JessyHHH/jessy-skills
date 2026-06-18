@@ -1,7 +1,7 @@
 ---
 name: designing-solutions
 description: Use when a user request or project-workflow-claude run needs an approved design before planning or implementation. Performs requirement echo, scope boundary confirmation, Grill, Ambiguity Register, Assumption Ledger, approach proposal, design spec writing, and design approval. In full-workflow mode, hands off to planning-implementation.
-version: "v2.7"
+version: "v2.9"
 ---
 
 # Designing Solutions

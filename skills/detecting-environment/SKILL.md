@@ -1,7 +1,7 @@
 ---
 name: detecting-environment
 description: Use when starting or resuming project-workflow-claude, or when the user asks to inspect a repository before design or implementation. Detects project type, language/tooling, MCP availability, context artifact freshness, and task-specific skill routing. In full-workflow mode, hands off to designing-solutions.
-version: "v2.7"
+version: "v2.9"
 ---
 
 # Detecting Environment
@@ -104,26 +104,64 @@ Follow the context artifact model in `references/context-artifact-model.md`.
    - For Go: architecture claims vs `Grep` in `go.mod`
    - Log failures but don't block
 
-### Step 6: Skill Selection
+### Step 6: Intelligent Skill Selection (Two-Step Routing)
 
-1. **Load platform overlay:** `Read('skills/project-workflow-claude/references/claude-routing.md')` -- load Claude Code-specific action mappings.
+Master builds a candidate pool from ALL available skills, then applies judgment to select the final set. Don't load every match — load only what the task genuinely needs.
 
-2. **Codebase signal matching** (from dependency scan):
-   - **Go:** `Read('go.mod')` -- scan for samber, grpc, testify, etc. -- match against `skills/project-workflow/references/full-skill-routing.md` (base layer, shared) and `skills/project-workflow-claude/references/claude-routing.md` (overlay)
-   - **Vue:** `Read('package.json')` -- scan for vue, pinia, vitest -- match against routing tables
-   - For EVERY match: `Skill(skill='<name>')`
+#### 6a. Discover Available Skills (Both Sources)
 
-3. **MCP-aware routing:** If Context7 available -- prefer for docs/library queries. If Firecrawl available -- prefer for web searches.
+1. **Project skills:** List `skills/*/SKILL.md` directories. Read frontmatter (name + description) for each. These are the 23 skills shipped with jessy-skills.
+2. **Global skills:** List `~/.claude/skills/*/SKILL.md` entries. Read frontmatter for each. These include user-installed plugins (superpowers, omc, grill-me, etc.) and manually added skills. Skip symlinks that already point to project skill dirs (dedup by resolved path).
 
-4. **Task signal matching:** Match keywords against `full-skill-routing.md` and `claude-routing.md`. Load each matched skill via `Skill(skill='<name>')`.
+#### 6b. Build Candidate Pool (Mechanical Scan)
 
-5. **Memory trigger detection:** Scan `~/.claude/projects/.../memory/` for the pattern `(arrow) load skill <name>` (using the actual arrow character). Load matched skills via `Skill(skill='<name>')`. Skip already-loaded skills.
+Load the routing overlay: `Read('skills/project-workflow-claude/references/claude-routing.md')`.
 
-6. **Baseline** (no Skill calls, internalized): `karpathy-guidelines` -- Think before coding, surgical changes, fresh evidence.
+**Codebase signals:**
+- **Go:** Scan `go.mod` for framework keywords (samber, grpc, testify, cobra, viper, etc.). Match against `claude-routing.md` (overlay) and project-go skills.
+- **Vue:** Scan `package.json` for vue, pinia, vitest, vue-router. Match against routing tables.
+- **Skills Repo:** No codebase signals — task signals only.
 
-7. **Deduplication:** Skip already-loaded skills. If both base layer and overlay match the same skill name, log collision and use overlay.
+**Task signals:**
+- Scan the user's request for keywords matching `claude-routing.md` task signal table (implement, review, verify, design, commit, debug, etc.). Add matched skills to candidate pool.
 
-8. **Iron Law loading:** If task involves code changes or verification -- `Read('skills/project-workflow-claude/references/iron-law.md')`.
+**Memory triggers:**
+- Scan `~/.claude/projects/.../memory/` for `→ load skill <name>`. Add matched skills.
+
+**MCP awareness:**
+- If Context7 available → note for docs/library queries.
+- If Firecrawl available → note for web searches.
+
+#### 6c. Master Judgment (Filter Candidates)
+
+For each candidate in the pool, Master answers:
+
+1. Does the task actually involve this skill's domain? (not just keyword match in go.mod)
+2. Is the skill likely to provide actionable guidance in this session?
+
+**Discard candidates** that fail both checks. Document the reason.
+
+**Force-load candidates** that pass. `Skill(skill='<name>')` for each.
+
+#### 6d. Baseline (Always Load)
+
+`karpathy-guidelines` — Think before coding, surgical changes, fresh evidence. Never skip.
+
+#### 6e. Iron Law
+
+If the task involves code changes or verification: `Read('skills/project-workflow-claude/references/iron-law.md')`.
+
+#### 6f. Log the Selection
+
+Record in the announcement:
+```
+Phase 0.5: Intelligent Skill Selection
+- Scanned: N project + M global = T total skills available
+- Candidates: K matched (codebase: X, task: Y, memory: Z)
+- Master judgment: L loaded, D discarded
+- Discarded: skill-A (no DB work in task), skill-B (...)
+- Baseline: karpathy-guidelines
+```
 
 ### Step 7: Persist Context Summary
 
@@ -166,11 +204,12 @@ Knowledge Layer: [fresh|stale|generated] -- N patterns, N entities, N interfaces
 CLAUDE.md: [fresh | generated | updated (N blocks) | skipped (malformed markers) | upgraded (first-touch AUTO markers added)]
 Cross-validation: [pass/fail details]
 
-Phase 0.5: Skills
-- Codebase signals: N skills loaded
-- Task signals: N skills loaded
-- Overlay: claude-routing.md loaded
-- Total: N skills"
+Phase 0.5: Intelligent Skill Selection
+- Scanned: N project + M global = T total skills available
+- Candidates: K matched (codebase: X, task: Y, memory: Z)
+- Master judgment: L loaded, D discarded
+- Discarded: <list with reasons>
+- Baseline: karpathy-guidelines"
 ```
 
 ## Output Contract
