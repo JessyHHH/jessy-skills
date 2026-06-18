@@ -1,8 +1,30 @@
 #!/bin/bash
 set -e
 DOTFILES="$(cd "$(dirname "$0")" && pwd)"
+CLAUDE_SYNC_HOME="$HOME/.jessy-skills-claude"
 echo "Installing jessy-skills from: $DOTFILES"
 echo ""
+
+sync_repo_snapshot() {
+    local dest="$1"
+    local label="$2"
+    local tmp="${dest}.tmp.$$"
+
+    rm -rf "$tmp"
+    mkdir -p "$tmp"
+    tar -C "$DOTFILES" \
+        --exclude='./.git' \
+        --exclude='./.claude/worktrees' \
+        --exclude='./.claude/state' \
+        --exclude='./.omc' \
+        --exclude='./.firecrawl' \
+        --exclude='./.agents/skills' \
+        --exclude='./.codex' \
+        -cf - . | tar -C "$tmp" -xf -
+    rm -rf "$dest"
+    mv "$tmp" "$dest"
+    echo "  ✓ $label snapshot synced to $dest"
+}
 
 # === Platform detection ===
 HAS_HERMES=0
@@ -28,12 +50,13 @@ echo "  ✓ Skills installed ($(ls "$DOTFILES/skills" | wc -l | tr -d ' ') skill
 # === Install skills to Claude Code (symlink-only, additive, never deletes external skills) ===
 if [ $HAS_CLAUDE -eq 1 ]; then
     echo "→ Installing skills to Claude Code (~/.claude/skills/)..."
+    sync_repo_snapshot "$CLAUDE_SYNC_HOME" "Claude Code"
     mkdir -p ~/.claude/skills
     CC_INSTALLED=0
     CC_SKIPPED=0
 
     # 1. Create/refresh symlinks for jessy-skills ONLY — never touch other entries
-    for skill_dir in "$DOTFILES/skills/"*/; do
+    for skill_dir in "$CLAUDE_SYNC_HOME/skills/"*/; do
         [ -d "$skill_dir" ] || continue
         skill_name=$(basename "$skill_dir")
         target="$HOME/.claude/skills/$skill_name"
@@ -203,56 +226,28 @@ if [ $HAS_CLAUDE -eq 1 ]; then
     echo ""
     echo "→ Setting up Claude Code integration..."
 
-    # === Branch detection: Claude Code needs 'claude' branch ===
+    # === Branch notice: installed snapshots are isolated from future repo branch switches ===
     if [ -d "$DOTFILES/.git" ]; then
         CURRENT_BRANCH=$(git -C "$DOTFILES" branch --show-current 2>/dev/null || echo "unknown")
-        if [ "$CURRENT_BRANCH" != "claude" ]; then
-            echo "  ⚠ Current branch: $CURRENT_BRANCH — Claude Code needs 'claude' branch"
-            # Check if claude branch exists
-            if git -C "$DOTFILES" show-ref --verify --quiet refs/heads/claude 2>/dev/null || \
-               git -C "$DOTFILES" show-ref --verify --quiet refs/remotes/origin/claude 2>/dev/null; then
-                echo "  → Auto-switching to 'claude' branch..."
-                git -C "$DOTFILES" checkout claude 2>/dev/null || \
-                git -C "$DOTFILES" checkout -b claude origin/claude 2>/dev/null
-                echo "  ✓ Switched to claude branch"
-            else
-                echo "  ⚠ 'claude' branch not found. Staying on $CURRENT_BRANCH."
-                echo "  → For Claude Code support: git checkout claude (after git fetch)"
-            fi
-        else
-            echo "  ✓ Already on claude branch"
-        fi
-    fi
-
-    # Create .claude/skills symlink in the repo if running from within it
-    if [ -d "$DOTFILES/skills" ] && [ ! -L "$DOTFILES/.claude/skills" ]; then
-        mkdir -p "$DOTFILES/.claude"
-        ln -sfn ../skills "$DOTFILES/.claude/skills" 2>/dev/null || true
-        echo "  ✓ .claude/skills → ../skills symlink created"
+        echo "  ℹ Source branch: $CURRENT_BRANCH; Claude Code uses snapshot $CLAUDE_SYNC_HOME"
     fi
 
     # Install workflow scripts to global location (~/.claude/workflows/)
     # Workflow(name='...') auto-discovers scripts here — works from any project
     # NOTE: Only phase3-6 are active. phase1-2 are kept as skeletons in project only (phased out in v2.8).
     WF_INSTALL="$HOME/.claude/workflows"
-    if [ -d "$DOTFILES/.claude/workflows" ]; then
+    if [ -d "$CLAUDE_SYNC_HOME/.claude/workflows" ]; then
         mkdir -p "$WF_INSTALL"
-        cp "$DOTFILES/.claude/workflows/"*.js "$WF_INSTALL/" 2>/dev/null || true
+        cp "$CLAUDE_SYNC_HOME/.claude/workflows/"*.js "$WF_INSTALL/" 2>/dev/null || true
         echo "  ✓ Workflow scripts installed to $WF_INSTALL/ ($(ls "$WF_INSTALL" 2>/dev/null | wc -l | tr -d ' ') scripts)"
         echo "  → Active: Workflow(name='phase3-consensus'), Workflow(name='phase4-implement'), Workflow(name='phase5-review'), Workflow(name='phase6-verify')"
         echo "  → Phase 0-2 use Skill+Agent direct execution (no Harness overhead)"
     fi
 
-    # Create .claude/workflows symlink if running from within the repo
-    if [ -d "$DOTFILES/.claude/workflows" ] && [ ! -L "$HOME/.claude/workflows" ]; then
-        # Workflow scripts stay in the repo; they're accessed via CWD
-        echo "  ✓ .claude/workflows/ available from project root"
-    fi
-
     # Copy project CLAUDE.md if not already present
-    if [ -f "$DOTFILES/CLAUDE.md" ] && [ ! -f "$HOME/.claude/CLAUDE.md" ]; then
+    if [ -f "$CLAUDE_SYNC_HOME/CLAUDE.md" ] && [ ! -f "$HOME/.claude/CLAUDE.md" ]; then
         # Don't auto-overwrite user's global CLAUDE.md; just inform
-        echo "  ℹ Project CLAUDE.md available at $DOTFILES/CLAUDE.md"
+        echo "  ℹ Project CLAUDE.md available at $CLAUDE_SYNC_HOME/CLAUDE.md"
     fi
 
     echo "  ✓ Claude Code integration ready"
@@ -282,6 +277,7 @@ if [ $HAS_HERMES -eq 1 ]; then
 fi
 if [ $HAS_CLAUDE -eq 1 ]; then
     echo "  Claude Code: skills installed to ~/.claude/skills/"
+    echo "  Claude Code snapshot: $CLAUDE_SYNC_HOME"
     echo "  Run /reload-skills in Claude Code to activate"
 fi
 echo "  pwsh: . \$PROFILE"
