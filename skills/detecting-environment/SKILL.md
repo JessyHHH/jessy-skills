@@ -55,7 +55,7 @@ Check available tool names in the current session:
 - Tool name contains "context7" (case-insensitive) -- Context7 MCP available
 - Tool name contains "firecrawl" (case-insensitive) -- Firecrawl MCP available
 - Neither available: document queries fallback to WebFetch; search fallback to WebSearch
-- If missing but recommended: suggest consulting `references/setup.md` for installation
+- If missing but recommended: suggest consulting `skills/project-workflow-claude/references/setup.md` for installation
 
 ### Step 4: Task Intake Snapshot
 
