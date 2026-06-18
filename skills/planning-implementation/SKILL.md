@@ -1,7 +1,7 @@
 ---
 name: planning-implementation
-description: Use when an approved design or clear requirements must become a concrete implementation plan. Writes `.claude/plans/`, defines expanded json:tasks, runs consensus review with Workflow(name='phase3-consensus'), and hands off to implementing-changes in full-workflow mode.
-version: "v2.7"
+description: Use when an approved design or clear requirements must become a concrete implementation plan. Writes `.claude/plans/`, defines expanded json:tasks, runs consensus review via 3 parallel Judge agents + synthesis, and hands off to implementing-changes in full-workflow mode.
+version: "v2.9"
 ---
 
 # Planning Implementation
@@ -82,29 +82,81 @@ Before invoking the consensus workflow, the master agent MUST collect:
 
 These enable pre-check validation: scope contradiction detection, ambiguity resolution, and task contract validation.
 
-### Step 5: Run Consensus Review
+### Step 5: Run Consensus Review (Master-Driven Agent Dispatch)
 
-Invoke the Judge Panel workflow. See `references/consensus-review-contract.md` for the full contract.
+Master dispatches 3 independent Judge agents in parallel (architecture, risk, feasibility), then synthesizes the results. See `references/consensus-review-contract.md` for the full contract.
+
+#### 5a. Build Context Block
+
+Build a context injection block for the judges:
 
 ```
-Workflow(
-  name='phase3-consensus',
-  args={
-    planContent: '<full plan text>',
-    contextSummary: <Phase 0.3 output contextSummary>,
-    grillSummary: <Phase 1 grill evidence>,
-    taskIntakeSnapshot: <Phase 0 task intake snapshot>,
-    tasks: <parsed tasks array from plan>
+contextBlock = ''
+if contextSummary: contextBlock += '\n=== CONTEXT SUMMARY ===\n' + JSON.stringify(contextSummary)
+if grillSummary: contextBlock += '\n=== GRILL SUMMARY ===\n' + JSON.stringify(grillSummary)
+if taskIntakeSnapshot: contextBlock += '\n=== TASK INTAKE SNAPSHOT ===\n' + JSON.stringify(taskIntakeSnapshot)
+```
+
+#### 5b. Dispatch 3 Judges in Parallel
+
+Use `Agent(subagent_type='general-purpose')` for three independent judges. Each judge MUST use the schema below for structured output:
+
+```
+JUDGE_SCHEMA = {
+  type: 'object',
+  required: ['score', 'findings', 'verdict'],
+  properties: {
+    score: {type: 'number', minimum: 1, maximum: 10},
+    findings: {type: 'array', items: {type: 'string'}},
+    verdict: {type: 'string', enum: ['APPROVE', 'ITERATE', 'REJECT']}
   }
-)
+}
 ```
 
-The script reviews from 3 angles in parallel (architecture, risk, feasibility), scores 1-10 each, and synthesizes one verdict.
+Dispatch three agents simultaneously (no dependency between them):
 
-### Step 6: Act on Verdict
+1. **Architecture Judge** (model: sonnet):
+   "Review ARCHITECTURAL SOUNDNESS. Is the design coherent? Component boundaries clear? Score 1-10. Return APPROVE/ITERATE/REJECT."
+   
+2. **Risk Judge** (model: sonnet):
+   "Review RISK. What are the real failure modes? Are mitigations concrete? What hidden assumptions? Score 1-10. Return APPROVE/ITERATE/REJECT."
+   
+3. **Feasibility Judge** (model: sonnet):
+   "Review IMPLEMENTATION FEASIBILITY. Are steps concrete and executable? File paths correct? Could a junior engineer follow this? Score 1-10. Return APPROVE/ITERATE/REJECT."
+
+Each agent receives the full plan text + contextBlock in its prompt. Filter results with `.filter(Boolean)`.
+
+#### 5c. Synthesize Verdict
+
+Dispatch a 4th agent (model: sonnet) to synthesize the 3 reviews:
+
+```
+Agent: "Synthesize N independent plan reviews into one verdict.
+Adopt the strongest insights from each angle. Resolve contradictions.
+Return: verdict (APPROVE/ITERATE/REJECT), summary, recommendation."
+```
+
+Also perform pre-check validation before synthesis:
+- **Task Contract Check:** Mutating tasks must have `patchBackStrategy`; tasks without `expectedEvidence` need verification explanation in prompt.
+- **Scope Contradiction Check:** Plan must not include items listed in `approvedOutOfScope`.
+- **Ambiguity Check:** No unresolved open ambiguities in grill evidence.
+
+If any pre-check fails → verdict = REJECT (no synthesis needed).
+
+#### 5d. Determine Final Verdict
+
+Master computes the final verdict from judges' scores and pre-checks:
+
+- If any judge returned REJECT → REJECT
+- If any judge returned ITERATE or average score < 7 → ITERATE
+- Otherwise → APPROVE
+
+Master collects all findings from all judges + pre-check findings into a single array.
+
+### Step 6: Act on Verdict (Master Decision)
 
 - **APPROVE**: Proceed to Step 7 (user approval).
-- **ITERATE**: Address findings and re-run `Workflow(name='phase3-consensus', ...)`. Max 3 iterations. Report to user on 3rd failure.
+- **ITERATE**: Address findings and re-run the consensus review (back to Step 5). Max 3 iterations. Report to user on 3rd failure.
 - **REJECT**: Stop. Present reasons to user. Do NOT proceed to implementation.
 
 ### Step 7: User Approval

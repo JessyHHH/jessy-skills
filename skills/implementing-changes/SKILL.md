@@ -1,7 +1,7 @@
 ---
 name: implementing-changes
-description: Use when an approved implementation plan with json:tasks is ready to execute. Enriches tasks with file contents, grill decisions, plan sections, and diffText; invokes Workflow(name='phase4-implement'); performs worktree review and quick gate; hands off to reviewing-implementation in full-workflow mode.
-version: "v2.7"
+description: Use when an approved implementation plan with json:tasks is ready to execute. Enriches tasks with file contents, grill decisions, plan sections, and diffText; dispatches Agent() per task (serial implement→verify→self-review); handles Completion Guarantee loop; performs worktree review and quick gate; hands off to reviewing-implementation in full-workflow mode.
+version: "v2.9"
 ---
 
 # Implementing Changes
@@ -58,35 +58,89 @@ expectedEvidenceText = expectedEvidence.map(e => `- ${e}`).join('\n')
 forbiddenEvidenceText = forbiddenEvidence.map(e => `- ${e}`).join('\n')
 ```
 
-### 4. Execute Workflow Script
+### 4. Execute Implementation (Master-Driven Serial Agent Dispatch)
 
-Announce "**Phase 4: Implement** — Workflow(pipeline) via phase4-implement.js."
+Announce "**Phase 4: Implement** — Master-driven serial Agent dispatch."
 
-Invoke:
+Master processes tasks **sequentially** (one at a time, to avoid file conflicts). For each task, Master dispatches 3 agents in series: Implement → Quick Verify → Self-Review.
 
+#### 4a. Per-Task Dispatch Loop
+
+For each task in `enrichedTasks`:
+
+**Stage 1 — Implement:**
+Model: `simple` tasks → haiku, `medium`/`complex` → sonnet.
+Isolation: `patchBackStrategy='harness-managed'` → `isolation='worktree'`, otherwise omit.
+
+Build the implementer prompt from the enriched task:
 ```
-Workflow(
-  name='phase4-implement',
-  args={tasks: enrichedTasks}
+buildImplementerPrompt(task):
+  parts = [task.prompt]
+  + fileContents (injected as code blocks: '### path\n```\ncontent\n```')
+  + diffText (if any: '## Git Diff\n```diff\n' + diffText + '\n```')
+  + grillDecisions (if any: '## Design Decisions\n- decision1\n- decision2')
+  + planSections (if any: '## Task Section from Implementation Plan\n' + planSections)
+  + expectedEvidence / forbiddenEvidence
+  + isolation strategy instructions
+  + "IMPORTANT: Read target file fresh before calling Edit. Do NOT rely on injected file contents for old_string construction."
+```
+
+Dispatch:
+```
+Agent(enhancedPrompt, {
+  model: sonnet or haiku,
+  isolation: 'worktree' or undefined,
+  schema: {
+    properties: {
+      changedFiles: {type: 'array', items: {type: 'string'}},
+      expectedEvidenceObserved: {type: 'array', items: {type: 'string'}},
+      forbiddenEvidenceObserved: {type: 'array', items: {type: 'string'}},
+      summary: {type: 'string'}
+    }
+  }
+})
+```
+
+Record `taskChangedFiles[task.id]` from the result.
+
+**Stage 2 — Quick Verify:**
+```
+Agent(
+  'Quick verify these files: ' + task.files.join(', ') + '. Run build and affected tests. Report results.',
+  { schema: { properties: { buildPassed: {type: 'boolean'}, testsPassed: {type: 'boolean'}, errors: {type: 'array', items: {type: 'string'}} }, required: ['buildPassed', 'testsPassed'] } }
 )
 ```
 
-The script uses `pipeline()` (streaming, no barrier):
-- **Stage 1 (Implement):** `agent(task.prompt, {model, isolation})` per task. `buildImplementerPrompt()` embeds `fileContents`, `grillDecisions`, and `planSections` when present, falling back to `contextRefs`/`grillRefs` references when absent. Complexity drives model: `simple` -> Haiku, `medium`/`complex` -> Sonnet. `patchBackStrategy='harness-managed'` -> `isolation='worktree'`, `no-isolation` -> `isolation='none'`.
-- **Stage 2 (Quick Verify):** `agent(verify, {phase: 'Quick Verify', schema})` per task.
-- **Stage 3 (Self-Review):** Each implementer reports `DONE` / `DONE_WITH_CONCERNS` / `NEEDS_CONTEXT` / `BLOCKED`.
-- **Stage 4 (Completion Guarantee):** Failsafe loop: collects tasks with status NOT in [`DONE`, `DONE_WITH_CONCERNS`], retries them with a simplified implement+quick-verify pipeline (no self-review), fresh agent, different approach prompt. Maximum 3 retry rounds per task (`MAX_RETRY_ROUNDS = 3`). After exhaustion marks remaining as `STUCK` with `stuckReason` and adds them to `selfReviewStatus` for Phase 5 visibility.
+**Stage 3 — Self-Review:**
+If quick-verify failed → mark as FAILED immediately, skip self-review.
 
-### 4b. Completion Guarantee — Compensation Loop
+For `patchBackStrategy='external-report'` → auto-mark `DONE_WITH_CONCERNS`.
 
-After the Workflow script completes, inspect the returned `selfReviewStatus`:
+Otherwise dispatch:
+```
+Agent(
+  'Self-review task ' + task.id + ': ' + task.files.join(', ') + '.\nCheck: all requirements met? Edge cases handled? Tests pass? Code matches project patterns?\nReturn status: DONE | DONE_WITH_CONCERNS | NEEDS_CONTEXT (specify what) | BLOCKED (explain why)',
+  { schema: { required: ['status'], properties: { status: {type: 'string', enum: ['DONE', 'DONE_WITH_CONCERNS', 'NEEDS_CONTEXT', 'BLOCKED']}, concerns: {type: 'array', items: {type: 'string'}}, contextNeeded: {type: 'string'}, blockReason: {type: 'string'} } } }
+)
+```
 
-1. **Identify stuck tasks:** Filter for objects where `status === 'STUCK'`. Log each stuck task's `taskId` and `stuckReason`.
-2. **If stuck tasks exist:**
-   - **`NEEDS_CONTEXT` tasks:** Enrich with the missing context (re-read files, re-fetch grill decisions, re-load plan sections). Re-invoke `Workflow(name='phase4-implement', args={tasks: [stuck tasks only]})`.
-   - **`BLOCKED` tasks:** Report block reason to the user for manual resolution. Do not retry automatically.
-3. **Compensation cap:** Max 2 compensation loops. After 2 loops, any still-stuck tasks are reported to the user regardless of reason.
-4. **Stuck task visibility:** Ensure `stuckReason` is preserved in the `selfReviewStatus` for Phase 5 (`reviewing-implementation`) consumption. The per-task `stuckReason` field feeds directly into the review pipeline.
+Build `patchBackStatus`: `harness-managed:applied`, `no-isolation:applied`, or `external-report:pending-review`.
+
+Collect per-task result:
+```
+{ taskId, status, concerns, contextNeeded, blockReason, changedFiles, expectedEvidenceObserved, forbiddenEvidenceObserved, patchBackStatus }
+```
+
+Record to `selfReviewStatus` array.
+
+#### 4b. Completion Guarantee (Master-Driven Loop)
+
+After all tasks processed, Master inspects `selfReviewStatus`:
+
+1. **Identify stuck tasks:** Filter `status !== 'DONE' && status !== 'DONE_WITH_CONCERNS'`.
+2. **NEEDS_CONTEXT tasks:** Re-enrich with missing context, re-dispatch implementer + quick-verify (no self-review) with fresh agent and different approach prompt. Max 3 retries per task.
+3. **BLOCKED tasks:** Report block reason to user. Do NOT retry automatically.
+4. **Compensation cap:** Max 2 compensation loops. After exhaustion, mark remaining as `STUCK` with `stuckReason`.
 
 ### 5. Worktree Review (Phase 4.5)
 

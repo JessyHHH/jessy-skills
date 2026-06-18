@@ -1,7 +1,7 @@
 ---
 name: reviewing-implementation
-description: Use after implementation changes exist and before final verification. Runs two-stage review in the required order: spec compliance first, code quality second, with per-task pipeline, tiered models, context injection, quick-gate risk handling, and Workflow(name='phase5-review'). Hands off to verifying-completion in full-workflow mode.
-version: "v2.7"
+description: Use after implementation changes exist and before final verification. Runs two-stage review in the required order: spec compliance first, code quality second, with Master-driven serial Agent dispatch, tiered models, context injection, quick-gate risk handling. Hands off to verifying-completion in full-workflow mode.
+version: "v2.9"
 ---
 
 # Reviewing Implementation
@@ -79,55 +79,118 @@ Collect the following inputs for the Workflow call:
 - `quickGateResults` — from `.claude/state/quick-gate-results.json`.
 - `grillEvidence` — from `.claude/state/grill-evidence.json` (or null if absent).
 
-### 4. Execute Review Workflow
+### 4. Execute Review (Master-Driven Agent Dispatch)
 
-Announce "**Phase 5: Two-Stage Review** — per-task independent pipeline via phase5-review.js."
+Announce "**Phase 5: Two-Stage Review** — Master-driven serial Agent dispatch."
 
-```
-Workflow(
-  name='phase5-review',
-  args={
-    planPath,
-    planText,
-    changedFiles,
-    tasks: [...enrichedTasks],
-    selfReviewStatuses: [...],
-    fastGateResults: {...},
-    quickGateResults: {...},
-    grillEvidence: {...}
-  }
-)
-```
+Master processes tasks **sequentially**. For each task, Master dispatches review agents: Spec Review → Code Review → Adversarial Verify. Then a cross-task Final Review agent.
 
-The script uses **per-task independent pipeline**:
-- **Spec Review:** Context injected directly. Haiku by default, Sonnet for high-risk tasks (>=2 missing expectedEvidence from quickGateResults). Simple tasks skip.
-- **Code Review:** Reviewers receive pre-computed `git diff` via `diffText` — only review changed lines. Tiered models: correctness=Sonnet, safety=Sonnet, simplicity=Haiku. Simple tasks skip entirely; medium gets correctness-only; complex gets 3-agent parallel.
-- **Adversarial Verification:** Runs per-task inline. Complexity-gated: complex=3 skeptics, medium=1, simple=auto-confirm. All skeptics use Haiku.
-- **Final Review:** Haiku synthesis of per-task findings. Cross-task consistency check. Skipped when <=1 task or no shared files.
+#### 4a. Complexity Gating (Master Decision Before Dispatch)
 
-### 5. Anti-Exploration Guardrails
-
-All review agent prompts inject these rules from `references/review-prompt-guardrails.md`:
+Before dispatching review agents for a task, Master checks complexity:
 
 ```
-Maximum 5 file reads. DO NOT read same file twice.
-FORBIDDEN: go build, go test, go vet, grep exploration.
-Maximum 3 thinking blocks.
+complexity = task.complexity || 'medium'
+
+shouldSkipSpec       = complexity === 'simple'
+shouldSkipCode       = complexity === 'simple'
+codeDepth            = complexity === 'complex' ? 'full' : 'correctness-only'
+shouldSkipAdversaria = complexity !== 'complex'
+adversarialSkeptics  = complexity === 'complex' ? 3 : (complexity === 'medium' ? 1 : 0)
 ```
 
-### 6. Fix-and-Retry Loop
+#### 4b. Per-Task Review Dispatch (Serial)
 
-Read the script output: `{criticalCount, highCount, findings, specFailed, finalVerdict}`.
+For each task (skip if self-review status is FAILED or BLOCKED):
 
-- If `criticalCount > 0`: Agent fixes CRITICAL issues -> re-run Workflow. Max 3 iterations.
-- If `specFailed.length > 0`: Address spec gaps -> fix implementation or update plan -> re-run Workflow.
+**Stage 1 — Spec Review** (skip if `shouldSkipSpec`):
+Model: task.riskLevel === 'high' ? sonnet : haiku
+
+Build guarded spec prompt with injected context:
+```
+'Spec compliance review for task Tn.
+DO NOT read any plan files. All context provided.
+## Task Specification: <task.enrichedContext or task.prompt>
+## Self-Review Status: status=X, concerns=Y
+## Instructions: Check implementation matches spec exactly. Nothing extra? Nothing missing?
+Verify expectedEvidence: <task.expectedEvidence>
+Check forbiddenEvidence: <task.forbiddenEvidence>
+Return APPROVE, ITERATE, or REJECT with specific issues.
+## REVIEW GUARDRAILS (HARD):
+1. Maximum 5 file reads total.
+2. DO NOT read any file more than once.
+3. FORBIDDEN: go build, go test, go vet, grep, find. You are a reviewer, not a builder.
+4. Maximum 3 thinking blocks.'
+```
+
+Dispatch: `Agent(specPrompt, { schema: SPEC_SCHEMA, model })`
+
+If verdict !== APPROVE → record spec failure, skip code review for this task.
+
+**Stage 2 — Code Review** (skip if `shouldSkipCode`):
+
+If codeDepth === 'correctness-only':
+- Dispatch 1 agent (model: sonnet) for correctness review with diff
+If codeDepth === 'full':
+- Dispatch 3 agents in parallel (correctness=sonnet, safety=sonnet, simplicity=haiku)
+
+Each agent receives:
+```
+'Review CORRECTNESS/SAFETY/SIMPLICITY for task Tn.
+## Git Diff (ONLY review changed lines): <task.diffText>
+## Full File Contents (context only, do not review unchanged lines): <task.fileContents>
+Flag findings with severity CRITICAL/HIGH/MEDIUM/LOW.
+## REVIEW GUARDRAILS (HARD): [same 5 rules as spec review]'
+```
+
+Dispatch: `Agent(codePrompt, { schema: REVIEW_SCHEMA, model })`
+Tag each finding with taskId and reviewType.
+
+**Stage 3 — Adversarial Verify** (gated by complexity):
+
+For each CRITICAL finding in the task:
+- If complex (3 skeptics): Dispatch 3 haiku agents in parallel, each trying to REFUTE the finding. Survives if ≥2/3 fail to refute.
+- If medium (1 skeptic): Dispatch 1 haiku agent to refute. If refuted → downgrade to HIGH.
+- If simple: auto-confirm (no skeptics).
+
+Skeptic dispatch:
+```
+Agent('Try to REFUTE this finding. Default to refuted=false if uncertain.\nFinding: <description>\nFile: <file> [line <line>]',
+  { schema: SKEPTIC_SCHEMA, model: 'haiku' })
+```
+
+Collect verified critical findings.
+
+#### 4c. Final Review (Cross-Task)
+
+Skip if ≤1 task or no shared files between tasks.
+
+Dispatch 1 agent (model: haiku, summary-based — DO NOT re-read files):
+```
+'CROSS-TASK CONSISTENCY CHECK:
+## Changed Files: <changedFiles.join(', ')>
+## Per-Task Findings Summary: <allFindings as bullet list>
+## Spec Failures: <specFailed summary>
+Check for: integration gaps, cross-task conflicts, duplicate patterns.
+Return: verdict (APPROVE/ITERATE/REJECT), issues, reasons, summary.'
+```
+
+Dispatch: `Agent(prompt, { schema: FINAL_REVIEW_SCHEMA, model: 'haiku' })`
+
+Master determines final verdict: Final Review must be APPROVE for pass; any unresolved CRITICAL or SPEC_FAILURE blocks pass.
+
+### 5. Fix-and-Retry Loop (Master Decision)
+
+Master inspects collected results:
+- If `criticalCount > 0`: Dispatch fix Agent → re-run review. Max 3 iterations.
+- If `specFailed.length > 0`: Address spec gaps → fix implementation → re-run review.
 - Report to user on 3rd failure.
 
 **Red Flags (NEVER):**
 - Start code quality before spec compliance is complete.
 - Skip either stage.
 - Accept "close enough".
-- Skip context injection before invoking Phase 5.
+- Skip context injection before review.
 - Use Sonnet for simplicity review or final review (Haiku is sufficient and faster).
 
 ### 7. Report
@@ -165,30 +228,3 @@ Recommended next step:
 2. /implementing-changes — if findings need implementation fixes.
 3. Stop here — keep review findings as-is.
 ```
-
----
-
-## Workflow Script Rules (HARD — Plain JavaScript Only)
-
-When writing or reviewing Workflow scripts (code passed to the `Workflow()` tool), these rules apply:
-
-### Forbidden in Workflow Scripts
-- TypeScript type annotations: `const x: string[] = ...`, `function f(a: number): void {}`
-- TypeScript interfaces: `interface MyResult { ... }`
-- TypeScript generics: `Array<string>`, `Promise<Result>`, `<T>`
-- TypeScript type assertions: `x as string`, `<string>x`
-- TypeScript enums: `enum Color { Red, Green }`
-- Union types in executable positions: `type Mode = "A" | "B"` (in JSON Schema use plain JS: `{ type: 'string', enum: ['A', 'B'] }`)
-
-### Required in Workflow Scripts
-- ALL scripts must be plain JavaScript (ES2020)
-- Use `const`, `var`, `function` — no type annotations
-- Use JSON Schema objects for structured output: `{ type: 'object', properties: { name: { type: 'string' } } }` — these are plain JS objects, NOT TypeScript
-- After authoring a script, run `node --check <scriptPath>` before passing to `Workflow()`
-
-### On Parse Error
-If `Workflow()` returns "Invalid workflow script: Script parse error", inspect the reported line and surrounding lines for:
-- Type annotations (`: string`, `: number[]`)
-- Arrow functions with typed parameters
-- Interface/type declarations
-- Remove ALL TypeScript syntax from the offending lines and retry.

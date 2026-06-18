@@ -1,7 +1,7 @@
 ---
 name: project-workflow-claude
 description: "Use when starting any development task — auto-detects project type, loads matching skills, drives 11-phase pipeline from design through verified completion. Hard Gates + Iron Law."
-version: "v2.8"
+version: "v2.9"
 author: "jessyhuang"
 metadata:
   standalone: true

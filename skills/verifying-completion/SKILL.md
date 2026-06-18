@@ -1,7 +1,7 @@
 ---
 name: verifying-completion
-description: Use before claiming work is complete, fixed, passing, ready, committed, or mergeable. Enforces the Iron Law with fresh verification evidence, project-specific commands, Workflow(name='phase6-verify'), and loop-until-dry fixes. Hands off to finishing-development in full-workflow mode.
-version: "v2.7"
+description: Use before claiming work is complete, fixed, passing, ready, committed, or mergeable. Enforces the Iron Law with fresh verification evidence, project-specific commands, Master-driven loop-until-dry with Agent fix dispatch, and hard cap at 10 iterations. Hands off to finishing-development in full-workflow mode.
+version: "v2.9"
 ---
 
 # Verifying Completion
@@ -60,42 +60,80 @@ From `quickGateResults` and grill evidence, build the `evidenceChecks` array:
 
 Extract `quickGateEvidence` from `.claude/state/quick-gate-results.json` and `grillEvidencePath` from the state file.
 
-### 4. Invoke Verification Workflow
+### 4. Verification Loop (Master-Driven Loop Until Dry)
 
-Announce "**Phase 6: Verify** — Iron Law enforcement via phase6-verify.js."
+Announce "**Phase 6: Verify** — Iron Law enforcement. Master-driven loop-until-dry."
+
+Master runs the verification loop directly. No Workflow script — Master executes Bash, inspects results, dispatches fix agents, repeats.
+
+#### 4a. Initialize Loop State
 
 ```
-Workflow(
-  name='phase6-verify',
-  args={
-    projectType: '<go|vue|node|skills-repo>',
-    checkResults: [...],
-    dryRounds: <current>,
-    totalIterations: <cumulative count from master, defaults to 0>,
-    evidenceChecks: [...],
-    quickGateEvidence: <from quick-gate-results.json>,
-    grillEvidencePath: '<.claude/state/grill-evidence.json>'
-  }
-)
+dryRounds = 0
+totalIterations = 0
+MAX_ITERATIONS = 10
 ```
 
-### 5. Loop Until Dry (Mechanical Loop Contract)
+#### 4b. Loop Body
 
-The script returns `{allPassed, dryRounds, totalIterations, mandatoryNextAction, verdict, remainingFailures, evidenceFailures, phase, quickGateAudit, grillEvidenceAvailable}`.
+**Each iteration:**
 
-Read `mandatoryNextAction` to determine the next step:
+1. **Run ALL verification commands** (from Step 2) — fresh Bash output each time.
+2. **Evaluate evidence checks** (from Step 3) — re-check `file-exists`, `text-present`, `text-absent` evidence.
+3. **Count failures:** command failures (exitCode !== 0) + evidence failures (passed === false).
 
-- **`RE_RUN_CHECKS`**: Fixes were applied or dry rounds are in progress. Master MUST re-run ALL Bash checks and re-invoke the script with updated `checkResults`, evidence, and incremented `totalIterations`.
-- **`DONE`**: Verification complete or exhausted. Master MUST exit the loop.
+**If 0 failures:**
+```
+dryRounds += 1
+if dryRounds >= 2:
+  verdict = 'PASSED'
+  mandatoryNextAction = 'DONE'
+  exit loop
+else:
+  verdict = 'IN_PROGRESS'
+  mandatoryNextAction = 'RE_RUN_CHECKS'
+  totalIterations += 1
+  continue loop (re-run checks for a clean round)
+```
 
-The `verdict` field indicates final state:
-- **`PASSED`**: All checks passed with 2 consecutive dry rounds. Proceed.
-- **`EXHAUSTED`**: Max iterations (10) reached with remaining failures. Do NOT proceed to `finishing-development`.
-- **`IN_PROGRESS`**: Loop still active, continue re-running checks.
+**If failures > 0:**
+```
+dryRounds = 0  // dry streak broken
+totalIterations += 1
 
-**Safety cap:** The script enforces a hard cap at `totalIterations >= 10`. When the cap triggers and failures remain, `mandatoryNextAction` is `DONE` with `verdict='EXHAUSTED'`.
+if totalIterations >= MAX_ITERATIONS:
+  verdict = 'EXHAUSTED'
+  mandatoryNextAction = 'DONE'
+  exit loop (report remaining failures, do NOT proceed to finishing-development)
+else:
+  verdict = 'IN_PROGRESS'
+  mandatoryNextAction = 'RE_RUN_CHECKS'
+  // Master dispatches fix agents, then continues loop
+```
 
-If `allPassed=false` after exhaustion, report the failing checks and do NOT proceed to `finishing-development`.
+#### 4c. Fix Dispatch (When Failures Exist)
+
+Master dispatches fix agents for each failure:
+
+**Command failures:** Dispatch 1 Agent per failed check:
+```
+Agent('Check "' + failure.name + '" failed.
+Command: ' + failure.command + '
+Stderr: ' + (failure.stderr || '(none)') + '
+Stdout: ' + (failure.stdout || '(none)') + '
+Fix the issue with MINIMAL changes. Do NOT redesign or refactor.',
+  { isolation: 'worktree', model: 'sonnet' })
+```
+
+**Evidence failures:** Dispatch 1 Agent per failed evidence:
+```
+Agent('Evidence check "' + ef.id + '" (' + ef.type + ': ' + ef.description + ') failed.
+Details: ' + (ef.details || '(none)') + '
+Fix the issue with MINIMAL changes.',
+  { isolation: 'worktree', model: 'sonnet' })
+```
+
+After all fix agents complete, Master re-runs the loop body (Step 4b) with fresh Bash checks and re-evaluated evidence.
 
 ### 6. Persist Verification Results
 

@@ -232,16 +232,12 @@ if [ $HAS_CLAUDE -eq 1 ]; then
         echo "  ℹ Source branch: $CURRENT_BRANCH; Claude Code uses snapshot $CLAUDE_SYNC_HOME"
     fi
 
-    # Install workflow scripts to global location (~/.claude/workflows/)
-    # Workflow(name='...') auto-discovers scripts here — works from any project
-    # NOTE: Only phase3-6 are active. phase1-2 are kept as skeletons in project only (phased out in v2.8).
+    # v2.9: No Workflow scripts — execution skills use Agent() directly (Master-driven dispatch).
+    # Clean up stale workflow scripts from v2.8 install.
     WF_INSTALL="$HOME/.claude/workflows"
-    if [ -d "$CLAUDE_SYNC_HOME/.claude/workflows" ]; then
-        mkdir -p "$WF_INSTALL"
-        cp "$CLAUDE_SYNC_HOME/.claude/workflows/"*.js "$WF_INSTALL/" 2>/dev/null || true
-        echo "  ✓ Workflow scripts installed to $WF_INSTALL/ ($(ls "$WF_INSTALL" 2>/dev/null | wc -l | tr -d ' ') scripts)"
-        echo "  → Active: Workflow(name='phase3-consensus'), Workflow(name='phase4-implement'), Workflow(name='phase5-review'), Workflow(name='phase6-verify')"
-        echo "  → Phase 0-2 use Skill+Agent direct execution (no Harness overhead)"
+    if [ -d "$WF_INSTALL" ]; then
+        rm -f "$WF_INSTALL"/phase3-consensus.js "$WF_INSTALL"/phase4-implement.js "$WF_INSTALL"/phase5-review.js "$WF_INSTALL"/phase6-verify.js 2>/dev/null || true
+        echo "  ✓ v2.9: Agent() direct dispatch (no Workflow scripts)"
     fi
 
     # Copy project CLAUDE.md if not already present
@@ -252,10 +248,9 @@ if [ $HAS_CLAUDE -eq 1 ]; then
 
     echo "  ✓ Claude Code integration ready"
 
-    # project-workflow-claude v2.8 — modular execution skills
-    echo "  ℹ project-workflow-claude v2.8 — modular execution skills"
-    echo "  → 1 orchestrator + 7 execution skills"
-    echo "  → 6 Workflow scripts included (.claude/workflows/)"
+    # project-workflow-claude v2.9 — modular execution skills
+    echo "  ℹ project-workflow-claude v2.9 — modular execution skills"
+    echo "  → 1 orchestrator + 7 execution skills (Agent() direct dispatch, no Workflow scripts)"
     echo "  → Auto-detects Context7/Firecrawl MCP (falls back to WebFetch/WebSearch)"
     echo "  → Iron Law: skills/project-workflow-claude/references/iron-law.md"
 
