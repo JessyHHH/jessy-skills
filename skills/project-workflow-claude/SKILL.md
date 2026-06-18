@@ -17,11 +17,11 @@ triggers:
   - "write code"
 ---
 
-# Project Workflow Claude v2.8 — Modular Orchestrator
+# Project Workflow Claude v2.9 — Modular Orchestrator
 
-**Core design:** Thin orchestrator that delegates each phase to a dedicated modular execution skill. The master agent is a supervisor — it routes, monitors, and transitions, but never implements directly. All heavy lifting (environment detection, design, planning, implementation, review, verification, finishing) lives in child skills.
+**Core design:** Thin orchestrator that delegates each phase to a dedicated modular execution skill. The master agent is a supervisor — it routes, monitors, dispatches sub-agents, and transitions, but never implements directly. All heavy lifting (environment detection, design, planning, implementation, review, verification, finishing) lives in child skills. Child skills use `Agent()` directly (no Workflow scripts) — Master supervises all sub-agent dispatch and makes all decisions.
 
-**Platform:** Claude Code v2.4+. Uses `Skill`, `Agent`, `Workflow`, `Read`, `Glob`, `Grep`, `Bash`, `AskUserQuestion`.
+**Platform:** Claude Code v2.4+. Uses `Skill`, `Agent`, `Read`, `Glob`, `Grep`, `Bash`, `AskUserQuestion`.
 
 ---
 
@@ -40,41 +40,43 @@ The control plane reads the workflow state file, determines which skill to invok
 
 1. `detecting-environment` — Project type, language version, tooling, MCP availability, context artifacts, smart skill selection. Covers legacy Phases 0, 0.3, 0.5.
 2. `designing-solutions` — Requirement echo, variable-depth Grill (Ambiguity Register + Assumption Ledger), approach proposal, spec writing. Covers legacy Phase 1.
-3. `planning-implementation` — Concrete plan with expanded task schema, consensus review via Judge Panel. Covers legacy Phases 2, 3.
-4. `implementing-changes` — Parallel task execution, worktree review, quick gate. Covers legacy Phases 4, 4.5, 4.6.
-5. `reviewing-implementation` — Per-task independent pipeline: spec compliance, code quality, adversarial verification, final review. Covers legacy Phase 5.
-6. `verifying-completion` — Iron Law enforcement: build, test, lint, security, loop-until-dry. Covers legacy Phase 6.
+3. `planning-implementation` — Concrete plan with expanded task schema, consensus review via 3 parallel Judge agents + synthesis. Covers legacy Phases 2, 3.
+4. `implementing-changes` — Serial Agent() dispatch per task (implement→verify→self-review), Completion Guarantee loop, worktree review, quick gate. Covers legacy Phases 4, 4.5, 4.6.
+5. `reviewing-implementation` — Master-driven serial review: spec→code→adversarial per task, complexity-gated models, final cross-task review. Covers legacy Phase 5.
+6. `verifying-completion` — Master-driven loop-until-dry: Bash verification + Agent fix dispatch, dryRounds tracking, hard cap at 10 iterations. Covers legacy Phase 6.
 7. `finishing-development` — Retrospective, learning, branch finish, PR/push. Covers legacy Phases 7, 8.
 
 All 7 skills support two modes: full workflow (`handoffPolicy=auto-continue`, auto-transition to next) and standalone (`handoffPolicy=prompt-next-step`, prompt user for next action). See `references/handoff-contract.md` for the complete handoff table.
 
 ---
 
-## Workflow Scripts
+## Agent Dispatch Model (v2.9)
 
-Six deterministic JS scripts power Phases 1-6. They run via the `Workflow` tool and are installed to `~/.claude/workflows/` by `install.sh`:
+Execution skills use `Agent()` directly — no Workflow scripts. Master supervises all sub-agent dispatch and makes all decisions.
 
-| Script | Purpose |
-|--------|---------|
-| `phase1-detect-knowledge` | Detect project environment, analyze context artifacts, smart skill selection |
-| `phase2-plan-generate` | Generate concrete implementation plan with expanded task schema |
-| `phase3-consensus` | Judge Panel review (architecture, risk, feasibility) |
-| `phase4-implement` | Parallel task pipeline (implement + quick verify + self-review) |
-| `phase5-review` | Per-task independent review pipeline (spec → code → adversarial → final) |
-| `phase6-verify` | Loop-until-dry verification with 2-consecutive-dry-round exit |
+### Dispatch Patterns
 
-Workflow scripts are pure orchestrators — they dispatch subagents but do no file I/O themselves. See `references/transition-rules.md` for when each script is invoked.
+| Pattern | Used By | Description |
+|---------|---------|-------------|
+| **Parallel Judges** | Phase 3 | 3 judges (architecture/risk/feasibility) dispatched simultaneously, then 1 synthesis agent |
+| **Serial Per-Task** | Phase 4, 5 | Tasks processed one-at-a-time to avoid file conflicts. Each task: implement→verify→self-review (Phase 4) or spec→code→adversarial (Phase 5) |
+| **Loop Until Dry** | Phase 6 | Master runs Bash checks → dispatches fix agents for failures → re-runs checks. 2 consecutive clean rounds = done. Hard cap at 10 iterations. |
 
----
+### Model Selection
 
-## Workflow Script Authoring Rules
+| Task Complexity | Model |
+|-----------------|-------|
+| `simple` (1-2 files, well-specified) | haiku |
+| `medium` / `complex` (multi-file, judgment) | sonnet |
+| Spec review (high-risk task) | sonnet; otherwise haiku |
+| Code correctness/safety review | sonnet |
+| Code simplicity review | haiku |
+| Adversarial skeptic | haiku (1-3 skeptics depending on complexity) |
+| Final cross-task review | haiku |
 
-Workflow scripts are **plain JavaScript ONLY**. TypeScript syntax (type annotations, interfaces, generics) will cause parse errors. See `skills/reviewing-implementation/SKILL.md` for the full **Workflow Script Rules (HARD — Plain JavaScript Only)**.
+### Structured Output
 
-Key points:
-- Type constraints must use JSON Schema objects, not TS type annotations.
-- Run `node --check <scriptPath>` before submitting to `Workflow()`.
-- On parse error: inspect reported line, remove all TS syntax, retry.
+All agents use JSON Schema for structured output — enables reliable downstream decisions by Master. See each execution skill's `references/` for schemas (JUDGE_SCHEMA, REVIEW_SCHEMA, SPEC_SCHEMA, SKEPTIC_SCHEMA, etc.).
 
 ---
 
@@ -130,7 +132,7 @@ When the user triggers this skill:
    ```json
    {
      "workflow": "project-workflow-claude",
-     "version": "v2.8",
+     "version": "v2.9",
      "runMode": "full-workflow",
      "handoffPolicy": "auto-continue",
      "currentSkill": "detecting-environment",
@@ -206,7 +208,6 @@ Full transition rules and auto-transition conditions are in `references/transiti
 | `no review` | Skip `reviewing-implementation` (DANGEROUS — warn user) |
 | `I'll test` | Skip `verifying-completion` (user owns verification) |
 | `skip branch` | Skip `finishing-development` branch actions |
-| `skip workflow` | Use manual Agent parallelism instead of Workflow scripts |
 
 When an escape hatch is matched, set `runMode="standalone-skill"` and `handoffPolicy="prompt-next-step"` in the state file, then route directly to the corresponding child skill.
 
@@ -222,8 +223,8 @@ When an escape hatch is matched, set `runMode="standalone-skill"` and `handoffPo
 6. Present plan inline without saving to `.claude/plans/`
 7. Start code quality review before spec compliance passes
 8. Claim completion without running verification commands THIS turn
-9. Use parallel() when pipeline() works
-10. Pass incomplete prompt to a task — subagent starts with blank context; tasks must be enriched with fileContents, grillDecisions, and planSections
+9. Pass incomplete prompt to a task — subagent starts with blank context; tasks must be enriched with fileContents, grillDecisions, and planSections
+10. Skip Master supervision — Master must inspect every Agent result before proceeding to the next step
 
 ---
 

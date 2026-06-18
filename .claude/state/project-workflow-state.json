@@ -1,6 +1,6 @@
 {
   "workflow": "project-workflow-claude",
-  "version": "v2.8",
+  "version": "v2.9",
   "runMode": "standalone-skill",
   "handoffPolicy": "prompt-next-step",
   "currentSkill": "finishing-development",
