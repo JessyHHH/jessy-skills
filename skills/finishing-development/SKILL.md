@@ -64,31 +64,11 @@ Evaluate inline triggers. See `references/retrospective.md` for the complete tri
 | User corrected same pattern >=2 times | Save to memory as durable preference |
 | Plan missed a relevant skill | Update claude-routing.md if pattern repeats |
 
-### 4. Memory Compression Cron (Phase 7.3)
+### 4. Memory Management (Phase 7.3)
 
-Present an opt-in prompt for background memory compression. Default to skip.
+Memory compression is manual — no automatic cron. The user invokes `/finishing-development` when they want to compress project memory. Skip this step by default.
 
-```
-AskUserQuestion(
-  question="Enable background memory compression cron? Runs every 2 hours to scan and compress project memory. (You can also start it later with /phase7-memory-cron)",
-  header="Phase 7.3 Cron",
-  options=[
-    {label: "Skip (Recommended)", description: "Skip for now. Memory compression can be enabled later."},
-    {label: "Enable", description: "Start the 2-hour memory compression cron job."}
-  ]
-)
-```
-
-If "Enable" chosen:
-```
-CronCreate(
-  cron='7 */2 * * *',
-  prompt="Phase 7.3 Memory Cron. Run the COMPRESS_OR_EXTRACT algorithm...",
-  durable=true
-)
-```
-
-See `references/retrospective.md` for the full COMPRESS_OR_EXTRACT algorithm.
+If the user explicitly requests memory compression, run the COMPRESS_OR_EXTRACT algorithm documented in `references/retrospective.md`.
 
 ### 5. Branch Finish (Phase 8)
 
@@ -124,7 +104,7 @@ Persist to `.claude/state/project-workflow-state.json`.
 ## Output Contract
 
 - Retrospective report (background, may complete after this skill exits).
-- Optional memory compression cron job configured.
+- Manual memory compression (only if user explicitly requests).
 - Branch finish action executed per user choice.
 - State marked `status="complete"`.
 
@@ -145,6 +125,5 @@ No further workflow steps are required.
 - Recommended next step: No next skill — the workflow is finished.
 - Verification: all checks passed
 - Retrospective: running in background
-- Memory cron: [enabled | skipped]
 - Branch: [merged | PR created | kept as-is | discarded]
 ```
