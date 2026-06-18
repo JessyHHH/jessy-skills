@@ -1,7 +1,7 @@
 ---
 name: finishing-development
 description: Use after verified completion to run retrospective learning, optionally configure memory compression cron, and choose how to finish the development branch. Presents merge, PR, keep, or discard options after verification evidence is current.
-version: "v2.7"
+version: "v2.9"
 ---
 
 # Finishing Development
