@@ -38,7 +38,7 @@ The control plane reads the workflow state file, determines which skill to invok
 
 ## Execution Skills (in pipeline order)
 
-1. `detecting-environment` — Project type, language version, tooling, MCP availability, context artifacts (parallel write: CONTEXT.md/knowledge.md + CLAUDE.md via 2 agents), smart skill selection. Covers legacy Phases 0, 0.3, 0.5.
+1. `detecting-environment` — Project type, language version, tooling, MCP+LSP availability (auto-detect + recommend), context artifacts (parallel write: CONTEXT.md/knowledge.md + CLAUDE.md via 2 agents), smart skill selection. Covers legacy Phases 0, 0.3, 0.5.
 2. `designing-solutions` — Requirement echo, Matt Pocock Grill protocol via `grill-me` skill (Ambiguity Register + Assumption Ledger), approach proposal, spec writing. Covers legacy Phase 1.
 3. `planning-implementation` — Concrete plan with expanded task schema, consensus review via 3 parallel Judge agents + synthesis. Covers legacy Phases 2, 3.
 4. `implementing-changes` — Intelligent parallel Agent() dispatch (file-overlap-aware: disjoint files parallel, shared files serial) per task (implement→verify→self-review), Completion Guarantee loop, worktree review, quick gate. Covers legacy Phases 4, 4.5, 4.6.

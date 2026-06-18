@@ -49,13 +49,33 @@ Check in order, first match wins. Use Glob with Bash fallback as noted.
 - **Vue/Node:** `Bash(command='node -v')` for version; check `tsconfig.json` for TypeScript; `Bash(command='which node && (which npm || which pnpm)')` for tooling
 - **Skills Repository:** `Bash(command='which git')` -- text-only project, no language version
 
-### Step 3: Detect MCP Availability
+### Step 3: Detect MCP and LSP Availability
+
+Detect both MCP servers (docs/search) and LSP plugins (code intelligence) — external tools that enhance agent capabilities.
+
+#### MCP Detection
 
 Check available tool names in the current session:
 - Tool name contains "context7" (case-insensitive) -- Context7 MCP available
 - Tool name contains "firecrawl" (case-insensitive) -- Firecrawl MCP available
 - Neither available: document queries fallback to WebFetch; search fallback to WebSearch
-- If missing but recommended: suggest consulting `skills/project-workflow-claude/references/setup.md` for installation
+- If missing but recommended: suggest `skills/project-workflow-claude/references/setup.md` for installation
+
+#### LSP Detection
+
+Scan `~/.claude/settings.json` → `enabledPlugins` for entries ending in `-lsp` (e.g., `gopls-lsp@claude-plugins-official`, `typescript-lsp@claude-plugins-official`, `pyright-lsp@claude-plugins-official`). LSP plugins provide code intelligence (diagnostics, completion, hover) to Agent() sub-agents during implementation.
+
+**Report installed LSP plugins** in the Phase 0 announcement.
+
+**Recommend missing LSP by project type:**
+
+| Project Type | Recommended LSP | Install Command |
+|-------------|-----------------|-----------------|
+| Go | gopls-lsp | `/plugin` marketplace → search "gopls" |
+| TypeScript / Vue / React | typescript-lsp | `/plugin` marketplace → search "typescript" |
+| Python | pyright-lsp | `/plugin` marketplace → search "pyright" |
+
+If the project's matching LSP is not installed, include an advisory in the announcement. LSP plugins auto-activate on Claude Code restart — missing LSP is a soft recommendation, not a hard gate.
 
 ### Step 4: Task Intake Snapshot
 
@@ -186,6 +206,9 @@ Write `.claude/state/context-summary.json` (delegate to subagent):
   "confirmedFacts": [],
   "autoFacts": [],
   "projectType": "go | vue | node | skills-repo | unknown",
+  "mcpAvailable": {"context7": true, "firecrawl": false},
+  "lspAvailable": ["gopls-lsp", "typescript-lsp"],
+  "lspRecommended": ["pyright-lsp"],
   "loadedSkills": []
 }
 ```
@@ -197,6 +220,9 @@ Write `.claude/state/context-summary.json` (delegate to subagent):
 - `confirmedFacts`: key `[confirmed]` facts loaded from CONTEXT.md
 - `autoFacts`: key `[auto]` facts loaded from CONTEXT.md
 - `projectType`: normalized project type token (`go`, `vue`, `node`, `skills-repo`, `unknown`)
+- `mcpAvailable`: MCP server availability map (`context7`, `firecrawl`)
+- `lspAvailable`: installed LSP plugins detected from `enabledPlugins` (e.g., `["gopls-lsp", "typescript-lsp"]`)
+- `lspRecommended`: missing LSP plugins recommended for the project type
 - `loadedSkills`: array of skill names loaded in Step 6
 
 ### Announce Results
@@ -205,6 +231,7 @@ Write `.claude/state/context-summary.json` (delegate to subagent):
 "Phase 0: Environment -- [type], [version]
 Tooling: [available tools]
 MCP: context7 [available/not available], firecrawl [available/not available]
+LSP: [installed list] | [recommendations for missing]
 
 Phase 0.3: Codebase Analysis -- [project-type], commit <sha>
 CONTEXT.md: [present|missing|created|updated]
