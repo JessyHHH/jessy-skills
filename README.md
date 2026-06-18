@@ -50,6 +50,7 @@ ctx7 login && firecrawl login  # 浏览器授权
 安装后：
 - **Hermes** 每次启动自动加载 `project-workflow` + `karpathy-guidelines`
 - **Claude Code** 每次启动自动加载 CLAUDE.md，`/reload-skills` 激活技能
+  - `install.sh` 将 repo 快照到 `~/.jessy-skills-claude/`（排除 `.git`/worktrees/state），`~/.claude/skills/` 通过软链接指向快照。repo 移动/删除不影响 Claude Code 使用
 - 自动识别 Go/Vue/Node/Skills Repository 项目
 
 ## 工作流概览

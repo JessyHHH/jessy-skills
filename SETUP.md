@@ -39,6 +39,7 @@ bash install.sh
 This single command handles everything:
 - Backs up existing skills to `~/.hermes/skills.bak.*`
 - Copies all 85 skills to `~/.hermes/skills/`
+- **Claude Code:** Snapshots repo to `~/.jessy-skills-claude/` (tar — excludes `.git`, worktrees, state), then symlinks `~/.claude/skills/<name>` → snapshot. Survives repo deletion/relocation/branch switches.
 - Cleans stale skills removed from the repo
 - Installs `hermes.sh` to `~/.jessy-skills/` (clean source-based, not inline)
 - Configures shell: zsh/bash/pwsh auto-detected
