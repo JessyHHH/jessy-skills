@@ -67,30 +67,30 @@ Ask the user: "Complete and correct?" before proceeding to the first Grill quest
 
 [Step 2/9] Requirement Echo — requirements confirmed
 
-### Step 3: Grill -- Variable-Depth Requirements Crystallization
+### Step 3: Grill — Matt Pocock Protocol (via grill-me)
 
-The Grill is one question at a time with recommended answers. Depth is driven by the Ambiguity Register, not by a preset count.
+Load the grill-me skill for the interview protocol: `Skill(skill='grill-me')`.
 
-**Mandatory first question:** Confirm scope boundary -- "Here's what I think is in/out of scope based on exploration. Is this correct?" Ask nothing else until boundary is pinned.
+Grill-me provides the questioning discipline (one-at-a-time, recommended answers, forcing-question patterns, stop conditions). See `skills/grill-me/references/forcing_question_patterns.md` and `skills/grill-me/references/when_to_stop_grilling.md`.
 
-**Ambiguity Register** -- maintain a live list of unresolved questions that could change files, behavior, verification, or risk. Each entry includes:
+**The Master conducts the Grill using grill-me's protocol while maintaining Phase 1's pipeline structures:**
+
+**Mandatory first question:** Confirm scope boundary per grill-me protocol — "Here's what I think is in/out of scope. Is this correct?" Ask nothing else until boundary is pinned.
+
+**Ambiguity Register** (Phase 1 pipeline artifact — downstream consumers Phase 2/4/5/6):
 - **Question**: the unresolved item
 - **Status**: `open` | `answered` | `assumed` | `deferred-out-of-scope`
-- **Impact**: what would change based on the answer (files, behavior, verification, risk)
-- **Recommended answer**: "I think X because Y -- does that work?"
+- **Impact**: files, behavior, verification, risk
+- **Recommended answer**: "I think X because Y — does that work?"
 - **Decision**: the final resolved answer
 
-**Assumption Ledger** -- maintain a list of allowed assumptions. Each entry includes:
+**Assumption Ledger** (Phase 1 pipeline artifact):
 - **Assumption**: what is being assumed
 - **Evidence**: what supports this assumption
 - **Confidence**: High | Medium | Low
 - **Correction/rollback path**: what to do if the assumption proves wrong
 
-**Each question MUST embed a recommended answer:** "I think X because Y -- does that work?" This reduces decision fatigue. Explain reasoning and explicitly invite disagreement to avoid anchoring bias.
-
-**No fixed question count.** Well-specified tasks with clear scope may complete the Grill with 0 additional questions. Ambiguous tasks may require many rounds.
-
-**Exit criteria:** The Grill exits when the Hard Grill Checklist in `references/grill-checklist.md` passes. ALL checklist items must be PASS before proceeding.
+**Exit criteria:** The Grill exits when the Hard Grill Checklist in `references/grill-checklist.md` passes (ALL items PASS). Grill-me's own stop conditions (`when_to_stop_grilling.md`) guide when to stop asking — the Checklist is the formal gate.
 
 [Step 3/9] Grill — requirements crystallized (N resolved, M assumed)
 

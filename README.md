@@ -2,7 +2,7 @@
 
 ![Version](https://img.shields.io/badge/version-v2.9-blue)
 
-一个支持 [Claude Code](https://code.claude.com/) + [Hermes Agent](https://github.com/NousResearch/hermes-agent) 的多语言工作流技能集合。模块化流水线 — 1 个 orchestrator + 7 个 execution skills（含 HARD-GATE / Iron Law / Two-Stage Review），85+ 技能覆盖 Go/Vue/前端/工程/方法论全流程。
+一个支持 [Claude Code](https://code.claude.com/) + [Hermes Agent](https://github.com/NousResearch/hermes-agent) 的多语言工作流技能集合。模块化流水线 — 1 个 orchestrator + 7 个 execution skills（含 HARD-GATE / Iron Law / Two-Stage Review），86+ 技能覆盖 Go/Vue/前端/工程/方法论全流程。
 
 **v2.9 新特性：**
 - **Agent() 直接调度**: 弃用所有 Agent() 调度（-1405 行），改为 Master 驱动的 `Agent()` 直接调度。Master 监督所有 sub-agent、做所有决策（重试/跳过/阻塞）

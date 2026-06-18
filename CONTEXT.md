@@ -2,7 +2,7 @@
 
 <!-- KNOWLEDGE_START -->
 ## Architecture
-[auto] Monorepo of 85 AI Agent skills, each defined under `skills/*/SKILL.md` using the agentskills.io YAML frontmatter open standard. 23 top-level category directories organize skills by domain.
+[auto] Monorepo of 86 AI Agent skills, each defined under `skills/*/SKILL.md` using the agentskills.io YAML frontmatter open standard. 23 top-level category directories organize skills by domain.
 [confirmed] Core workflow: `project-workflow-claude` v2.9 modular orchestrator + 7 execution skills + `karpathy-guidelines` — a thin control plane that delegates to independent execution skills with Hard Gates and Iron Law. All phases use Agent() direct dispatch (no Workflow scripts); Master supervises all sub-agent dispatch and makes all decisions.
 [auto] No Workflow scripts — v2.9 removed all `~/.claude/workflows/phase*.js` files (-1405 lines). Execution skills use Agent() directly: Phase 3 (3 parallel Judge agents + synthesis), Phase 4 (serial implement→verify→self-review), Phase 5 (serial spec→code→adversarial), Phase 6 (Bash + Agent fix loop-until-dry).
 [auto] Installation via `bash install.sh` (snapshot to ~/.jessy-skills-claude/ + symlink to ~/.claude/skills/); verification via `bash tests/test-*.sh`.
@@ -36,7 +36,7 @@
 [auto] CLAUDE.md uses `<!-- AUTO_START: <Section> -->`/`<!-- AUTO_END: <Section> -->` markers for machine-managed blocks.
 
 ## Package Map
-- `skills/` — 85 skill definitions in 23 category directories (flat within each category)
+- `skills/` — 86 skill definitions in 23 category directories (flat within each category)
 - `skills/analyze/` — 1 skill: repository analysis
 - `skills/code-review/` — 1 skill: comprehensive code review
 - `skills/deep-interview/` — 1 skill: Socratic deep interview
@@ -61,7 +61,7 @@
 - `tests/` — Repository-level test scripts
 
 ## Confidence
-[auto] Architecture and entity structure: High (verified via direct file inspection of 85 SKILL.md files across 23 directories).
+[auto] Architecture and entity structure: High (verified via direct file inspection of 86 SKILL.md files across 23 directories).
 [auto] Skill count (85): High (confirmed by `find skills -name "SKILL.md" -type f | wc -l`).
 [auto] Workflow script count (0): High — v2.9 removed all `.claude/workflows/phase*.js` files. Execution skills use Agent() direct dispatch.
 [auto] Category breakdown: High (verified by directory traversal of skills/ tree).
