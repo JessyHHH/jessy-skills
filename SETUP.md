@@ -19,7 +19,7 @@ bash install.sh
 The installer:
 
 - syncs this repository to `~/.jessy-skills-codex`
-- links curated startup skills at `~/.agents/skills/jessy-skills`
+- links all installed skills for Codex discovery at `~/.agents/skills/jessy-skills`
 - keeps the full skill snapshot at `~/.jessy-skills-codex/skills`
 - copies `codex/agents/*.toml` to `~/.codex/agents`
 - does not overwrite `~/.codex/AGENTS.md`
@@ -50,6 +50,7 @@ firecrawl --status
 ```bash
 ls ~/.jessy-skills-codex/skills/project-workflow-codex/SKILL.md
 ls ~/.agents/skills/jessy-skills/project-workflow-codex/SKILL.md
+ls ~/.agents/skills/jessy-skills/grill-me/SKILL.md
 ls ~/.codex/agents/executor.toml
 ```
 

@@ -73,14 +73,15 @@ Route in this order:
 
 The entry skill does not implement these phases inline. It initializes state, invokes or reads the next execution skill, and checks that the previous skill wrote its required artifact before transitioning.
 
-## Discovery Budget
+## Skill Discovery
 
-Codex startup discovery should expose only:
+Codex startup discovery may expose the full jessy-skills catalog through:
 
-- `project-workflow-codex`
-- `karpathy-guidelines`
+```text
+~/.agents/skills/jessy-skills -> ~/.jessy-skills-codex/skills
+```
 
-The full skill snapshot remains under `~/.jessy-skills-codex/skills`. Load execution and domain skills explicitly from that snapshot or this repository after routing confirms relevance.
+This lets users manually invoke domain skills with `$skill-name`. The workflow still keeps routing disciplined: load execution and domain skill bodies only after the task confirms relevance, and keep final integration in the main Codex session.
 
 ## Start Or Resume
 
@@ -121,7 +122,7 @@ Record escape hatches in state.
 - Do not use Claude Code `Workflow(...)` scripts.
 - Do not use Claude `CLAUDE.md` or `.claude/` paths.
 - Do not use Hermes `project-workflow`.
-- Do not load every skill at startup.
+- Do not load every skill body just because it is discoverable.
 - Do not let subagents edit overlapping files in parallel.
 - Do not claim completion without fresh verification.
 

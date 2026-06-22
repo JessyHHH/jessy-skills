@@ -28,12 +28,13 @@ Codex subagents own bounded exploration, implementation, review, test, or repair
 
 ## Skill Discovery
 
-Keep startup skill discovery small:
+Global Codex skill discovery links the full snapshot:
 
-- `project-workflow-codex`
-- `karpathy-guidelines`
+```text
+~/.agents/skills/jessy-skills -> ~/.jessy-skills-codex/skills
+```
 
-The full skill snapshot lives under `~/.jessy-skills-codex/skills` after install. Load execution and domain skills explicitly from that snapshot or from this repository only after routing confirms relevance.
+This supports manual `$skill-name` usage. For workflow tasks, still load execution and domain skill bodies only after routing confirms relevance.
 
 ## Essential Commands
 

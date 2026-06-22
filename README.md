@@ -28,10 +28,9 @@ firecrawl login
 `install.sh` is Codex-only on this branch:
 
 - Syncs this repository snapshot to `~/.jessy-skills-codex`.
-- Exposes only the Codex entry skills through `~/.agents/skills/jessy-skills`:
-  - `project-workflow-codex`
-  - `karpathy-guidelines`
-- Keeps the full skill snapshot at `~/.jessy-skills-codex/skills` for explicit workflow loading.
+- Links the full Codex skill snapshot for global discovery:
+  - `~/.agents/skills/jessy-skills -> ~/.jessy-skills-codex/skills`
+- This makes manual `$skill-name` usage available while `project-workflow-codex` still routes workflow tasks deliberately.
 - Installs repo-managed Codex custom agent templates from `codex/agents/*.toml` to `~/.codex/agents`.
 - Does not overwrite `~/.codex/AGENTS.md`.
 - Does not install Claude Code or Hermes skills.

@@ -24,9 +24,10 @@ grep -q "Codex-only" "$ROOT/SETUP.md" || fail "SETUP lacks Codex-only notice"
 grep -q "Codex-only" "$ROOT/AGENTS.md" || fail "AGENTS lacks Codex-only notice"
 
 grep -q 'CODEX_SYNC_HOME="$HOME/.jessy-skills-codex"' "$ROOT/install.sh" || fail "install.sh missing Codex snapshot"
-grep -q 'CODEX_DISCOVERY_SKILLS=' "$ROOT/install.sh" || fail "install.sh missing curated discovery"
-grep -q '"project-workflow-codex"' "$ROOT/install.sh" || fail "install.sh missing project-workflow-codex discovery"
-grep -q '"karpathy-guidelines"' "$ROOT/install.sh" || fail "install.sh missing karpathy-guidelines discovery"
+grep -q 'ln -sfn "$CODEX_SYNC_HOME/skills" "$HOME/.agents/skills/jessy-skills"' "$ROOT/install.sh" || fail "install.sh missing full skills discovery link"
+if grep -q 'CODEX_DISCOVERY_SKILLS=\|codex/skill-discovery' "$ROOT/install.sh"; then
+  fail "install.sh still uses curated discovery"
+fi
 grep -q 'codex/agents' "$ROOT/install.sh" || fail "install.sh does not install Codex agents"
 
 if grep -q 'CLAUDE_SYNC_HOME\|~/.claude\|~/.hermes\|hermes.sh' "$ROOT/install.sh"; then

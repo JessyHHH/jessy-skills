@@ -31,16 +31,12 @@ grep -q 'sync_repo_snapshot "$CODEX_SYNC_HOME"' "$ROOT/install.sh" || fail "inst
 if grep -q 'CLAUDE_SYNC_HOME\|~/.claude\|~/.hermes\|hermes.sh' "$ROOT/install.sh"; then
   fail "install.sh still contains Claude/Hermes install behavior"
 fi
-grep -q 'CODEX_DISCOVERY_SKILLS=' "$ROOT/install.sh" || fail "install.sh does not define curated Codex discovery skills"
-grep -q '"project-workflow-codex"' "$ROOT/install.sh" || fail "install.sh does not expose project-workflow-codex to Codex discovery"
-grep -q '"karpathy-guidelines"' "$ROOT/install.sh" || fail "install.sh does not expose karpathy-guidelines to Codex discovery"
-grep -q 'CODEX_DISCOVERY_HOME="$CODEX_SYNC_HOME/codex/skill-discovery"' "$ROOT/install.sh" || fail "install.sh does not define Codex discovery home"
-grep -q 'ln -sfn "$CODEX_DISCOVERY_HOME" "$HOME/.agents/skills/jessy-skills"' "$ROOT/install.sh" || fail "install.sh does not link Codex from curated discovery"
-if grep -q 'ln -sfn "$CODEX_SYNC_HOME/skills" "$HOME/.agents/skills/jessy-skills"' "$ROOT/install.sh"; then
-  fail "install.sh still links all skills into Codex startup discovery"
+grep -q 'ln -sfn "$CODEX_SYNC_HOME/skills" "$HOME/.agents/skills/jessy-skills"' "$ROOT/install.sh" || fail "install.sh does not link all Codex skills"
+if grep -q 'CODEX_DISCOVERY_SKILLS=\|codex/skill-discovery' "$ROOT/install.sh"; then
+  fail "install.sh still uses curated Codex discovery"
 fi
-grep -q 'Discovery Budget' "$SKILL" || fail "project-workflow-codex does not document Codex skill discovery budget"
-grep -q '~/.jessy-skills-codex/skills' "$SKILL" || fail "project-workflow-codex does not document explicit domain skill loading"
+grep -q 'Skill Discovery' "$SKILL" || fail "project-workflow-codex does not document Codex skill discovery"
+grep -q '~/.agents/skills/jessy-skills -> ~/.jessy-skills-codex/skills' "$SKILL" || fail "project-workflow-codex does not document full skill symlink"
 grep -q 'Use Codex subagents deliberately' "$SKILL" || fail "project-workflow-codex does not document subagent execution"
 grep -q '/agent' "$SKILL" || fail "project-workflow-codex does not document /agent supervision"
 grep -q 'Prefer parallel subagents for read-heavy work' "$SKILL" || fail "project-workflow-codex does not prefer read-heavy subagents"

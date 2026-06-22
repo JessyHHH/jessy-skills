@@ -8,8 +8,8 @@
 [confirmed] Codex runtime artifacts live under `.codex/`: state, context, specs, and plans.
 [confirmed] Root `AGENTS.md` is the Codex instruction file. Root `CLAUDE.md` is not used on this branch.
 [confirmed] `CONTEXT.md` is the durable repository context contract. `.codex/context/knowledge.md` is the generated machine cache.
-[auto] `install.sh` installs only Codex assets: `~/.jessy-skills-codex`, curated `~/.agents/skills/jessy-skills`, and repo-managed `~/.codex/agents/*.toml`.
-[auto] Startup skill discovery is intentionally small: `project-workflow-codex` and `karpathy-guidelines`. The full skill snapshot remains at `~/.jessy-skills-codex/skills`.
+[auto] `install.sh` installs only Codex assets: `~/.jessy-skills-codex`, global `~/.agents/skills/jessy-skills`, and repo-managed `~/.codex/agents/*.toml`.
+[auto] Startup skill discovery links the full skill snapshot: `~/.agents/skills/jessy-skills -> ~/.jessy-skills-codex/skills`, so users can manually invoke any installed skill.
 
 ## Entity Map
 - **Project Workflow Codex**: Thin Codex orchestrator that initializes state, routes to execution skills, supervises subagents, and owns final verification claims.
