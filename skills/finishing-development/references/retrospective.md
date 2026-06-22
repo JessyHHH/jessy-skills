@@ -1,138 +1,45 @@
-# Session Retrospective and Self-Learning
+# Session Retrospective
 
 ## 7.1 Session-End Retrospective
 
-After verification is confirmed complete, dispatch a background agent to scan the session for patterns, errors, user corrections, and skill misses:
+After verification is confirmed complete, optionally run a bounded retrospective before branch finish. The main Codex session owns the decision and output. A read-only subagent may help summarize when the session is long.
 
-```
-Agent(
-  description='Session retrospective',
-  prompt='Scan this session: errors, user corrections, skill misses, patterns. Extract lessons. Save to memory. Output retrospective report.',
-  run_in_background=true
-)
-```
-
-The retrospective runs in background mode so it does not block the branch finish flow. It scans:
+Scan:
 - Errors encountered during implementation and their root causes.
 - User corrections — what the user asked to change and why.
 - Skill misses — tasks that could have benefitted from a skill that was not loaded.
 - Repeated patterns — conventions or preferences the user applied consistently.
 
-Output is saved to user memory for cross-session learning.
+Write only task-local artifacts unless the user explicitly asks to update durable instructions or skills.
 
 ## 7.2 Self-Learning Triggers (Inline)
 
-The master agent evaluates these triggers AFTER verification completes and BEFORE branch finish:
+The main Codex session evaluates these triggers AFTER verification completes and BEFORE branch finish:
 
 | Trigger | Action |
 |---------|--------|
 | Phase 6 failed >3 times on the same issue | Load `diagnose` skill (if available) to investigate systemic cause. |
 | Phase 5 found >5 CRITICAL/HIGH findings | Re-examine Phase 1 design assumptions — the design may have structural issues. |
 | User corrected the same pattern >=2 times | Save to memory as a durable preference with the pattern name, the correction, and the session context. |
-| Plan missed a relevant skill | Update `claude-routing.md` if the pattern repeats across sessions. Add a new routing entry or adjust trigger words. |
+| Plan missed a relevant skill | Update Codex skill routing guidance if the pattern repeats across sessions. Add or adjust trigger words. |
 
-## 7.3 Background Memory Cron
+## 7.3 Durable Learning
 
-### Cron Setup (opt-in, default skip)
+When the user explicitly asks to preserve lessons, prefer one of these durable locations:
 
-The master agent asks the user whether to enable a persistent background cron job that runs every 2 hours to scan and compress project memory. The default recommendation is to skip.
+- Repository guidance: `AGENTS.md`, `CONTEXT.md`, or `.codex/context/knowledge.md`.
+- Reusable workflow guidance: the relevant `skills/<skill>/SKILL.md` or one-level `references/` file.
+- Personal Codex skill: `~/.codex/skills/<skill>/SKILL.md` when it is not project-specific.
 
-```
-AskUserQuestion(
-  question="Enable background memory compression cron? Runs every 2 hours to scan and compress project memory. (You can also start it later with /phase7-memory-cron)",
-  header="Phase 7.3 Cron",
-  options=[
-    {label: "Skip (Recommended)", description: "Skip for now. Memory compression can be enabled later."},
-    {label: "Enable", description: "Start the 2-hour memory compression cron job."}
-  ]
-)
-```
+Follow `skill-creator` when creating or updating skills: only `name` and `description` in frontmatter, concise `SKILL.md`, details in `references/`, helpers in `scripts/`, and run `quick_validate.py`.
 
-If "Enable" chosen:
-```
-CronCreate(
-  cron='7 */2 * * *',
-  prompt="Phase 7.3 Memory Cron. Run the COMPRESS_OR_EXTRACT algorithm below. Scan project memory files for patterns. If memory is near capacity, compress into skills. Otherwise extract cross-session conventions.",
-  durable=true
-)
-```
+## 7.4 Retrospective Output
 
-Note: Recurring tasks auto-expire after 7 days. They are re-created on the next workflow run only if not already present.
-
-### COMPRESS_OR_EXTRACT Algorithm
-
-```
-1. Scan memory files:
-   Bash(command='ls -t ~/.claude/projects/<project>/memory/*.md 2>/dev/null')
-
-2. Check capacity:
-   Bash(command='wc -c ~/.claude/projects/<project>/memory/*.md | tail -1')
-   Threshold: 10,000 chars total (~90% capacity)
-
-3. IF total chars >= 10,000:
-     RUN COMPRESSION CYCLE
-   ELSE:
-     RUN CROSS-SESSION EXTRACTION
-```
-
-#### COMPRESSION CYCLE (memory >= 90%)
-
-```
-1. Read ALL memory files in ~/.claude/projects/<project>/memory/
-2. Classify by topic using Agent:
-   - Group related entries (e.g., all Go conventions, all project-specific patterns)
-   - Each group becomes a candidate skill
-3. FOR EACH topic group:
-   a. Summarize into 3-5 concise, impactful rules
-   b. Name: memory-<topic-slug> (e.g., memory-golang, memory-project-x)
-   c. Agent writes skill: Write ~/.claude/skills/memory-<topic>/SKILL.md
-      - Frontmatter: name, description, version
-      - Content: Key Rules section with 3-5 rules
-   d. If skill already exists:
-      - Agent reads existing -> appends new rules without duplicating
-4. REPLACE memory entries:
-   - Remove detailed entries that were classified into skills
-   - Write compact trigger entries: "<topic>: 加载 skill memory-<topic-slug>"
-   - Trigger format MUST be parseable by Phase 0.5
-5. Verify: memory total chars dropped by >=30% from pre-compression level
-6. If still >=10,000 chars after first pass -> run second pass with more aggressive summarization
-```
-
-#### CROSS-SESSION EXTRACTION (memory < 90%)
-
-```
-1. Scan memory files for recurring patterns (same topic appearing across files)
-2. IF new durable convention found -> Write new memory file
-3. IF existing convention contradicted -> Edit to update
-4. IF stale convention (not referenced in last 10 sessions) -> Remove memory file
-```
-
-### Trigger Format Specification
-
-Compressed memory triggers follow this format (machine-parseable by Phase 0.5):
-
-```
-<topic>: 加载 skill <skill-name>
-```
-
-Example:
-```
-golang: 加载 skill memory-golang
-project-x: 加载 skill memory-project-x
-```
-
-### Generated Skill Format
-
-```yaml
----
-name: memory-<topic-slug>
-description: "Compressed memory backup — <topic> conventions and lessons. Auto-generated by Phase 7.3."
-version: "1.0"
----
-# Memory Backup: <Topic>
-Auto-generated from compressed agent memory.
-## Key Rules
-1. <rule 1>
-2. <rule 2>
-3. <rule 3>
+```text
+Retrospective:
+- Repeated issue:
+- Root cause:
+- Skill or instruction update needed:
+- Durable artifact updated:
+- Verification:
 ```

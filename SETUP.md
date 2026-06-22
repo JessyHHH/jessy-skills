@@ -1,205 +1,77 @@
-# SETUP — AI Agent Install Guide
+# SETUP — Codex Branch
 
-This file contains machine-readable instructions for installing jessy-skills.
-An AI agent (Hermes, Claude Code, Codex, etc.) can read this file and execute
-each step autonomously. No human intervention required.
+This branch is Codex-only. For Claude Code or Hermes workflows, switch to the corresponding branch before installing or editing skills.
 
 ## Prerequisites
 
-- Hermes Agent installed (`which hermes`), Claude Code installed (`which claude`), and/or Codex installed (`which codex`)
-- Git (`which git`)
-- Node.js + npm (`which node && which npm`)
+- Codex installed: `which codex`
+- Git installed: `which git`
+- Python 3 available for helper scripts
+- Node.js + npm for optional documentation tools
 
-### Fix npm global prefix (if permission denied on `npm install -g`)
-
-If `npm install -g` fails with `EACCES`, set a user-local prefix:
-
-```bash
-mkdir -p ~/.npm-global
-npm config set prefix ~/.npm-global
-echo 'export PATH=~/.npm-global/bin:$PATH' >> ~/.zshrc  # or ~/.bashrc
-export PATH=~/.npm-global/bin:$PATH
-```
-
-## Fresh Install
-
-### Step 1: Clone
+## Install
 
 ```bash
-git clone https://github.com/JessyHHH/jessy-skills.git
-cd jessy-skills
-```
-
-### Step 2: Run install.sh
-
-```bash
+git switch codex
 bash install.sh
 ```
 
-This single command handles everything:
-- Backs up existing skills to `~/.hermes/skills.bak.*`
-- Copies all skills to `~/.hermes/skills/`
-- Overwrites platform snapshots at `~/.jessy-skills-claude` and/or `~/.jessy-skills-codex`
-- Links Claude Code skills from `~/.jessy-skills-claude/skills` into `~/.claude/skills/`
-- Links Codex entry skills through `~/.agents/skills/jessy-skills -> ~/.jessy-skills-codex/codex/skill-discovery` when `codex` is available
-- Copies repo-managed Codex agents from `~/.jessy-skills-codex/codex/agents/*.toml` to `~/.codex/agents/`
-- Cleans stale skills removed from the repo
-- Installs `hermes.sh` to `~/.jessy-skills/` (clean source-based, not inline)
-- Configures shell: zsh/bash/pwsh auto-detected
-- Removes old inline function if exists
-- Adds `source ~/.jessy-skills/hermes.sh` to shell config
-- Reloads Hermes skills
+The installer:
 
-### Step 3: Activate
+- syncs this repository to `~/.jessy-skills-codex`
+- links curated startup skills at `~/.agents/skills/jessy-skills`
+- keeps the full skill snapshot at `~/.jessy-skills-codex/skills`
+- copies `codex/agents/*.toml` to `~/.codex/agents`
+- does not overwrite `~/.codex/AGENTS.md`
+- does not install Claude Code or Hermes skills
 
-```bash
-source ~/.zshrc   # macOS / Linux with zsh
-source ~/.bashrc  # Linux with bash
-. $PROFILE        # Windows PowerShell
-```
+Restart Codex after install.
 
-### Step 4: Verify
+## Optional Tool CLIs
+
+Context7 is recommended because repository instructions require current documentation for library, SDK, API, CLI, and cloud-service questions.
 
 ```bash
-ls ~/.hermes/skills/project-workflow/SKILL.md  # must exist
-grep "jessy-skills" ~/.zshrc ~/.bashrc         # single source line
+npm install -g ctx7@latest
+ctx7 login
+ctx7 whoami
 ```
 
-### Step 5: Install Tool CLIs
-
-Install Context7 (real-time library docs) and Firecrawl (web search/scraping):
+Firecrawl is optional for web research:
 
 ```bash
-npm install -g ctx7@latest firecrawl-cli@latest
+npm install -g firecrawl-cli@latest
+firecrawl login
+firecrawl --status
 ```
 
-### Step 6: Authenticate Tools
-
-Both tools require browser OAuth. Run each — a browser window will open for authorization:
+## Verify Install
 
 ```bash
-ctx7 login        # opens context7.com — click Authorize
-firecrawl login   # interactive: choose "1" for browser login
+ls ~/.jessy-skills-codex/skills/project-workflow-codex/SKILL.md
+ls ~/.agents/skills/jessy-skills/project-workflow-codex/SKILL.md
+ls ~/.codex/agents/executor.toml
 ```
 
-Verify:
+In Codex, use `$project-workflow-codex` or `/skills` to start the workflow.
 
-```bash
-ctx7 whoami       # shows login name + email
-firecrawl --status  # shows credits + auth status
-```
-
-## Update (repo already cloned)
+## Update
 
 ```bash
 cd /path/to/jessy-skills
+git switch codex
 git pull
 bash install.sh
-source ~/.zshrc  # or ~/.bashrc
 ```
 
-## Platform Support
+Restart Codex after updating.
 
-| Platform | Workflow Skill | Shell Integration | Skill Dir |
-|----------|---------------|-------------------|-----------|
-| Hermes | `project-workflow` (v7.0) | `~/.jessy-skills/hermes.sh` | `~/.hermes/skills/` |
-| Claude Code | `project-workflow-claude` (v2.8) | `CLAUDE.md` auto-load | `~/.claude/skills/` → `~/.jessy-skills-claude/skills` |
-| Codex | `project-workflow-codex` (v0.1) | `AGENTS.md` auto-load | `~/.agents/skills/jessy-skills` → `~/.jessy-skills-codex/codex/skill-discovery` |
-
-| Shell | Config File | Status |
-|-------|-------------|--------|
-| zsh | `~/.zshrc` | ✅ |
-| bash | `~/.bashrc` | ✅ |
-| PowerShell / pwsh | `$PROFILE` | ✅ |
-| fish | manual | ⚠️ |
-
-### Claude Code Specific
-
-After install, restart Claude Code or run `/reload-skills` to activate skills. The project's `CLAUDE.md` boot layer auto-loads each session. The `project-workflow-claude` v2.8 skill is a modular orchestrator: 1 thin control plane + 7 independent execution skills. 4 active Workflow scripts (phase3-6) provide deterministic pipeline automation; Phase 0-2 use Skill+Agent direct execution (no Harness overhead). Model: Sonnet/Haiku only, no Opus.
-
-install.sh is safe for environments with other Claude Code plugins installed. It overwrites only the managed snapshot `~/.jessy-skills-claude`, then refreshes symlinks for jessy-skills entries in `~/.claude/skills/`. Non-jessy-skills entries such as superpowers, omc, and skill-creator are preserved.
-
-### Codex Specific
-
-After install, restart Codex so it reloads `AGENTS.md` and skill discovery paths. The Codex branch entry point is `project-workflow-codex`: it keeps planning, orchestration, integration, and final audit in the main Codex session, then delegates bounded implementation/review/verification work to Codex agents instead of Claude Code `Workflow(...)` scripts.
-
-Codex does not need hooks, OMX, or oh-my-codex for this workflow. `install.sh` installs native Codex agent templates to `~/.codex/agents/` and preserves unrelated user agents.
-
-Codex agent model routing:
-
-| Agent | Model |
-|-------|-------|
-| `executor`, `worker`, `test-engineer`, `build-fixer`, `debugger` | `gpt-5.3-codex` |
-| `code-reviewer`, `verifier` | `gpt-5.4-mini` |
-
-Keep the main Codex session model in your own Codex config, recommended:
-
-```toml
-model = "gpt-5.5"
-```
-
-Codex skill discovery links:
+## Validation For Contributors
 
 ```bash
-test -d ~/.jessy-skills-codex/skills/project-workflow-codex
-test -L ~/.agents/skills/jessy-skills && readlink ~/.agents/skills/jessy-skills
-ls ~/.codex/agents/executor.toml ~/.codex/agents/code-reviewer.toml
+git diff --check
+bash tests/test-*.sh
+python3 /home/huangzexi/.codex/skills/.system/skill-creator/scripts/quick_validate.py skills/project-workflow-codex
 ```
 
-The current repo can switch branches freely after install. Codex global discovery points at the copied snapshot, not the mutable checkout.
-
-If Codex prints `Skill descriptions were shortened to fit the 2% skills context budget`,
-the total number of enabled global skills/plugins is still too high. The jessy-skills
-installer only exposes two Codex entry skills (`project-workflow-codex` and
-`karpathy-guidelines`) through the `jessy-skills` symlink, but Codex will also index
-any other directories already present under `~/.agents/skills`.
-
-Check the active discovery set:
-
-```bash
-readlink ~/.agents/skills/jessy-skills
-find ~/.agents/skills -mindepth 1 -maxdepth 1 -printf '%f\n' | sort
-```
-
-To make the warning go away, disable unused global skills by moving them out of
-`~/.agents/skills`, then restart Codex. Keep `jessy-skills` enabled if you want the
-Codex project workflow available.
-
-### Claude Code MCP Servers (Recommended, NOT Required)
-
-For better documentation search and web research, install these MCP servers:
-```bash
-# Context7 — library/framework documentation
-claude mcp add context7 -- npx @upstash/context7-mcp@latest
-
-# Firecrawl — web search and scraping
-claude mcp add firecrawl -- npx @anthropic/firecrawl-mcp@latest
-# Set FIRECRAWL_API_KEY env var (get from https://firecrawl.dev)
-```
-
-See `skills/project-workflow-claude/references/setup.md` for detailed setup instructions.
-The workflow auto-detects MCP availability and falls back to native WebFetch/WebSearch.
-
-## Launch Mode
-
-project-workflow-claude v2.8 is a modular orchestrator — thin control plane + 7 independent execution skills.
-
-```bash
-claude                          # Start Claude Code normally
-/project-workflow-claude        # Run the workflow
-```
-
-The workflow auto-detects MCP availability (Context7, Firecrawl) and falls back to native WebFetch/WebSearch when MCP servers are not available. 4 active Workflow scripts (phase3-6) provide deterministic pipeline automation. Phase 0-2 use Skill+Agent direct execution (no Harness overhead).
-
-## Report to User
-
-After install, tell the user:
-- Skills installed to `~/.hermes/skills/`, `~/.claude/skills/`, and/or `~/.agents/skills/jessy-skills`
-- Claude/Codex snapshots are overwritten at `~/.jessy-skills-claude` and `~/.jessy-skills-codex` during global sync
-- Hermes: Shell integration at `~/.jessy-skills/hermes.sh` (sourced from config)
-- Claude Code: CLAUDE.md auto-loads; run `/reload-skills` to activate
-- Codex: AGENTS.md auto-loads; run `/skills` or invoke `$project-workflow-codex`
-- Codex agents: `~/.codex/agents` gets repo-managed templates; execution/test/repair agents use `gpt-5.3-codex`, review/plan-verification agents use `gpt-5.4-mini`; no hooks/OMX/oh-my-codex required
-- Auto-loaded on every session: `project-workflow` (Hermes) / `project-workflow-claude` (Claude Code) / `project-workflow-codex` (Codex) + `karpathy-guidelines`
-- Context7 + Firecrawl CLIs installed and authenticated
-- Run `source ~/.zshrc` (or `~/.bashrc`, or `. $PROFILE`) or open a new terminal to activate
+Run `quick_validate.py` on every changed or added skill folder.

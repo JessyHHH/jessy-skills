@@ -1,10 +1,16 @@
 ---
 name: grill-me
-description: "DEPRECATED → 使用 strategic-thinking 的 Grill 模式。Interview the user relentlessly about a plan or design until reaching shared understanding."
+description: Compatibility wrapper for the top-level grill-me skill. Use when older engineering workflows refer to skills/engineering/grill-me; load the top-level grill-me instructions instead.
 ---
 
-Interview me relentlessly about every aspect of this plan until we reach a shared understanding. Walk down each branch of the design tree, resolving dependencies between decisions one-by-one. For each question, provide your recommended answer.
+# Grill Me Compatibility Wrapper
 
-Ask the questions one at a time.
+Use the top-level `skills/grill-me` implementation for all new work.
 
-If a question can be answered by exploring the codebase, explore the codebase instead.
+This wrapper exists so older engineering references to `skills/engineering/grill-me` do not fail. Do not duplicate the interview protocol here.
+
+When invoked:
+
+1. Read `skills/grill-me/SKILL.md`.
+2. Use its `references/` and `scripts/` as needed.
+3. Follow one-question-at-a-time grilling with recommended answers.

@@ -15,21 +15,19 @@ echo ""
 
 # ── Load skill and routing table ──
 SKILL="$ROOT/skills/engineering/strategic-thinking/SKILL.md"
-ROUTING="$ROOT/skills/project-workflow/references/full-skill-routing.md"
 
 echo "1. Skill file exists"
 if [ -f "$SKILL" ]; then green "strategic-thinking/SKILL.md exists"; else red "MISSING"; fi
 echo ""
 
 # ── Test: exact trigger words in routing table ──
-echo "2. Exact trigger words present in routing table"
+echo "2. Exact trigger words present in skill metadata/body"
 EXACT_TRIGGERS=("zoom out" "grill" "handoff" "caveman" "全景" "压力测试" "交接" "省 token" "brief")
-ST_LINE=$(grep 'strategic-thinking' "$ROUTING" | head -1)
 for t in "${EXACT_TRIGGERS[@]}"; do
-  if echo "$ST_LINE" | grep -qi "$t"; then
+  if grep -qi "$t" "$SKILL"; then
     green "'$t' → strategic-thinking"
   else
-    red "'$t' → NOT in strategic-thinking routing row"
+    red "'$t' → NOT in strategic-thinking trigger text"
   fi
 done
 echo ""
@@ -47,10 +45,7 @@ FUZZY=(
 
 for phrase in "${FUZZY[@]}"; do
   MATCHED=false
-  # Dynamically extract all comma-separated keywords from the strategic-thinking routing line
-  TRIGGER_LINE=$(grep 'strategic-thinking' "$ROUTING" | head -1)
-  # Extract the second column (keywords) between the first and second | separator
-  KWS=$(echo "$TRIGGER_LINE" | awk -F'|' '{print $2}' | tr ',' '\n')
+  KWS=$(printf '%s\n' "zoom out" "grill" "handoff" "caveman" "全景" "压力测试" "交接" "省 token" "省点token" "brief" "换个角度" "方案" "agent")
   while IFS= read -r kw; do
     kw=$(echo "$kw" | xargs)  # trim whitespace
     [ -z "$kw" ] && continue

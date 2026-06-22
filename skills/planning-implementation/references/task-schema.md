@@ -1,6 +1,6 @@
 # Task Schema
 
-Each task in the `json:tasks` block of an implementation plan MUST include all required fields below. The schema is designed for Phase 4 Workflow consumption. Sub-agents implementing tasks start with blank context and rely entirely on the task object for instructions.
+Each task in the `json:tasks` block of an implementation plan MUST include all required fields below. The schema is designed for Phase 4 Codex subagent execution. Subagents implementing tasks start with bounded context and rely on the task object plus injected file/context snippets for instructions.
 
 ## Required Fields
 
@@ -43,10 +43,10 @@ Exact file paths this task creates or modifies. Relative to the repository root.
 
 ### `complexity` (string, required)
 
-Task complexity level. Drives model selection and review gating:
-- `simple`: Haiku model, skips spec review, gets correctness-only code review (1 agent)
-- `medium`: Sonnet model, runs spec review, gets correctness-only code review (1 agent) + 1 adversarial skeptic
-- `complex`: Sonnet model, runs spec review, gets full 3-agent parallel code review (correctness + safety + simplicity) + 3 adversarial skeptics
+Task complexity level. Drives subagent selection and review gating:
+- `simple`: usually handled by main Codex or one executor; skips spec review.
+- `medium`: use one bounded executor or reviewer as needed; runs spec review.
+- `complex`: may use parallel read-only reviewers or disjoint writer subagents; runs full review.
 
 ### `mutatesFiles` (boolean, required)
 
@@ -62,7 +62,7 @@ References to Phase 0 Task Intake Snapshot entries relevant to this task. Exampl
 
 ### `grillRefs` (string[], optional)
 
-References to Phase 1 Ambiguity Register or Assumption Ledger entries relevant to this task. Used as fallback references when `grillDecisions` is not provided. Example: `["A1-ConfigRouting", "S1-DatabaseSchema"]`. The master agent resolves these against `.claude/state/grill-evidence.json` during Phase 4 enrichment.
+References to Phase 1 Ambiguity Register or Assumption Ledger entries relevant to this task. Used as fallback references when `grillDecisions` is not provided. Example: `["A1-ConfigRouting", "S1-DatabaseSchema"]`. The main Codex session resolves these against `.codex/state/grill-evidence.json` during Phase 4 enrichment.
 
 ### `expectedEvidence` (string[], required)
 
@@ -93,7 +93,7 @@ Full file contents for embedding in the sub-agent prompt. The master agent fills
 
 ### `grillDecisions` (object[], optional, filled by master agent)
 
-Resolved grill decisions by key. The master agent fills this from `.claude/state/grill-evidence.json` before Phase 4. Each entry: `{key: "A1-ConfigRouting", decision: "Two MySQL configs: admin stays in yunui_mixyun..."}`.
+Resolved grill decisions by key. The main Codex session fills this from `.codex/state/grill-evidence.json` before Phase 4. Each entry: `{key: "A1-ConfigRouting", decision: "Two MySQL configs: admin stays in yunui_mixyun..."}`.
 
 Resolution logic: match `grillRefs` keys against `ambiguityRegister[].id` or `assumptionLedger[].id` in grill-evidence.json. Extract the `decision` field (for register entries) or `assumption`+`evidence`+`confidence` fields (for ledger entries).
 

@@ -49,10 +49,10 @@ Collect results in the same `{name, command, exitCode, stdout, stderr}` format.
 
 ## Skills Repository
 
-### Modular Structure Checks
+### Codex Skill Structure Checks
 
 ```bash
-for skill in project-workflow-claude detecting-environment designing-solutions planning-implementation implementing-changes reviewing-implementation verifying-completion finishing-development; do
+for skill in project-workflow-codex detecting-environment designing-solutions planning-implementation implementing-changes reviewing-implementation verifying-completion finishing-development; do
   test -f "skills/$skill/SKILL.md"
   grep -q "^name: $skill" "skills/$skill/SKILL.md"
   grep -q "^description:" "skills/$skill/SKILL.md"
@@ -62,8 +62,9 @@ done
 ### Orchestrator Markers
 
 ```bash
-grep -q "Modular Skill Orchestrator" skills/project-workflow-claude/SKILL.md
-grep -q "Skill(skill='detecting-environment')" skills/project-workflow-claude/SKILL.md
+grep -q "Project Workflow Codex" skills/project-workflow-codex/SKILL.md
+grep -q "detecting-environment" skills/project-workflow-codex/SKILL.md
+grep -q "/agent" skills/project-workflow-codex/SKILL.md
 ```
 
 ### Frontmatter Spot-Check
@@ -87,14 +88,14 @@ git diff --check
 ### Reference Integrity
 
 ```bash
-for ref in $(grep -oE 'references/[a-z0-9-]+\.md' skills/project-workflow-claude/SKILL.md); do
-  test -f "skills/project-workflow-claude/$ref" && echo "checkmark $ref" || echo "cross ref not found: $ref"
+for ref in $(grep -oE 'references/[a-z0-9-]+\.md' skills/project-workflow-codex/SKILL.md); do
+  test -f "skills/project-workflow-codex/$ref" && echo "ok $ref" || echo "missing ref: $ref"
 done
 ```
 
 ## Project Type Tokens
 
-Normalized tokens passed to `Workflow(name='phase6-verify')`:
+Normalized project type tokens for verification selection:
 
 - `go` — Go projects
 - `vue` — Vue.js projects

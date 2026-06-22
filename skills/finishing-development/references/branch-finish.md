@@ -3,7 +3,7 @@
 ## Pre-Conditions (NEVER skip)
 
 Before presenting the branch finish menu:
-1. Verify Phase 6 results are still current — no new code since verification (`git status --porcelain` should show only expected artifacts in `.claude/state/` and `.claude/plans/`).
+1. Verify Phase 6 results are still current — no new code since verification (`git status --porcelain` should show only expected artifacts in `.codex/state/` and `.codex/plans/`).
 2. Never merge before verification.
 3. Never push with failing tests.
 4. Never discard without confirming (data loss).
@@ -24,19 +24,12 @@ git merge-base HEAD main 2>/dev/null || git merge-base HEAD master 2>/dev/null
 
 ## Four-Option Menu
 
-Present via `AskUserQuestion`:
+Ask the user which finish action they want:
 
-```
-AskUserQuestion(
-  question="What would you like to do?",
-  options=[
-    Merge locally,
-    Push and create PR,
-    Keep branch as-is,
-    Discard this work
-  ]
-)
-```
+1. Merge locally
+2. Push and create PR
+3. Keep branch as-is
+4. Discard this work
 
 ## Commands per Choice
 

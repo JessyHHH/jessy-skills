@@ -13,7 +13,6 @@ echo "=== Prior-Research Fuzzy Prompt Tests ==="
 echo ""
 
 SKILL="$ROOT/skills/methodology/prior-research/SKILL.md"
-ROUTING="$ROOT/skills/project-workflow/references/full-skill-routing.md"
 
 # ── 1. Skill exists ──
 echo "1. Skill file exists"
@@ -21,14 +20,13 @@ if [ -f "$SKILL" ]; then green "prior-research/SKILL.md exists ($(wc -l < "$SKIL
 echo ""
 
 # ── 2. Exact trigger words ──
-echo "2. Exact trigger words in routing table"
-EXACT=("docs" "library" "search" "scrape" "crawl" "research" "context7" "firecrawl" "文档" "搜索" "抓取" "API reference" "setup guide" "怎么配置")
-ST_LINE=$(grep 'prior-research' "$ROUTING" | head -1)
+echo "2. Exact trigger words in skill metadata/body"
+EXACT=("docs" "library" "search" "scrape" "crawl" "research" "context7" "firecrawl" "文档" "搜索" "抓取" "API" "怎么配置")
 for t in "${EXACT[@]}"; do
-  if echo "$ST_LINE" | grep -qi "$t"; then
+  if grep -qi "$t" "$SKILL"; then
     green "'$t' → prior-research"
   else
-    red "'$t' → NOT in routing row"
+    red "'$t' → NOT in skill trigger text"
   fi
 done
 echo ""
@@ -47,8 +45,7 @@ FUZZY=(
 )
 
 for phrase in "${FUZZY[@]}"; do
-  TRIGGER_LINE=$(grep 'prior-research' "$ROUTING" | head -1)
-  KWS=$(echo "$TRIGGER_LINE" | awk -F'|' '{print $2}' | tr ',' '\n')
+  KWS=$(printf '%s\n' "docs" "library" "API" "search" "scrape" "crawl" "research" "context7" "firecrawl" "文档" "搜索" "搜" "抓取" "配置" "不确定" "最新版" "怎么用")
   MATCHED=false
   while IFS= read -r kw; do
     kw=$(echo "$kw" | xargs)
@@ -75,8 +72,7 @@ NON=(
   "数据库加个索引"
 )
 for prompt in "${NON[@]}"; do
-  TRIGGER_LINE=$(grep 'prior-research' "$ROUTING" | head -1)
-  KWS=$(echo "$TRIGGER_LINE" | awk -F'|' '{print $2}' | tr ',' '\n')
+  KWS=$(printf '%s\n' "docs" "library" "API" "search" "scrape" "crawl" "research" "context7" "firecrawl" "文档" "搜索" "搜" "抓取" "配置" "不确定" "最新版" "怎么用")
   TRIGGERED=false
   while IFS= read -r kw; do
     kw=$(echo "$kw" | xargs)

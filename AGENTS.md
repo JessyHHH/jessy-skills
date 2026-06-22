@@ -1,30 +1,57 @@
 # jessy-skills - Codex Instructions
 
+This branch is Codex-only. For Claude Code or Hermes workflows, switch to the corresponding branch before installing or editing skills.
+
 ## Project
 
-Skills repository for Hermes, Claude Code, and Codex.
+This repository contains Codex workflow skills and reusable domain skills.
 
-- Hermes workflow: `project-workflow`
-- Claude Code workflow: `project-workflow-claude`
-- Codex workflow: `project-workflow-codex`
-- Shared skills root: `skills/`
+- Codex workflow entry: `project-workflow-codex`
+- Root context artifact: `CONTEXT.md`
+- Codex state: `.codex/`
+- Repo-managed Codex custom agents: `codex/agents/*.toml`
+
+Do not use Claude Code Workflow scripts, Claude Code `CLAUDE.md`, Hermes `project-workflow`, hooks, OMX, or oh-my-codex for this branch.
 
 ## Codex Workflow
 
-Use `project-workflow-codex` for project changes that should run through Codex subagents instead of Claude Code `Workflow(...)` scripts.
+Use `$project-workflow-codex` for project changes in this repository.
 
-Codex owns planning, subagent orchestration, integration, and final audit. Spawned Codex subagents own bounded implementation, review, or verification tasks. Do not trust subagent success reports without fresh local evidence.
+Codex main owns:
 
-Codex native custom agent templates are managed in `codex/agents/` and installed to `~/.codex/agents/` by `install.sh`. Execution, test, repair, and debugging subagents (`executor`, `worker`, `test-engineer`, `build-fixer`, `debugger`) use `gpt-5.3-codex`; review and plan/completion verification subagents (`code-reviewer`, `verifier`) use `gpt-5.4-mini`. Keep the main Codex model configured separately as `gpt-5.5`.
+- routing and state transitions
+- spec and plan integration
+- subagent supervision
+- final verification and completion claims
 
-Do not use hooks, OMX, or oh-my-codex for this repository's Codex workflow.
+Codex subagents own bounded exploration, implementation, review, test, or repair work. Use `/agent` to inspect, steer, stop, or close active subagent threads when needed. Do not trust subagent success reports without fresh local evidence.
+
+## Skill Discovery
+
+Keep startup skill discovery small:
+
+- `project-workflow-codex`
+- `karpathy-guidelines`
+
+The full skill snapshot lives under `~/.jessy-skills-codex/skills` after install. Load execution and domain skills explicitly from that snapshot or from this repository only after routing confirms relevance.
 
 ## Essential Commands
 
 - Verify all shell tests: `bash tests/test-*.sh`
 - Lint diffs: `git diff --check`
-- Validate Codex skill: `python3 /home/huangzexi/.codex/skills/.system/skill-creator/scripts/quick_validate.py skills/project-workflow-codex`
-- Check workflow scripts: `bash tests/test-regression-workflow-parse.sh`
+- Validate a changed skill: `python3 /home/huangzexi/.codex/skills/.system/skill-creator/scripts/quick_validate.py <skill-dir>`
+- Dry-run cc-switch sync: `python3 skills/sync-ccswitch-config-codex/scripts/sync_config.py --dry-run`
+
+## Skill Authoring
+
+When adding or editing skills, follow `$skill-creator`:
+
+- `SKILL.md` frontmatter contains only `name` and `description`.
+- Keep `SKILL.md` concise.
+- Put detailed workflow material in one-level `references/`.
+- Put deterministic helper code in `scripts/`.
+- Do not add README, CHANGELOG, or installation docs inside skill folders.
+- Run `quick_validate.py` on each changed skill.
 
 ## Context7
 
@@ -34,4 +61,8 @@ Use the `ctx7` CLI to fetch current documentation whenever the user asks about a
 2. Pick the best `/org/project` match.
 3. `npx ctx7@latest docs <libraryId> "<user's question>"`
 
-Run Context7 CLI requests outside Codex's default sandbox when network access is required. If a Context7 command fails with quota errors, tell the user to run `npx ctx7@latest login` or set `CONTEXT7_API_KEY`.
+If Context7 fails with quota errors, tell the user to run `npx ctx7@latest login` or set `CONTEXT7_API_KEY`.
+
+## Firecrawl
+
+For web research, prior search, crawling, page extraction, or site evidence tasks, prefer Firecrawl tools or skills when installed and relevant. Otherwise use available search/browser tools and state the fallback.

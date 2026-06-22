@@ -1,148 +1,53 @@
 ---
 name: verifying-completion
-description: Use before claiming work is complete, fixed, passing, ready, committed, or mergeable. Enforces the Iron Law with fresh verification evidence, project-specific commands, Workflow(name='phase6-verify'), and loop-until-dry fixes. Hands off to finishing-development in full-workflow mode.
-version: "v2.7"
+description: Enforce Codex completion verification with fresh command output, semantic evidence checks, loop-until-dry repair, and .codex verification artifacts.
 ---
 
 # Verifying Completion
 
-## Purpose
-
-Enforce the Iron Law: NO COMPLETION CLAIMS WITHOUT FRESH VERIFICATION EVIDENCE. Run all project-type verification commands, invoke the phase6-verify Workflow for loop-until-dry fix cycles, and persist verification results before any completion claim.
+Use this for Codex Phase 6 before any completion claim.
 
 ## Inputs
 
-- `.claude/state/project-workflow-state.json` — workflow metadata, project type, grill evidence path, quick gate results path.
-- `skills/project-workflow-claude/references/iron-law.md` — full Iron Law discipline.
-- `.claude/state/grill-evidence.json` — Grill evidence for semantic validation (optional).
-- `.claude/state/quick-gate-results.json` — Quick Gate results from `implementing-changes`.
-
-**Note on review-results.json:** The Phase 5 review results (`.claude/state/review-results.json`) produced by `reviewing-implementation` are NOT rechecked by this skill. Phase 5 review is a separate gate with its own fix-and-retry loop. This skill verifies implementation completion evidence (build, test, lint, security), not review findings. If review findings indicate unresolved issues, those must be addressed before entering Phase 6.
+- `.codex/state/project-workflow-state.json`
+- `.codex/state/review-results.json`
+- `.codex/state/quick-gate-results.json`
+- `.codex/state/grill-evidence.json` when present
+- `references/verification-commands.md`
 
 ## Procedure
 
-### Step 0: State Validation
+1. Validate state.
+   - Required field: `reviewResultsPath`.
+   - Block if missing unless review was explicitly skipped.
 
-Read `.claude/state/project-workflow-state.json`.
+2. Build verification command list.
+   - Skills repository: `git diff --check`, `bash tests/test-*.sh`, skill validation for changed skills, helper script dry-runs.
+   - Go/Node/Vue projects: use the project-specific commands in `references/verification-commands.md`.
 
-Verify required fields per `skills/project-workflow-claude/references/state-validation.md`.
+3. Build semantic evidence checks.
+   - Expected files exist.
+   - Expected text or behavior is present.
+   - Forbidden evidence is absent.
+   - Quick Gate remains valid.
 
-**Required for this phase:** `reviewResultsPath`
+4. Loop until dry.
+   - Run all verification commands fresh.
+   - Evaluate semantic checks fresh.
+   - If clean, rerun once for a second clean round when risk warrants it.
+   - If failures remain, dispatch `build-fixer`, `debugger`, `test-engineer`, or `worker` subagents by non-overlapping file groups.
+   - Re-run checks after fixes.
+   - Stop after 10 iterations and report `EXHAUSTED`.
 
-- If any required field is missing or null: BLOCK. Report exactly what's missing.
-- If `escapeHatchesUsed` is missing from state file: default to `[]` (backward compat).
-- If all required fields present: continue to Step 1.
+5. Persist `.codex/state/verification-results.json`.
 
-### 1. Load the Iron Law
+## Exit
 
-Read `skills/project-workflow-claude/references/iron-law.md` to enforce the complete verification discipline: Gate Function, Red Flags, Rationalization Prevention, TDD Red-Green Verification, Agent Delegation Verification, and Evidence Standard.
+Update `.codex/state/project-workflow-state.json`:
 
-### 2. Run All Verification Commands
+- `lastCompletedSkill="verifying-completion"`
+- `currentSkill="finishing-development"`
+- `nextSkill=null`
+- `verificationResultsPath=".codex/state/verification-results.json"`
 
-Execute ALL commands for the detected project type using Bash. Collect results as `[{name, command, exitCode, stdout, stderr}]`.
-
-See `references/verification-commands.md` for the complete command sets per project type:
-
-- **Go:** `go mod tidy`, `go build ./...`, `go vet ./...`, `go test -race -count=1 ./...`, vulnerability scan, lint check.
-- **Vue/Node:** `npm ci` (or `pnpm install`), `npx tsc --noEmit` (if TypeScript), `npm test`, `npm run lint`.
-- **Skills Repository:** Modular structure checks (frontmatter validation, skill count, reference integrity), `grep` for unresolved issues, `git diff --check`.
-
-### 3. Build Evidence Checks
-
-From `quickGateResults` and grill evidence, build the `evidenceChecks` array:
-
-```json
-"evidenceChecks": [
-  {"taskId": "T1", "expectedPassed": true, "forbiddenClean": true, "filesMatch": true},
-  ...
-]
-```
-
-Extract `quickGateEvidence` from `.claude/state/quick-gate-results.json` and `grillEvidencePath` from the state file.
-
-### 4. Invoke Verification Workflow
-
-Announce "**Phase 6: Verify** — Iron Law enforcement via phase6-verify.js."
-
-```
-Workflow(
-  name='phase6-verify',
-  args={
-    projectType: '<go|vue|node|skills-repo>',
-    checkResults: [...],
-    dryRounds: <current>,
-    totalIterations: <cumulative count from master, defaults to 0>,
-    evidenceChecks: [...],
-    quickGateEvidence: <from quick-gate-results.json>,
-    grillEvidencePath: '<.claude/state/grill-evidence.json>'
-  }
-)
-```
-
-### 5. Loop Until Dry (Mechanical Loop Contract)
-
-The script returns `{allPassed, dryRounds, totalIterations, mandatoryNextAction, verdict, remainingFailures, evidenceFailures, phase, quickGateAudit, grillEvidenceAvailable}`.
-
-Read `mandatoryNextAction` to determine the next step:
-
-- **`RE_RUN_CHECKS`**: Fixes were applied or dry rounds are in progress. Master MUST re-run ALL Bash checks and re-invoke the script with updated `checkResults`, evidence, and incremented `totalIterations`.
-- **`DONE`**: Verification complete or exhausted. Master MUST exit the loop.
-
-The `verdict` field indicates final state:
-- **`PASSED`**: All checks passed with 2 consecutive dry rounds. Proceed.
-- **`EXHAUSTED`**: Max iterations (10) reached with remaining failures. Do NOT proceed to `finishing-development`.
-- **`IN_PROGRESS`**: Loop still active, continue re-running checks.
-
-**Safety cap:** The script enforces a hard cap at `totalIterations >= 10`. When the cap triggers and failures remain, `mandatoryNextAction` is `DONE` with `verdict='EXHAUSTED'`.
-
-If `allPassed=false` after exhaustion, report the failing checks and do NOT proceed to `finishing-development`.
-
-### 6. Persist Verification Results
-
-Write `.claude/state/verification-results.json`:
-
-```json
-{
-  "timestamp": "<ISO 8601>",
-  "allPassed": true,
-  "dryRounds": 2,
-  "projectType": "skills-repo",
-  "checkResults": [...],
-  "evidenceChecks": [...]
-}
-```
-
-### 7. Report
-
-```
-"Phase 6: Verified
-- Build: checkmark (exit 0)
-- Test: checkmark (N/N PASS)
-- Lint: checkmark (0 warnings)
-- Security: checkmark (0 vulnerabilities)"
-```
-
-## Output Contract
-
-- `.claude/state/verification-results.json` with full check results, evidence validation, and dry round status.
-- Fresh verification evidence for all checks (no cached or stale results).
-
-## Exit Contract
-
-1. Persist `.claude/state/verification-results.json`.
-2. Update `.claude/state/project-workflow-state.json`:
-   - `lastCompletedSkill="verifying-completion"`
-   - `currentSkill="finishing-development"`
-   - `nextSkill=null`
-   - `verificationResultsPath=".claude/state/verification-results.json"`
-3. If `handoffPolicy=auto-continue` and `allPassed=true` with dry rounds complete, announce and invoke `Skill(skill='finishing-development')`.
-4. If verification failed and `handoffPolicy=auto-continue`, do NOT transition. Report failure and await user guidance.
-5. If standalone, print:
-
-```
-Verification complete. Results saved to `.claude/state/verification-results.json`.
-
-Recommended next step:
-1. /finishing-development (Recommended) — run retrospective, optionally enable memory compression, and choose how to finish the branch.
-2. Stop here — keep branch as-is with verified completion evidence.
-```
+If all checks pass and `handoffPolicy=auto-continue`, continue to `finishing-development`.

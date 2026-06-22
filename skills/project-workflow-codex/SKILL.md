@@ -1,244 +1,138 @@
 ---
 name: project-workflow-codex
-description: "Run the Codex project workflow: discover repo, route skills, plan, delegate to Codex subagents, review, and verify with fresh evidence."
+description: "Run the Codex-only project workflow: detect context, design, plan, execute with Codex subagents, review, verify, and finish using .codex state and fresh evidence."
 ---
 
 # Project Workflow Codex
 
-## Overview
+Use this as the Codex-only workflow entry point. This branch does not support Claude Code or Hermes workflows; switch branches for those tools.
 
-Run the jessy-skills development workflow in Codex using skills plus Codex subagents. This is the Codex-native branch of the Claude Code `Workflow(...) + Skill(...)` design: the control plane stays in the main Codex session, while execution is delegated to Codex subagents with explicit ownership, artifacts, watchdogs, and verification.
+## Control Model
 
-Core rule:
+Codex main owns routing, state, integration, and final claims. Codex subagents own bounded exploration, implementation, review, test, repair, or verification tasks.
 
-```text
-Codex main agent owns routing, state, phase transitions, and final claims.
-Codex subagents own bounded exploration, execution, review, or verification tasks.
-Do not invoke Claude Code Workflow scripts from this skill.
-Do not rely on hooks, OMX, or oh-my-codex.
-Do not trust subagent success reports without independent verification.
-```
+Use Codex subagents deliberately:
 
-Model routing:
+- Spawn Codex subagents only for explicitly bounded work.
+- Prefer parallel subagents for read-heavy work.
+- Allow parallel writers only when file sets are disjoint.
+- Use `/agent` to inspect, steer, stop, or close subagent threads.
+- Record `BLOCKED_AGENT` evidence when a subagent stalls after inspection and one steering prompt.
+- Do not treat subagent completion as evidence. Verify locally before claiming completion.
 
-```text
-Main Codex session: configured outside this skill, recommended gpt-5.5.
-Execution, test, repair, and debugging subagents: executor, worker, test-engineer, build-fixer, debugger -> gpt-5.3-codex.
-Review and plan/completion verification subagents: code-reviewer, verifier -> gpt-5.4-mini.
-```
+Read `references/agent-execution.md` before spawning subagents. Read `references/validation.md` before final claims.
 
-## State Files
+## State
 
-Use `.codex/state/project-workflow-state.json` as the durable baton. Save plan contracts under `.codex/plans/` and verification artifacts under `.codex/state/`.
+Use `.codex/state/project-workflow-state.json` as the durable baton.
 
-Minimum state fields:
+Minimum state:
 
 ```json
 {
   "workflow": "project-workflow-codex",
-  "version": "v0.1",
-  "currentPhase": "0",
+  "version": "v1",
+  "runMode": "full-workflow",
+  "handoffPolicy": "auto-continue",
+  "currentSkill": "detecting-environment",
+  "lastCompletedSkill": null,
+  "nextSkill": "designing-solutions",
   "status": "running",
-  "baseCommit": null,
+  "taskIntakePath": ".codex/state/task-intake.json",
+  "contextSummaryPath": null,
+  "grillEvidencePath": null,
+  "specPath": null,
   "planPath": null,
-  "agentResultsPath": null,
-  "verificationResultsPath": null
+  "quickGateResultsPath": null,
+  "reviewResultsPath": null,
+  "verificationResultsPath": null,
+  "escapeHatchesUsed": []
 }
 ```
 
-Every phase must finish with:
+Artifacts:
 
-```text
-Phase: <phase>
-Status: COMPLETE | WAITING_FOR_USER | BLOCKED | FAIL
-Evidence:
-  - <file/command/result>
-Next:
-  - <allowed next phase>
-```
+- Root context: `CONTEXT.md`
+- Codex instructions: `AGENTS.md`
+- Knowledge cache: `.codex/context/knowledge.md`
+- Specs: `.codex/specs/`
+- Plans: `.codex/plans/`
+- Runtime state: `.codex/state/`
 
-## Skill Discovery Budget
+## Execution Skills
 
-Codex startup should expose only entry skills such as `project-workflow-codex`
-and `karpathy-guidelines`. Full domain skills stay in the installed snapshot
-under `~/.jessy-skills-codex/skills` and should be loaded by explicit path only
-after routing confirms they are relevant. Do not require all repository skills
-to be present in the model-visible startup skills list.
+Route in this order:
 
-## Phase 0: Discovery
+1. `detecting-environment` - Phase 0, 0.3, 0.5.
+2. `designing-solutions` - Phase 1, requirement echo and grill.
+3. `planning-implementation` - Phase 2 and 3.
+4. `implementing-changes` - Phase 4, 4.5, 4.6.
+5. `reviewing-implementation` - Phase 5.
+6. `verifying-completion` - Phase 6.
+7. `finishing-development` - Phase 7 and 8.
 
-Read and record:
+The entry skill does not implement these phases inline. It initializes state, invokes or reads the next execution skill, and checks that the previous skill wrote its required artifact before transitioning.
 
-```text
-git branch --show-current
-git status --short
-git rev-parse HEAD
-AGENTS.md
-CLAUDE.md if present
-README.md / SETUP.md / install.sh when relevant
-skills/project-workflow-codex/SKILL.md
-skills/project-workflow-claude/SKILL.md only for compatibility questions
-~/.jessy-skills-codex/skills when checking installed domain skill inventory
-```
+## Discovery Budget
 
-Never revert unrelated user changes. If the worktree is dirty, list dirty files and decide whether they are in scope before editing.
+Codex startup discovery should expose only:
 
-## Phase 0.3: Knowledge
+- `project-workflow-codex`
+- `karpathy-guidelines`
 
-If `.codex/context/knowledge.md` is missing or stale for `HEAD`, create or refresh it with:
+The full skill snapshot remains under `~/.jessy-skills-codex/skills`. Load execution and domain skills explicitly from that snapshot or this repository after routing confirms relevance.
 
-```text
-Commit
-Project type
-Skill inventory summary
-Workflow entry points
-Test/verification commands
-Known risks and invariants
-```
+## Start Or Resume
 
-Keep `AGENTS.md` short. Long process details belong in this skill or `references/`.
+1. Read `.codex/state/project-workflow-state.json`.
+2. If it is running, continue with `currentSkill`.
+3. If it is complete, ask whether to restart.
+4. If missing, create the minimum state above and continue to `detecting-environment`.
+5. Announce the selected skill and why it is next.
 
-## Phase 0.5: Skill Routing
+## Direct Routing
 
-Always include:
+If the user asks for a specific phase, set `runMode="standalone-skill"` and `handoffPolicy="prompt-next-step"`, then route:
 
-```text
-Codex: project-workflow-codex, karpathy-guidelines
-```
+| User intent | Skill |
+| --- | --- |
+| detect, inspect, setup context | `detecting-environment` |
+| design, clarify, grill, spec | `designing-solutions` |
+| plan, tasks, consensus | `planning-implementation` |
+| implement, build, fix | `implementing-changes` |
+| review, audit | `reviewing-implementation` |
+| verify, test, prove completion | `verifying-completion` |
+| finish, commit, PR, branch cleanup | `finishing-development` |
 
-Add domain skills only when task signals justify them. If a routed domain skill
-is absent from the startup skill list, read it from `~/.jessy-skills-codex/skills/<skill>/SKILL.md`
-or the repository `skills/<skill>/SKILL.md`. Read `references/agent-execution.md`
-before spawning agents and `references/validation.md` before final claims.
+## Escape Hatches
 
-## Phase 1: Clarify
+- `quick` / `fast` - reduce interview or review depth, keep verification.
+- `deep` / `careful` - use deeper review and verification.
+- `skip design` - proceed to planning from task intake only.
+- `skip plan` - execute only when tasks are already explicit.
+- `no review` - skip Phase 5 only after warning the user.
+- `I'll test` - skip Phase 6 only when the user owns verification.
+- `skip branch` - skip branch finish actions.
 
-Clarify only the boundaries that cannot be safely inferred:
+Record escape hatches in state.
 
-```text
-goal
-scope and non-goals
-expected changed files
-forbidden changes
-verification requirements
-approval boundary for spawning agents
-```
+## Anti-Patterns
 
-Ask one concise question at a time when clarification is required. If the request is already specific, record assumptions and proceed.
-
-## Phase 2: Plan Contract
-
-Write `.codex/plans/YYYY-MM-DD_HHMMSS-codex-plan-<slug>.md` with:
-
-```text
-Metadata
-Discovery evidence
-Skill routing
-Scope and non-goals
-Tasks with owner role, files, expected changes, forbidden changes
-Agent execution map
-Verification contract
-Rollback / no-revert constraints
-Final audit checklist
-```
-
-Use `references/contract-template.md` as the shape.
-
-## Phase 3: Codex Preflight
-
-Before execution, verify:
-
-```text
-baseCommit matches HEAD or drift is documented
-expected and forbidden files are explicit
-each task has a disjoint write set where possible
-verification commands are runnable or skipped with reason
-subagent roles are bounded
-```
-
-Verdict must be `PASS`, `PASS_WITH_RISK`, or `FAIL`. Do not spawn implementation subagents on `FAIL`.
-
-## Phase 4: Codex Subagent Execution
-
-Spawn Codex subagents only for bounded tasks with clear ownership. Prefer:
-
-```text
-explorer: read-heavy codebase exploration, risk discovery, or context gathering
-executor / worker: implementation
-build-fixer / debugger: failing build, lint, typecheck, or reproduction diagnosis
-code-reviewer: independent review
-verifier: completion evidence
-test-engineer: focused test coverage
-```
-
-Use subagents deliberately:
-
-```text
-Codex does not spawn subagents automatically.
-Prompt explicitly when parallel subagent work is intended.
-Prefer parallel subagents for read-heavy work: exploration, tests, triage, log analysis, and summarization.
-Default to one writer subagent for implementation.
-Allow multiple writer subagents only when write sets are disjoint and named in the plan.
-Keep agents.max_depth at 1 unless recursive delegation is explicitly required.
-```
-
-Each subagent prompt must include:
-
-```text
-plan path
-owned files or directories
-forbidden files
-expected output shape
-instruction to preserve unrelated changes
-instruction to list changed files and verification run
-instruction to return progress or a blocker instead of waiting silently
-```
-
-Runtime watchdog:
-
-```text
-If a subagent has no visible progress for the expected first update window:
-1. Inspect the subagent thread with `/agent` when available.
-2. Send one steering prompt with the exact next action and requested output.
-3. If it remains idle, stop or close that subagent and record BLOCKED_AGENT evidence.
-4. Respawn with a narrower read-only or single-file scope, or ask the user before the main session takes over implementation.
-```
-
-The main agent integrates results, resolves conflicts, closes completed subagent threads when no longer needed, and performs direct verification. See `references/agent-execution.md`.
-
-## Phase 5: Review
-
-Run review after implementation:
-
-```text
-spec compliance first
-code quality second
-verification adequacy third
-```
-
-For small changes, the main agent may review directly. For broader changes, spawn a `code-reviewer` subagent with the plan path and diff, then independently validate findings before acting on them.
-
-## Phase 6: Verify
-
-Run fresh verification commands from the plan. At minimum:
-
-```text
-git diff --check
-bash tests/test-*.sh
-```
-
-If a command cannot run, record the exact reason. Do not claim completion from subagent reports alone.
+- Do not use Claude Code `Workflow(...)` scripts.
+- Do not use Claude `CLAUDE.md` or `.claude/` paths.
+- Do not use Hermes `project-workflow`.
+- Do not load every skill at startup.
+- Do not let subagents edit overlapping files in parallel.
+- Do not claim completion without fresh verification.
 
 ## Final Audit
 
 Before final response:
 
-```text
-git status --short
-git diff --stat
-compare changed files against plan
-compare behavior against user request
-summarize verification evidence
-```
+- `git status --short`
+- `git diff --stat`
+- `git diff --check`
+- relevant tests from the plan
+- semantic evidence checks from the plan
 
-Final verdict: `PASS`, `PASS_WITH_RISK`, or `FAIL`.
+Final verdicts: `PASS`, `PASS_WITH_RISK`, or `FAIL`.

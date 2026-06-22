@@ -1,6 +1,6 @@
 # Design Spec Template
 
-Template for `.claude/specs/YYYY-MM-DD-<topic>-design.md`. All sections are required. Remove placeholder text and replace with concrete content.
+Template for `.codex/specs/YYYY-MM-DD-<topic>-design.md`. All sections are required. Remove placeholder text and replace with concrete content.
 
 ---
 

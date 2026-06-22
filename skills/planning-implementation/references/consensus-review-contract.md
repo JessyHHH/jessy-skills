@@ -1,35 +1,31 @@
-# Consensus Review Contract
+# Codex Consensus Review Contract
 
-The `phase3-consensus` Workflow script reviews the implementation plan from 3 angles in parallel (architecture, risk, feasibility), scores 1-10 each, and synthesizes one verdict.
+Phase 3 reviews the implementation plan from 3 angles in parallel when the plan is risky enough to justify subagents: architecture, risk, and feasibility. The main Codex session owns the final verdict.
 
-## Workflow Invocation
+## Subagent Invocation
 
-```javascript
-Workflow(
-  name='phase3-consensus',
-  args={
-    planContent: '<full plan text>',
-    contextSummary: '<Phase 0.3 output contextSummary>',
-    grillSummary: '<Phase 1 grill evidence>',
-    taskIntakeSnapshot: '<Phase 0 task intake snapshot>',
-    tasks: '<parsed tasks array from plan>'
-  }
-)
+```text
+Spawn bounded reviewer subagents only when useful:
+- architecture reviewer
+- risk reviewer
+- feasibility reviewer
+
+Each prompt receives the plan path, relevant task objects, expected output JSON, and forbidden file changes.
 ```
 
 ## Argument Descriptions
 
 | Argument | Source | Description |
 |----------|--------|-------------|
-| `planContent` | `.claude/plans/<file>.md` | Full text of the implementation plan |
-| `contextSummary` | `.claude/state/context-summary.json` | Structured JSON from Phase 0.3 with projectType, knowledgeStatus, confirmedFacts, etc. |
-| `grillSummary` | `.claude/state/grill-evidence.json` | Ambiguity register + assumption ledger + checklist results. May be `null` for simple tasks that skipped Grill. |
-| `taskIntakeSnapshot` | `.claude/state/task-intake.json` | Structured snapshot of the original request, scope, constraints |
+| `planContent` | `.codex/plans/<file>.md` | Full text of the implementation plan |
+| `contextSummary` | `.codex/state/context-summary.json` | Structured JSON from Phase 0.3 with projectType, knowledgeStatus, confirmedFacts, etc. |
+| `grillSummary` | `.codex/state/grill-evidence.json` | Ambiguity register + assumption ledger + checklist results. May be `null` for simple tasks that skipped Grill. |
+| `taskIntakeSnapshot` | `.codex/state/task-intake.json` | Structured snapshot of the original request, scope, constraints |
 | `tasks` | Parsed from plan's `json:tasks` block | Array of task objects following the expanded schema |
 
 ## Review Angles
 
-The script dispatches 3 parallel review agents:
+When needed, the main session dispatches up to 3 parallel read-only reviewers:
 
 | Angle | Focus | Score Range |
 |-------|-------|-------------|
@@ -47,7 +43,7 @@ The script dispatches 3 parallel review agents:
 
 ## Pre-Check Validation (Master Agent)
 
-Before invoking the workflow, the master agent performs these pre-checks:
+Before spawning reviewers, the main Codex session performs these pre-checks:
 
 1. **Scope contradiction detection:** Compare `planContent` against `taskIntakeSnapshot.approvedOutOfScope`. Flag any overlap.
 2. **Ambiguity resolution:** For each `grillRefs` in tasks, verify a matching entry exists in `grillSummary.ambiguityRegister` with `status != "open"`.
@@ -55,7 +51,7 @@ Before invoking the workflow, the master agent performs these pre-checks:
 
 ## Output
 
-The script returns:
+Each reviewer returns:
 
 ```json
 {
