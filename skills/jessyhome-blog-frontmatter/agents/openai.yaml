@@ -1,0 +1,4 @@
+interface:
+  display_name: "JessyHome Blog Frontmatter"
+  short_description: "Prepare JessyHome blog frontmatter"
+  default_prompt: "Use $jessyhome-blog-frontmatter to add default frontmatter to new JessyHome blog posts."
