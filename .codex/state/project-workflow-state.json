@@ -1,0 +1,19 @@
+{
+  "workflow": "project-workflow-codex",
+  "version": "v1",
+  "runMode": "full-workflow",
+  "handoffPolicy": "auto-continue",
+  "currentSkill": null,
+  "lastCompletedSkill": "finishing-development",
+  "nextSkill": null,
+  "status": "complete",
+  "taskIntakePath": ".codex/state/task-intake.json",
+  "contextSummaryPath": ".codex/state/context-summary.json",
+  "grillEvidencePath": ".codex/state/grill-evidence.json",
+  "specPath": ".codex/specs/2026-07-16-codex-local-config-snapshot-design.md",
+  "planPath": ".codex/plans/2026-07-16_214539-codex-local-config-snapshot.md",
+  "quickGateResultsPath": ".codex/state/quick-gate-results.json",
+  "reviewResultsPath": ".codex/state/review-results.json",
+  "verificationResultsPath": ".codex/state/verification-results.json",
+  "escapeHatchesUsed": []
+}

@@ -1,0 +1,27 @@
+{
+  "requestSummary": "Sync the current machine's reusable Codex configuration, global AGENTS.md, and custom agent templates into this repository without committing secrets or volatile runtime data.",
+  "repoRoot": "/home/huangzexi/personal/jessy-skills",
+  "approvedInScope": [
+    "Add a repeatable local-to-repository Codex sync script",
+    "Store an exact snapshot of ~/.codex/AGENTS.md under codex/global/",
+    "Store a sanitized snapshot of ~/.codex/config.toml under codex/global/",
+    "Update codex/agents/*.toml additively from ~/.codex/agents/",
+    "Add focused tests and usage documentation"
+  ],
+  "approvedOutOfScope": [
+    "Overwrite the repository root AGENTS.md with global instructions",
+    "Copy auth.json, history, sessions, logs, caches, databases, or credentials",
+    "Modify ~/.codex files",
+    "Commit, push, or create a pull request"
+  ],
+  "sourceEvidence": [
+    "User approved the proposed layered snapshot design on 2026-07-16",
+    "All seven ~/.codex/agents/*.toml files currently match codex/agents/*.toml",
+    "~/.codex/config.toml contains sensitive Postman and MySQL environment values"
+  ],
+  "constraints": [
+    "Preserve existing unrelated modifications in AGENTS.md, skills/methodology/prior-research/SKILL.md, and tests/test-prior-research.sh",
+    "Use Python 3.11+ tomllib and do not add a third-party TOML dependency",
+    "Generated config must parse as TOML and contain no source credential values"
+  ]
+}

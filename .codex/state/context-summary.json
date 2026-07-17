@@ -1,0 +1,28 @@
+{
+  "rootContextPath": "CONTEXT.md",
+  "rootContextStatus": "present",
+  "instructionsPath": "AGENTS.md",
+  "instructionsStatus": "present-with-unrelated-user-changes",
+  "knowledgePath": ".codex/context/knowledge.md",
+  "knowledgeStatus": "not-required-for-bounded-sync-change",
+  "projectType": "skills-repo",
+  "tooling": {
+    "python": "python3 with tomllib",
+    "tests": "shell",
+    "git": true
+  },
+  "loadedSkills": [
+    "project-workflow-codex",
+    "karpathy-guidelines",
+    "detecting-environment",
+    "designing-solutions",
+    "planning-implementation",
+    "implementing-changes",
+    "reviewing-implementation",
+    "verifying-completion",
+    "finishing-development"
+  ],
+  "contextWarnings": [
+    "Root AGENTS.md and prior-research files were already modified before this task"
+  ]
+}

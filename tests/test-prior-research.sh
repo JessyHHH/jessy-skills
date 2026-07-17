@@ -100,8 +100,8 @@ for section in "WHEN" "HOW" "USE"; do
 done
 echo ""
 
-# ── 6. Skill content: priority chain ──
-echo "6. Skill content: search priority chain"
+# ── 6. Skill content: tool coverage ──
+echo "6. Skill content: research tool coverage"
 for tool in "context7" "firecrawl" "curl" "delegate_task"; do
   if grep -q "$tool" "$SKILL"; then
     green "'$tool' mentioned in skill"
@@ -111,8 +111,22 @@ for tool in "context7" "firecrawl" "curl" "delegate_task"; do
 done
 echo ""
 
-# ── 7. Deprecated skills still exist but with marker ──
-echo "7. Old tools marked deprecated"
+# ── 7. Skill content: route by research intent ──
+echo "7. Skill content: route by research intent"
+for route in \
+  "库、框架、SDK、API、CLI 或云服务文档 → Context7" \
+  "通用 Web 搜索、近期信息、网页提取、站点遍历或案例研究 → Firecrawl" \
+  "Context7 无结果或缺少所需网页内容 → Firecrawl"; do
+  if grep -Fq "$route" "$SKILL"; then
+    green "route present: $route"
+  else
+    red "route MISSING: $route"
+  fi
+done
+echo ""
+
+# ── 8. Deprecated skills still exist but with marker ──
+echo "8. Old tools marked deprecated"
 for f in "$ROOT/skills/tools/context7-docs/SKILL.md" "$ROOT/skills/tools/firecrawl-web/SKILL.md"; do
   name=$(basename "$(dirname "$f")")
   if [ -f "$f" ] && grep -q 'DEPRECATED' "$f"; then

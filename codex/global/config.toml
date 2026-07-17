@@ -1,0 +1,225 @@
+# Generated from ~/.codex/config.toml by codex/scripts/sync_from_local.py.
+# Provider configuration is excluded; sensitive values use ${ENV_NAME} placeholders.
+
+disable_response_storage = true
+model_reasoning_effort = "high"
+model_context_window = 1000000
+model_auto_compact_token_limit = 900000
+plan_mode_reasoning_effort = "high"
+model = "gpt-5.6-sol"
+service_tier = "fast"
+approvals_reviewer = "user"
+developer_instructions = """
+Use the jessy-skills Codex workflow when appropriate. If the user invokes $project-workflow-codex, or asks for a project change in /home/huangzexi/personal/jessy-skills, load and follow /home/huangzexi/.jessy-skills-codex/skills/project-workflow-codex/SKILL.md. Keep startup skill discovery small: project-workflow-codex and karpathy-guidelines are the entry skills; load domain skills from /home/huangzexi/.jessy-skills-codex/skills only after routing confirms they are relevant. Codex main owns routing, state, integration, and final verification; spawned Codex agents own only bounded tasks. Do not use Claude Workflow scripts. Do not rely on hooks or legacy hook-based orchestration plugins.
+
+For library, framework, SDK, API, CLI tool, or cloud-service documentation questions, use Context7 before answering: run `npx ctx7@latest library <official name> \"<full user question>\"`, choose the best /org/project ID, then run `npx ctx7@latest docs <libraryId> \"<full user question>\"`. Use at most 3 Context7 commands per question and do not put secrets in queries.
+
+For web research, prior search, crawling, page extraction, or site evidence tasks, prefer Firecrawl tools/skills when installed and relevant; otherwise use available search/browser tools and state the fallback. Keep source evidence explicit, distinguish facts from inference, and do not fabricate inaccessible results.
+
+Postman MCP is configured as the `postman` MCP server for Postman workspace/API operations. Use it only when the user asks for Postman or API collection/environment work.
+"""
+
+[features]
+multi_agent = true
+hooks = false
+
+[projects]
+
+[projects."/home/huangzexi/hzx_mixlinker/mixdesignd"]
+trust_level = "trusted"
+
+[projects."/home/huangzexi/hzx_mixlinker/yunuis"]
+trust_level = "trusted"
+
+[projects."/home/huangzexi"]
+trust_level = "trusted"
+
+[projects."/home/huangzexi/hzx_mixlinker"]
+trust_level = "trusted"
+
+[projects."/home/huangzexi/hzx_mixlinker/yunfiles"]
+trust_level = "trusted"
+
+[projects."/home/huangzexi/hzx_mixlinker/yunuis_test/yunuop"]
+trust_level = "trusted"
+
+[projects."/home/huangzexi/hzx_mixlinker/mixlinker_agent"]
+trust_level = "trusted"
+
+[projects."/home/huangzexi/personal/jessy-skills"]
+trust_level = "trusted"
+
+[projects."/home/huangzexi/hzx_mixlinker/mixclaw"]
+trust_level = "trusted"
+
+[projects."/home/huangzexi/personal/open-design"]
+trust_level = "trusted"
+
+[projects."/home/huangzexi/personal/open-design/deploy"]
+trust_level = "trusted"
+
+[projects."/home/huangzexi/personal/blog_platform"]
+trust_level = "trusted"
+
+[projects."/home/huangzexi/personal/BlogSync"]
+trust_level = "trusted"
+
+[projects."/home/huangzexi/personal/JessyHome"]
+trust_level = "trusted"
+
+[projects."/home/huangzexi/hzx_mixlinker/apirouter"]
+trust_level = "trusted"
+
+[projects."/home/huangzexi/hzx_mixlinker/markitdown"]
+trust_level = "trusted"
+
+[projects."/home/huangzexi/personal/cloud"]
+trust_level = "trusted"
+
+[projects."/home/huangzexi/personal"]
+trust_level = "trusted"
+
+[projects."/home/huangzexi/hzx_mixlinker/fastembed"]
+trust_level = "trusted"
+
+[projects."/home/huangzexi/hzx_mixlinker/mixgo"]
+trust_level = "trusted"
+
+[projects."/home/huangzexi/下载"]
+trust_level = "trusted"
+
+[projects."/home/huangzexi/hzx_mixlinker/yunuop"]
+trust_level = "trusted"
+
+[projects."/home/huangzexi/hzx_mixlinker/tctool"]
+trust_level = "trusted"
+
+[projects."/home/huangzexi/.hermes/skills"]
+trust_level = "trusted"
+
+[projects."/home/huangzexi/application"]
+trust_level = "trusted"
+
+[projects."/home/huangzexi/hzx_mixlinker/clash-for-linux"]
+trust_level = "trusted"
+
+[projects."/home"]
+trust_level = "trusted"
+
+[mcp_servers]
+
+[mcp_servers.postman]
+type = "stdio"
+command = "npx"
+args = ["@postman/postman-mcp-server"]
+
+[mcp_servers.postman.env]
+POSTMAN_API_KEY = "${POSTMAN_API_KEY}"
+
+[mcp_servers.codebase-memory-mcp]
+command = "/home/huangzexi/.local/bin/codebase-memory-mcp"
+
+[mcp_servers.codebase-memory-mcp.tools]
+
+[mcp_servers.codebase-memory-mcp.tools.get_architecture]
+approval_mode = "approve"
+
+[mcp_servers.codebase-memory-mcp.tools.get_code_snippet]
+approval_mode = "approve"
+
+[mcp_servers.codebase-memory-mcp.tools.index_repository]
+approval_mode = "approve"
+
+[mcp_servers.codebase-memory-mcp.tools.index_status]
+approval_mode = "approve"
+
+[mcp_servers.codebase-memory-mcp.tools.list_projects]
+approval_mode = "approve"
+
+[mcp_servers.codebase-memory-mcp.tools.search_code]
+approval_mode = "approve"
+
+[mcp_servers.codebase-memory-mcp.tools.search_graph]
+approval_mode = "approve"
+
+[mcp_servers.codebase-memory-mcp.tools.trace_path]
+approval_mode = "approve"
+
+[mcp_servers.mysql]
+command = "/home/huangzexi/.local/bin/toolbox"
+args = ["--prebuilt", "mysql", "--stdio"]
+
+[mcp_servers.mysql.env]
+MYSQL_DATABASE = "yunui_mixyun"
+MYSQL_HOST = "192.168.88.14"
+MYSQL_PASSWORD = "${MYSQL_PASSWORD}"
+MYSQL_PORT = "3306"
+MYSQL_USER = "root"
+
+[mcp_servers.mempalace]
+command = "docker"
+args = ["run", "-i", "--rm", "-v", "mempalace-data:/data", "mempalace"]
+
+[mcp_servers.mempalace.tools]
+
+[mcp_servers.mempalace.tools.mempalace_checkpoint]
+approval_mode = "approve"
+
+[mcp_servers.mempalace.tools.mempalace_memories_filed_away]
+approval_mode = "approve"
+
+[mcp_servers.mempalace.tools.mempalace_search]
+approval_mode = "approve"
+
+[agents]
+max_threads = 6
+max_depth = 2
+
+[notice]
+hide_full_access_warning = true
+
+[notice.model_migrations]
+"gpt-5.3-codex" = "gpt-5.4"
+
+[tui]
+
+[tui.model_availability_nux]
+"gpt-5.5" = 4
+"gpt-5.6-sol" = 4
+
+[hooks]
+
+[[hooks.SessionStart]]
+matcher = "startup|resume|clear|compact"
+
+[[hooks.SessionStart.hooks]]
+type = "command"
+command = "echo \"Code discovery: prefer codebase-memory-mcp (search_graph, trace_path, get_code_snippet, query_graph, search_code) over grep/file-read; run index_repository first if the project is not indexed.\""
+
+[plugins]
+
+[plugins."build-web-apps@openai-api-curated"]
+enabled = true
+
+[plugins."superpowers@openai-api-curated"]
+enabled = true
+
+[plugins."render@openai-api-curated"]
+enabled = true
+
+[plugins."warp@codex-warp"]
+enabled = true
+
+[marketplaces]
+
+[marketplaces.codex-warp]
+last_updated = "2026-07-09T08:22:19Z"
+last_revision = "f11334dc715d48f07d133db6046895cb45f4accb"
+source_type = "git"
+source = "https://github.com/warpdotdev/codex-warp.git"
+
+[marketplaces.agent-skills]
+last_updated = "2026-07-16T08:44:41Z"
+last_revision = "c1974de476a39cb002a3b8e51e6a7e8e57b808c6"
+source_type = "git"
+source = "https://github.com/addyosmani/agent-skills.git"

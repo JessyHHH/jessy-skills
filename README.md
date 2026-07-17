@@ -78,6 +78,27 @@ Repo-managed agent templates:
 
 The main Codex model is configured outside this repo, typically in `~/.codex/config.toml`.
 
+### Local Codex snapshot
+
+The repository keeps a reviewable snapshot of reusable local Codex settings:
+
+- `codex/global/AGENTS.md` is an exact copy of the current global `~/.codex/AGENTS.md`.
+- `codex/global/config.toml` is a sanitized copy of `~/.codex/config.toml`.
+- `codex/agents/*.toml` mirrors local custom agent templates additively.
+
+Refresh the snapshot from the current machine, then verify that it is current:
+
+```bash
+python3 codex/scripts/sync_from_local.py
+python3 codex/scripts/sync_from_local.py --check
+```
+
+The config snapshot excludes provider configuration and replaces sensitive
+values with `${ENV_NAME}` placeholders. It is a reference snapshot, not an
+installer input. The sync never copies Codex authentication, history, session,
+database, log, or cache files, and `install.sh` still does not modify the global
+`~/.codex/AGENTS.md`.
+
 ## Included Skills
 
 Workflow skills:

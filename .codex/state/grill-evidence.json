@@ -1,0 +1,27 @@
+{
+  "ambiguityRegister": [
+    {
+      "id": "A1-global-agents-location",
+      "question": "Should the global AGENTS.md overwrite the project AGENTS.md or be stored separately?",
+      "status": "answered",
+      "impact": "Instruction duplication and preservation of project-specific workflow rules",
+      "decision": "Store the exact global snapshot at codex/global/AGENTS.md and preserve root AGENTS.md."
+    },
+    {
+      "id": "A2-secret-policy",
+      "question": "How should sensitive config values be represented?",
+      "status": "answered",
+      "impact": "Repository security and snapshot usability",
+      "decision": "Exclude provider configuration and replace sensitive scalar values with environment-style placeholders."
+    }
+  ],
+  "assumptionLedger": [
+    {
+      "id": "S1-snapshot-direction",
+      "assumption": "This workflow synchronizes from ~/.codex into the repository and does not install snapshots back into ~/.codex.",
+      "evidence": "User asked to sync the current computer configuration into the current repository.",
+      "confidence": "High",
+      "correctionPath": "Add a separate explicit restore command only if requested later."
+    }
+  ]
+}

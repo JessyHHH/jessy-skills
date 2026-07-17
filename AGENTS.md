@@ -64,6 +64,10 @@ Use the `ctx7` CLI to fetch current documentation whenever the user asks about a
 
 If Context7 fails with quota errors, tell the user to run `npx ctx7@latest login` or set `CONTEXT7_API_KEY`.
 
+Do not use Context7 as the first step for general web research, current information, page extraction, site traversal, or case studies. If Context7 has no relevant result or lacks the required page content, fall back to Firecrawl.
+
 ## Firecrawl
 
-For web research, prior search, crawling, page extraction, or site evidence tasks, prefer Firecrawl tools or skills when installed and relevant. Otherwise use available search/browser tools and state the fallback.
+For general web research, current information, prior search, crawling, page extraction, site traversal, case studies, or site evidence, use the installed `firecrawl` CLI first. Do not run Context7 first for these tasks.
+
+Before claiming Firecrawl is unavailable, run `command -v firecrawl`. If the CLI is unavailable or fails, use another available search/browser tool and state the fallback.

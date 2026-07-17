@@ -1,0 +1,27 @@
+{
+  "status": "pass",
+  "checkedAt": "2026-07-16T21:52:00+08:00",
+  "expectedFiles": {
+    "codex/scripts/sync_from_local.py": "present",
+    "codex/global/AGENTS.md": "present-and-byte-identical-to-source",
+    "codex/global/config.toml": "present-valid-sanitized-toml",
+    "tests/test-codex-local-sync.sh": "present-and-passing",
+    "README.md": "documented"
+  },
+  "evidence": [
+    "bash tests/test-codex-local-sync.sh exited 0",
+    "python3 codex/scripts/sync_from_local.py --check exited 0",
+    "cmp ~/.codex/AGENTS.md codex/global/AGENTS.md exited 0",
+    "2 sensitive source paths were sanitized and provider config was excluded",
+    "git diff --check exited 0"
+  ],
+  "forbiddenEvidence": {
+    "sourceCredentialValuesInSnapshot": false,
+    "rootAgentsModifiedByTask": false,
+    "runtimeFilesCopied": false
+  },
+  "notes": [
+    "git diff --stat omits the new untracked files; git status confirms all expected new paths",
+    "Pre-existing modifications remain in AGENTS.md and prior-research files"
+  ]
+}
