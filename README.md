@@ -71,10 +71,10 @@ Codex supports subagent workflows with custom agents and `/agent` thread inspect
 
 Repo-managed agent templates:
 
-| Agent | Purpose | Model |
-| --- | --- | --- |
-| `executor`, `worker`, `test-engineer`, `build-fixer`, `debugger` | execution, tests, repair, debugging | `gpt-5.3-codex` |
-| `code-reviewer`, `verifier` | review and completion verification | `gpt-5.4-mini` |
+| Agent | Purpose | Model | Reasoning |
+| --- | --- | --- | --- |
+| `executor`, `worker`, `test-engineer`, `build-fixer`, `debugger` | execution, tests, repair, debugging | `deepseek-v4-flash` | `max` |
+| `explorer`, `code-reviewer`, `verifier` | read-only exploration, review, and completion verification | `deepseek-v4-pro` | `max` |
 
 The main Codex model is configured outside this repo, typically in `~/.codex/config.toml`.
 

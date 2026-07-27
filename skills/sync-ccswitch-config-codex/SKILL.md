@@ -72,4 +72,4 @@ python3.11 scripts/sync_config.py --dry-run
 If `tomllib.loads` reports duplicate keys or the requested MCP server is still
 missing, repair `settings.common_config_codex` before finishing. The current
 sync script is add-only and may not add a new child table such as
-`[mcp_servers.mempalace]` when `[mcp_servers]` already exists in the target.
+`[mcp_servers.graphify]` when `[mcp_servers]` already exists in the target.

@@ -1,27 +1,33 @@
 {
-  "requestSummary": "Sync the current machine's reusable Codex configuration, global AGENTS.md, and custom agent templates into this repository without committing secrets or volatile runtime data.",
-  "repoRoot": "/home/huangzexi/personal/jessy-skills",
+  "requestSummary": "Update this Codex development environment and its repository snapshot to replace codebase-memory-mcp with Docker-hosted Graphify, replace MemPalace with a self-hosted Mem0 REST skill, and install the repository skills through the existing global symlink layout.",
+  "repoRoot": "/root/hzx_mixlinker/jessy-skills",
   "approvedInScope": [
-    "Add a repeatable local-to-repository Codex sync script",
-    "Store an exact snapshot of ~/.codex/AGENTS.md under codex/global/",
-    "Store a sanitized snapshot of ~/.codex/config.toml under codex/global/",
-    "Update codex/agents/*.toml additively from ~/.codex/agents/",
-    "Add focused tests and usage documentation"
+    "Configure Graphify at http://127.0.0.1:8001/mcp as a Streamable HTTP MCP server",
+    "Replace the MemPalace skill and instructions with a self-hosted Mem0 REST skill targeting http://127.0.0.1:8002",
+    "Keep Graphify and Mem0 credentials in a local mode-0600 runtime environment file loaded by ~/.profile",
+    "Update the sanitized repository snapshots under codex/global",
+    "Install the repository snapshot and link all skills through ~/.agents/skills/jessy-skills",
+    "Add focused tests and verify both live integrations"
   ],
   "approvedOutOfScope": [
-    "Overwrite the repository root AGENTS.md with global instructions",
-    "Copy auth.json, history, sessions, logs, caches, databases, or credentials",
-    "Modify ~/.codex files",
-    "Commit, push, or create a pull request"
+    "Modify or restart the Docker services",
+    "Add an MCP adapter in front of Mem0",
+    "Use the hosted Mem0 Platform MCP endpoint",
+    "Commit credentials or volatile runtime data",
+    "Refactor unrelated skills or Codex settings"
   ],
   "sourceEvidence": [
-    "User approved the proposed layered snapshot design on 2026-07-16",
-    "All seven ~/.codex/agents/*.toml files currently match codex/agents/*.toml",
-    "~/.codex/config.toml contains sensitive Postman and MySQL environment values"
+    "User selected Graphify MCP plus Mem0 REST skill approach",
+    "User approved a private runtime environment file loaded by ~/.profile",
+    "User confirmed the complete requirement list and implementation design",
+    "Docker Graphify advertises Streamable HTTP at /mcp and requires a bearer or X-API-Key credential",
+    "Docker Mem0 exposes authenticated REST endpoints and has no /mcp route"
   ],
   "constraints": [
-    "Preserve existing unrelated modifications in AGENTS.md, skills/methodology/prior-research/SKILL.md, and tests/test-prior-research.sh",
-    "Use Python 3.11+ tomllib and do not add a third-party TOML dependency",
-    "Generated config must parse as TOML and contain no source credential values"
+    "Preserve the current global Codex configuration except for requested integration and path updates",
+    "SKILL.md frontmatter contains only name and description",
+    "Use Python standard library code for the Mem0 REST helper",
+    "Do not expose credential values in repository files, logs, tests, or final output",
+    "Do not modify Docker service state"
   ]
 }

@@ -1,7 +1,7 @@
 name = "verifier"
 description = "Validate completion claims with direct evidence."
-model = "gpt-5.4-mini"
-model_reasoning_effort = "high"
+model = "deepseek-v4-pro"
+model_reasoning_effort = "max"
 developer_instructions = """
 You are Verifier. Prove or disprove completion using observable evidence.
 

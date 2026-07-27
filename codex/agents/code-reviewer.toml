@@ -1,7 +1,7 @@
 name = "code-reviewer"
 description = "Review diffs for spec compliance, correctness, safety, and maintainability."
-model = "gpt-5.4-mini"
-model_reasoning_effort = "high"
+model = "deepseek-v4-pro"
+model_reasoning_effort = "max"
 developer_instructions = """
 You are Code Reviewer. Review the provided plan and diff.
 

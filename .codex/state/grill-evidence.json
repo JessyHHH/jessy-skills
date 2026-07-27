@@ -1,27 +1,70 @@
 {
+  "timestamp": "2026-07-24T11:28:45+08:00",
+  "session": "graphify-mem0-local-integration",
   "ambiguityRegister": [
     {
-      "id": "A1-global-agents-location",
-      "question": "Should the global AGENTS.md overwrite the project AGENTS.md or be stored separately?",
+      "id": "A1",
+      "question": "Should self-hosted Mem0 be exposed through a new MCP adapter or used through its existing REST API?",
       "status": "answered",
-      "impact": "Instruction duplication and preservation of project-specific workflow rules",
-      "decision": "Store the exact global snapshot at codex/global/AGENTS.md and preserve root AGENTS.md."
+      "impact": "Architecture, skill implementation, and runtime dependencies",
+      "recommendedAnswer": "Use a REST-backed skill because the deployed service has no MCP route and no adapter is needed for the requested memory workflow.",
+      "decision": "Use a REST-backed Mem0 skill."
     },
     {
-      "id": "A2-secret-policy",
-      "question": "How should sensitive config values be represented?",
+      "id": "A2",
+      "question": "Where should the Docker service credentials be stored for Codex runtime access?",
       "status": "answered",
-      "impact": "Repository security and snapshot usability",
-      "decision": "Exclude provider configuration and replace sensitive scalar values with environment-style placeholders."
+      "impact": "Credential safety and whether Graphify can authenticate after Codex restarts",
+      "recommendedAnswer": "Store them outside the repository in a mode-0600 environment file loaded by ~/.profile.",
+      "decision": "Use ~/.config/jessy-skills/runtime.env with mode 0600 and an idempotent ~/.profile source line."
+    },
+    {
+      "id": "A3",
+      "question": "Should the change affect only the live machine or also the repository snapshot and installation?",
+      "status": "answered",
+      "impact": "Tracked files, tests, and repeatability",
+      "recommendedAnswer": "Update both so the repository remains the source for this development environment.",
+      "decision": "Update the repository and install it into the live /root environment."
     }
   ],
   "assumptionLedger": [
     {
-      "id": "S1-snapshot-direction",
-      "assumption": "This workflow synchronizes from ~/.codex into the repository and does not install snapshots back into ~/.codex.",
-      "evidence": "User asked to sync the current computer configuration into the current repository.",
-      "confidence": "High",
-      "correctionPath": "Add a separate explicit restore command only if requested later."
+      "id": "S1",
+      "assumption": "The current Docker container credentials are the intended credentials for this development environment.",
+      "evidence": "Both services are running locally with authentication enabled and the user approved deriving a private runtime environment file from them.",
+      "confidence": "high",
+      "correctionPath": "Replace only the values in ~/.config/jessy-skills/runtime.env and restart Codex."
+    },
+    {
+      "id": "S2",
+      "assumption": "A default Mem0 user scope of codex is suitable for agent continuity.",
+      "evidence": "The deployment has already been exercised with a codex user scope and no alternative default was requested.",
+      "confidence": "medium",
+      "correctionPath": "Change the skill default or pass --user-id explicitly without altering the REST client architecture."
     }
+  ],
+  "checklistResults": {
+    "ambiguityRegisterPrinted": true,
+    "assumptionLedgerPrinted": true,
+    "openAmbiguitiesAddressed": true,
+    "successCriteriaObservable": true,
+    "constraintsDocumented": true,
+    "selfGrade": "PASS"
+  },
+  "requirementEcho": [
+    "Replace codebase-memory-mcp with Docker-hosted Graphify MCP",
+    "Replace MemPalace with a self-hosted Mem0 REST skill",
+    "Keep credentials private and load them for Codex startup",
+    "Update repository snapshots and install skills through the standard symlink",
+    "Verify live behavior and repository tests"
+  ],
+  "scopeStatement": "Migrate the repository and this development environment from the two old integrations to Graphify MCP and self-hosted Mem0 REST without modifying Docker services or committing credentials.",
+  "successCriteria": [
+    "Codex lists graphify and no longer lists codebase-memory-mcp or mempalace",
+    "An authenticated Graphify MCP initialization and tools/list exchange succeeds",
+    "A temporary Mem0 memory can be added, searched, retrieved, and deleted through the new helper",
+    "The installed global skills path is a symlink to the repository snapshot skills directory",
+    "Changed skills validate and all repository shell tests pass",
+    "No credential values appear in the Git diff"
   ]
 }

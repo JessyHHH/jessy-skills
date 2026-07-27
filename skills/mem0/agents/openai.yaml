@@ -1,0 +1,4 @@
+interface:
+  display_name: "Mem0"
+  short_description: "Use local Mem0 REST memory with no MCP"
+  default_prompt: "Use $mem0 to save durable context through the local REST helper with no MCP dependency."

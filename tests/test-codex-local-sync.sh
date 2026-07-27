@@ -41,6 +41,10 @@ multi_agent = true
 command = "postman-server"
 args = ["--stdio"]
 
+[mcp_servers.graphify]
+url = "http://127.0.0.1:8001/mcp"
+bearer_token_env_var = "GRAPHIFY_API_KEY"
+
 [mcp_servers.postman.env]
 POSTMAN_API_KEY = "postman-secret-value"
 SAFE_MODE = "1"
@@ -96,6 +100,10 @@ assert data["model_auto_compact_token_limit"] == 12345
 assert data["mcp_servers"]["postman"]["env"]["POSTMAN_API_KEY"] == "${POSTMAN_API_KEY}"
 assert data["mcp_servers"]["mysql"]["env"]["MYSQL_PASSWORD"] == "${MYSQL_PASSWORD}"
 assert data["mcp_servers"]["postman"]["env"]["SAFE_MODE"] == "1"
+assert data["mcp_servers"]["graphify"] == {
+    "url": "http://127.0.0.1:8001/mcp",
+    "bearer_token_env_var": "GRAPHIFY_API_KEY",
+}
 assert data["security_shapes"]["AWS_SECRET_ACCESS_KEY"] == "${AWS_SECRET_ACCESS_KEY}"
 assert data["security_shapes"]["SERVICE_TOKEN"] == "${SERVICE_TOKEN}"
 assert data["security_shapes"]["DB_PASSWD"] == "${DB_PASSWD}"

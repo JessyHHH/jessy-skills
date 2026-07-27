@@ -7,10 +7,10 @@ model_context_window = 1000000
 model_auto_compact_token_limit = 900000
 plan_mode_reasoning_effort = "high"
 model = "gpt-5.6-sol"
-service_tier = "fast"
-approvals_reviewer = "user"
+service_tier = "default"
+approvals_reviewer = "auto_review"
 developer_instructions = """
-Use the jessy-skills Codex workflow when appropriate. If the user invokes $project-workflow-codex, or asks for a project change in /home/huangzexi/personal/jessy-skills, load and follow /home/huangzexi/.jessy-skills-codex/skills/project-workflow-codex/SKILL.md. Keep startup skill discovery small: project-workflow-codex and karpathy-guidelines are the entry skills; load domain skills from /home/huangzexi/.jessy-skills-codex/skills only after routing confirms they are relevant. Codex main owns routing, state, integration, and final verification; spawned Codex agents own only bounded tasks. Do not use Claude Workflow scripts. Do not rely on hooks or legacy hook-based orchestration plugins.
+Use the jessy-skills Codex workflow when appropriate. If the user invokes $project-workflow-codex, or asks for a project change in /root/hzx_mixlinker/jessy-skills, load and follow /root/.jessy-skills-codex/skills/project-workflow-codex/SKILL.md. Keep startup skill discovery small: project-workflow-codex and karpathy-guidelines are the entry skills; load domain skills from /root/.jessy-skills-codex/skills only after routing confirms they are relevant. Codex main owns routing, state, integration, and final verification; spawned Codex agents own only bounded tasks. Do not use Claude Workflow scripts. Do not rely on hooks or legacy hook-based orchestration plugins.
 
 For library, framework, SDK, API, CLI tool, or cloud-service documentation questions, use Context7 before answering: run `npx ctx7@latest library <official name> \"<full user question>\"`, choose the best /org/project ID, then run `npx ctx7@latest docs <libraryId> \"<full user question>\"`. Use at most 3 Context7 commands per question and do not put secrets in queries.
 
@@ -106,47 +106,61 @@ trust_level = "trusted"
 [projects."/home"]
 trust_level = "trusted"
 
+[projects."/home/huangzexi/hzx_mixlinker/yunauth"]
+trust_level = "trusted"
+
+[projects."/home/huangzexi/hzx_mixlinker/mempalace"]
+trust_level = "trusted"
+
+[projects."/home/huangzexi/hzx_mixlinker/graphify"]
+trust_level = "trusted"
+
+[projects."/root/.codex"]
+trust_level = "trusted"
+
+[projects."/root"]
+trust_level = "trusted"
+
+[projects."/root/hzx_mixlinker/mixclaw"]
+trust_level = "trusted"
+
+[projects."/root/hzx_mixlinker/jessy-skills"]
+trust_level = "trusted"
+
+[projects."/root/hzx_mixlinker/yunfiles"]
+trust_level = "trusted"
+
 [mcp_servers]
 
 [mcp_servers.postman]
 type = "stdio"
 command = "npx"
-args = ["@postman/postman-mcp-server"]
+args = ["--offline", "-y", "@postman/postman-mcp-server@2.11.1"]
 
 [mcp_servers.postman.env]
 POSTMAN_API_KEY = "${POSTMAN_API_KEY}"
 
-[mcp_servers.codebase-memory-mcp]
-command = "/home/huangzexi/.local/bin/codebase-memory-mcp"
+[mcp_servers.graphify]
+url = "http://127.0.0.1:8001/mcp"
+bearer_token_env_var = "GRAPHIFY_API_KEY"
 
-[mcp_servers.codebase-memory-mcp.tools]
+[mcp_servers.graphify.tools]
 
-[mcp_servers.codebase-memory-mcp.tools.get_architecture]
+[mcp_servers.graphify.tools.graph_stats]
 approval_mode = "approve"
 
-[mcp_servers.codebase-memory-mcp.tools.get_code_snippet]
+[mcp_servers.graphify.tools.query_graph]
 approval_mode = "approve"
 
-[mcp_servers.codebase-memory-mcp.tools.index_repository]
+[mcp_servers.graphify.tools.god_nodes]
 approval_mode = "approve"
 
-[mcp_servers.codebase-memory-mcp.tools.index_status]
-approval_mode = "approve"
-
-[mcp_servers.codebase-memory-mcp.tools.list_projects]
-approval_mode = "approve"
-
-[mcp_servers.codebase-memory-mcp.tools.search_code]
-approval_mode = "approve"
-
-[mcp_servers.codebase-memory-mcp.tools.search_graph]
-approval_mode = "approve"
-
-[mcp_servers.codebase-memory-mcp.tools.trace_path]
+[mcp_servers.graphify.tools.get_node]
 approval_mode = "approve"
 
 [mcp_servers.mysql]
-command = "/home/huangzexi/.local/bin/toolbox"
+enabled = true
+command = "/root/.local/bin/toolbox"
 args = ["--prebuilt", "mysql", "--stdio"]
 
 [mcp_servers.mysql.env]
@@ -156,45 +170,12 @@ MYSQL_PASSWORD = "${MYSQL_PASSWORD}"
 MYSQL_PORT = "3306"
 MYSQL_USER = "root"
 
-[mcp_servers.mempalace]
-command = "docker"
-args = ["run", "-i", "--rm", "-v", "mempalace-data:/data", "mempalace"]
-
-[mcp_servers.mempalace.tools]
-
-[mcp_servers.mempalace.tools.mempalace_checkpoint]
-approval_mode = "approve"
-
-[mcp_servers.mempalace.tools.mempalace_memories_filed_away]
-approval_mode = "approve"
-
-[mcp_servers.mempalace.tools.mempalace_search]
-approval_mode = "approve"
-
 [agents]
 max_threads = 6
 max_depth = 2
 
 [notice]
 hide_full_access_warning = true
-
-[notice.model_migrations]
-"gpt-5.3-codex" = "gpt-5.4"
-
-[tui]
-
-[tui.model_availability_nux]
-"gpt-5.5" = 4
-"gpt-5.6-sol" = 4
-
-[hooks]
-
-[[hooks.SessionStart]]
-matcher = "startup|resume|clear|compact"
-
-[[hooks.SessionStart.hooks]]
-type = "command"
-command = "echo \"Code discovery: prefer codebase-memory-mcp (search_graph, trace_path, get_code_snippet, query_graph, search_code) over grep/file-read; run index_repository first if the project is not indexed.\""
 
 [plugins]
 
@@ -213,13 +194,18 @@ enabled = true
 [marketplaces]
 
 [marketplaces.codex-warp]
-last_updated = "2026-07-09T08:22:19Z"
+last_updated = "2026-07-23T07:15:19Z"
 last_revision = "f11334dc715d48f07d133db6046895cb45f4accb"
 source_type = "git"
 source = "https://github.com/warpdotdev/codex-warp.git"
 
 [marketplaces.agent-skills]
-last_updated = "2026-07-16T08:44:41Z"
-last_revision = "c1974de476a39cb002a3b8e51e6a7e8e57b808c6"
+last_updated = "2026-07-27T02:10:50Z"
+last_revision = "7829ffd90d973b6325f5f12f1b1226dcace74443"
 source_type = "git"
 source = "https://github.com/addyosmani/agent-skills.git"
+
+[tui]
+
+[tui.model_availability_nux]
+"gpt-5.6-sol" = 4

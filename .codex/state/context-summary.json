@@ -2,27 +2,28 @@
   "rootContextPath": "CONTEXT.md",
   "rootContextStatus": "present",
   "instructionsPath": "AGENTS.md",
-  "instructionsStatus": "present-with-unrelated-user-changes",
+  "instructionsStatus": "present",
   "knowledgePath": ".codex/context/knowledge.md",
-  "knowledgeStatus": "not-required-for-bounded-sync-change",
+  "knowledgeStatus": "refreshed",
   "projectType": "skills-repo",
   "tooling": {
-    "python": "python3 with tomllib",
-    "tests": "shell",
-    "git": true
+    "git": "available",
+    "python3": "available",
+    "codex": "available",
+    "docker": "available",
+    "graphify": "docker-http-8001",
+    "mem0": "docker-rest-8002"
   },
   "loadedSkills": [
     "project-workflow-codex",
     "karpathy-guidelines",
     "detecting-environment",
     "designing-solutions",
-    "planning-implementation",
-    "implementing-changes",
-    "reviewing-implementation",
-    "verifying-completion",
-    "finishing-development"
+    "skill-creator"
   ],
   "contextWarnings": [
-    "Root AGENTS.md and prior-research files were already modified before this task"
+    "The installed jessy-skills snapshot and global discovery symlink are currently absent under /root",
+    "GRAPHIFY_API_KEY and MEM0_API_KEY are not currently exported in the host environment",
+    "The repository snapshots still describe codebase-memory-mcp and MemPalace"
   ]
 }

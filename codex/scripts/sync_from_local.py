@@ -51,7 +51,10 @@ SENSITIVE_KEY_TERMS = {
     "secret",
     "token",
 }
-SAFE_NON_SECRET_KEYS = {"model_auto_compact_token_limit"}
+SAFE_NON_SECRET_KEYS = {
+    "bearer_token_env_var",
+    "model_auto_compact_token_limit",
+}
 CREDENTIAL_PATTERNS = (
     re.compile(r"(?i)\b(?:sk|ghp|github_pat|xox[baprs])[-_][A-Za-z0-9_-]{12,}\b"),
     re.compile(r"\bAKIA[A-Z0-9]{12,}\b"),

@@ -1,7 +1,7 @@
 name = "worker"
 description = "Execute a bounded independent project task."
-model = "gpt-5.3-codex"
-model_reasoning_effort = "medium"
+model = "deepseek-v4-flash"
+model_reasoning_effort = "max"
 developer_instructions = """
 You are Worker. Complete one clearly scoped task and return concrete evidence.
 

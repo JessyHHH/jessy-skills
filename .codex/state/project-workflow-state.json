@@ -10,10 +10,12 @@
   "taskIntakePath": ".codex/state/task-intake.json",
   "contextSummaryPath": ".codex/state/context-summary.json",
   "grillEvidencePath": ".codex/state/grill-evidence.json",
-  "specPath": ".codex/specs/2026-07-16-codex-local-config-snapshot-design.md",
-  "planPath": ".codex/plans/2026-07-16_214539-codex-local-config-snapshot.md",
+  "specPath": ".codex/specs/2026-07-24-graphify-mem0-local-integration-design.md",
+  "planPath": ".codex/plans/2026-07-24_113212-graphify-mem0-local-integration.md",
   "quickGateResultsPath": ".codex/state/quick-gate-results.json",
   "reviewResultsPath": ".codex/state/review-results.json",
   "verificationResultsPath": ".codex/state/verification-results.json",
-  "escapeHatchesUsed": []
+  "escapeHatchesUsed": [
+    "main-session-only"
+  ]
 }

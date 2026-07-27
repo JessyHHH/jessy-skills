@@ -1,27 +1,43 @@
 {
-  "status": "pass",
-  "iterations": 3,
-  "specCompliance": "pass",
-  "codeQuality": "pass",
-  "verificationAdequacy": "pass",
-  "initialFindings": [
-    "Sensitive-key detection missed common delimited and camelCase variants",
-    "Agent TOML files needed fail-closed credential scanning before copying",
-    "Non-finite TOML floats could not satisfy equality-based round-trip validation",
-    "Permission normalization followed target symlinks"
-  ],
-  "repairs": [
-    "Added delimited and camelCase sensitive-key classification with a narrow non-secret allowlist",
-    "Preflighted all agent TOMLs before the first target write",
-    "Rejected non-finite float values explicitly",
-    "Rejected non-regular targets and used atomic replacement for content or mode drift",
-    "Added regression fixtures for all findings"
-  ],
-  "finalReview": "Independent read-only reviewer returned PASS with no actionable findings",
-  "evidence": [
-    "bash tests/test-codex-local-sync.sh exited 0",
-    "python3 codex/scripts/sync_from_local.py --check exited 0",
-    "All repository tests passed when executed individually",
-    "git diff --check exited 0"
+  "timestamp": "2026-07-24T11:53:00+08:00",
+  "verdict": "PASS",
+  "executionMode": "main-session-only",
+  "specCompliance": {
+    "verdict": "PASS",
+    "findings": [],
+    "evidence": [
+      "Graphify is the only requested code graph MCP and uses the approved URL and bearer environment variable",
+      "MemPalace MCP and skill were removed and replaced by a self-hosted Mem0 REST skill",
+      "private credentials are stored outside Git with mode 0600 and loaded once from ~/.profile",
+      "repository snapshots were regenerated from the latest live Codex settings",
+      "skills are installed through the single approved discovery symlink",
+      "Docker services were not modified"
+    ]
+  },
+  "codeQuality": {
+    "verdict": "PASS",
+    "findings": [],
+    "evidence": [
+      "Mem0 client uses only Python standard library and has one command dispatch boundary",
+      "expected transport, authentication, JSON, metadata, and HTTP errors return concise failures without tracebacks",
+      "snapshot sanitizer preserves bearer_token_env_var while continuing to sanitize actual credential fields",
+      "changed skills keep only name and description frontmatter and validate successfully"
+    ]
+  },
+  "verificationAdequacy": {
+    "verdict": "PASS",
+    "findings": [],
+    "evidence": [
+      "Mem0 mock-server tests cover all seven commands and error paths",
+      "migration tests cover active legacy removal and Graphify configuration shape",
+      "live Graphify MCP initialize and tools/list succeeded",
+      "live Mem0 status and add/search/get/delete succeeded",
+      "installed snapshot and discovery symlink were inspected after the final install",
+      "active service credentials were scanned against repository content without printing values"
+    ]
+  },
+  "residualRisks": [
+    "The running Graphify service exposes one loaded graph; global instructions require checking that it covers the current corpus and verifying results against the filesystem.",
+    "A new Codex process is required to load the changed global instructions, MCP configuration, and profile environment."
   ]
 }

@@ -41,53 +41,38 @@ When compiling or testing Go projects, be conservative with package-level parall
 - If serial testing is too slow, explain the tradeoff and ask before increasing parallelism.
 <!-- go-resource-safety -->
 
-<!-- codebase-memory-mcp:start -->
-# Codebase Knowledge Graph (codebase-memory-mcp)
+<!-- graphify:start -->
+# Codebase Knowledge Graph (Graphify)
 
-This project uses codebase-memory-mcp to maintain a knowledge graph of the codebase.
-Use MCP graph tools first for fast code discovery, then verify against the current workspace files with `rg`/direct file reads. Do not treat graph results as authoritative without checking source files, because the index may be stale.
+Use the configured `graphify` MCP server for fast structural discovery when its loaded graph covers the current project or corpus. Treat graph results as supporting context and verify every implementation detail against the current workspace with `rg` and direct file reads.
 
 ## Discovery Flow
-1. Use `search_graph` to quickly find candidate functions, classes, routes, variables, or files.
-2. Use `trace_path` when caller/callee relationships matter.
-3. Use both:
-   - `get_code_snippet` for graph-context source snippets.
-   - `rg`/direct file reads for the current on-disk source.
-4. If graph and filesystem disagree, trust the filesystem and mention that the graph may be stale.
-5. Use `query_graph` for complex code-structure questions.
-6. Use `get_architecture` for high-level project summaries.
 
-## Use `rg`/filesystem directly for
-- String literals, error messages, logs, config values.
-- Non-code files such as Dockerfiles, shell scripts, configs, docs.
-- Confirming exact implementation details, line numbers, imports, and current edits.
-- Checking whether graph results are stale or incomplete.
+1. Use `query_graph` for broad code, architecture, and relationship questions.
+2. Use `get_node` and `get_neighbors` to inspect specific entities and their local relationships.
+3. Use `shortest_path` when the connection between two concepts matters.
+4. Use `list_prs`, `get_pr_impact`, and `triage_prs` only for graph data that includes pull requests.
+5. If Graphify and the filesystem disagree, trust the filesystem and note that the loaded graph may be stale or may cover another corpus.
 
-## Examples
-- Locate a handler: `search_graph(name_pattern=".*OrderHandler.*")`, then inspect matching files with `rg`.
-- Understand calls: `trace_path(function_name="OrderHandler", direction="inbound")`, then verify callers in source files.
-- Read implementation: use `get_code_snippet(...)` and also read the matching file from disk.
-<!-- codebase-memory-mcp:end -->
+Use `rg` and direct filesystem reads for exact strings, logs, configs, non-code files, line numbers, current edits, and final verification.
+<!-- graphify:end -->
 
-<!-- mempalace-memory:start -->
-# Persistent Context (MemPalace)
+<!-- mem0-memory:start -->
+# Persistent Context (Mem0)
 
-Use the configured `mempalace` MCP server as the persistent memory layer across sessions.
+Use the installed `$mem0` skill and its `mem0_client.py` REST helper for durable local memory. The helper is available at `~/.agents/skills/jessy-skills/mem0/scripts/mem0_client.py` and defaults to `user_id=codex`.
 
 ## Recall
-1. At the beginning of a new session, call `mempalace_status` once. If the current task is likely to continue earlier project work, run a focused search scoped to that project's wing before proceeding.
-2. Before answering about past work, prior decisions, user preferences, people, projects, or earlier sessions, call `mempalace_search` first. Use a short keyword query and scope it with `wing`/`room` when the project or topic is known.
-3. For relational or time-dependent facts, use `mempalace_kg_query` or `mempalace_kg_timeline` as appropriate.
-4. Quote relevant stored content verbatim. If nothing is found or the MCP server fails, say so explicitly; do not invent remembered context or silently fall back to a guess.
-5. Do not search reflexively for greenfield tasks that have no likely connection to prior context.
+
+1. Before answering about past work, prior decisions, stable preferences, or earlier sessions, run a focused `search` through the helper.
+2. Quote stored wording only when the returned memory is verbatim. Treat retrieved memory as supporting context, not authority over the current workspace or the user's latest instruction.
+3. If search is empty or the service fails, say so explicitly rather than inventing remembered context.
+4. Do not search reflexively for unrelated greenfield tasks.
 
 ## Save
-1. When the user asks to remember/save something, before context compaction, or after a substantive task that creates useful continuity, prefer one `mempalace_checkpoint` call over many individual writes.
-2. Persist only durable, useful context: explicit requirements, decisions and rationale, stable preferences/facts, important exact snippets, successful commands, completed outcomes, unresolved blockers, and concrete next steps.
-3. Keep checkpoint content verbatim when wording matters. Never claim a paraphrase is a quote, and do not store secrets, credentials, transient chatter, speculative assumptions, or easily regenerated output unless the user explicitly requests it.
-4. Use concise taxonomy: `wing` is the project/person/domain and `room` is the topic such as `decisions`, `preferences`, `setup`, `debugging`, or `handoff`.
-5. Do not double-file when a background hook already saved the same context. After writing, verify with `mempalace_memories_filed_away`, `mempalace_status`, or a focused `mempalace_search`.
-6. If a previously stored fact changes, preserve history with `mempalace_kg_supersede` or invalidate the old fact and add the new one; do not silently overwrite temporal context.
 
-MemPalace is local-first and stores original content in drawers backed by the persistent `/data` volume. Treat retrieved memory as supporting context, not as authority over the current workspace or the user's latest instruction.
-<!-- mempalace-memory:end -->
+1. Save only durable context: explicit requirements, decisions and rationale, stable preferences, successful commands, completed outcomes, unresolved blockers, and concrete next steps.
+2. Never store secrets, credentials, tokens, transient chatter, speculative assumptions, or easily regenerated output.
+3. Use one concise `add` operation for each coherent durable fact or decision.
+4. After saving, verify with a focused `search` and report any failure.
+<!-- mem0-memory:end -->

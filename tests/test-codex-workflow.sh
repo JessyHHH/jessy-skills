@@ -46,13 +46,15 @@ grep -q 'Codex Subagent Execution' "$ROOT/skills/project-workflow-codex/referenc
 grep -q 'First update window' "$ROOT/skills/project-workflow-codex/references/agent-execution.md" || fail "agent execution reference lacks first update window"
 grep -q 'Subagent Execution Map' "$ROOT/skills/project-workflow-codex/references/contract-template.md" || fail "contract template does not name subagent execution map"
 grep -q 'Codex subagent workflow' "$ROOT/skills/project-workflow-codex/agents/openai.yaml" || fail "openai.yaml does not describe subagent workflow"
-grep -q 'model = "gpt-5.3-codex"' "$ROOT/codex/agents/executor.toml" || fail "executor agent model is not gpt-5.3-codex"
-grep -q 'model = "gpt-5.3-codex"' "$ROOT/codex/agents/worker.toml" || fail "worker agent model is not gpt-5.3-codex"
-grep -q 'model = "gpt-5.3-codex"' "$ROOT/codex/agents/test-engineer.toml" || fail "test-engineer agent model is not gpt-5.3-codex"
-grep -q 'model = "gpt-5.3-codex"' "$ROOT/codex/agents/build-fixer.toml" || fail "build-fixer agent model is not gpt-5.3-codex"
-grep -q 'model = "gpt-5.3-codex"' "$ROOT/codex/agents/debugger.toml" || fail "debugger agent model is not gpt-5.3-codex"
-grep -q 'model = "gpt-5.4-mini"' "$ROOT/codex/agents/code-reviewer.toml" || fail "code-reviewer agent model is not gpt-5.4-mini"
-grep -q 'model = "gpt-5.4-mini"' "$ROOT/codex/agents/verifier.toml" || fail "verifier agent model is not gpt-5.4-mini"
+for agent in executor worker test-engineer build-fixer debugger; do
+  grep -q 'model = "deepseek-v4-flash"' "$ROOT/codex/agents/$agent.toml" || fail "$agent agent model is not deepseek-v4-flash"
+done
+for agent in explorer code-reviewer verifier; do
+  grep -q 'model = "deepseek-v4-pro"' "$ROOT/codex/agents/$agent.toml" || fail "$agent agent model is not deepseek-v4-pro"
+done
+for agent in executor worker test-engineer build-fixer debugger explorer code-reviewer verifier; do
+  grep -q 'model_reasoning_effort = "max"' "$ROOT/codex/agents/$agent.toml" || fail "$agent agent reasoning effort is not max"
+done
 python3 - "$SKILL" <<'PY' || fail "project-workflow-codex description exceeds 180 characters"
 import re
 import sys

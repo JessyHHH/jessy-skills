@@ -1,27 +1,33 @@
 {
-  "status": "pass",
-  "checkedAt": "2026-07-16T21:52:00+08:00",
+  "timestamp": "2026-07-24T11:52:00+08:00",
+  "verdict": "PASS",
+  "executionMode": "main-session-only",
   "expectedFiles": {
-    "codex/scripts/sync_from_local.py": "present",
-    "codex/global/AGENTS.md": "present-and-byte-identical-to-source",
-    "codex/global/config.toml": "present-valid-sanitized-toml",
-    "tests/test-codex-local-sync.sh": "present-and-passing",
-    "README.md": "documented"
+    "skills/mem0/SKILL.md": "present",
+    "skills/mem0/scripts/mem0_client.py": "present",
+    "skills/mem0/agents/openai.yaml": "present",
+    "tests/test-mem0.sh": "present",
+    "tests/test-codex-integrations.sh": "present",
+    "codex/global/config.toml": "modified",
+    "codex/global/AGENTS.md": "modified",
+    "codex/scripts/sync_from_local.py": "modified"
   },
-  "evidence": [
-    "bash tests/test-codex-local-sync.sh exited 0",
-    "python3 codex/scripts/sync_from_local.py --check exited 0",
-    "cmp ~/.codex/AGENTS.md codex/global/AGENTS.md exited 0",
-    "2 sensitive source paths were sanitized and provider config was excluded",
-    "git diff --check exited 0"
-  ],
   "forbiddenEvidence": {
-    "sourceCredentialValuesInSnapshot": false,
-    "rootAgentsModifiedByTask": false,
-    "runtimeFilesCopied": false
+    "skills/mempalace": "absent",
+    "legacyNamesInActiveSkills": "absent",
+    "legacyMcpTables": "absent",
+    "legacySessionStartHook": "absent",
+    "literalServiceCredentialsInTrackedConfig": "absent"
   },
-  "notes": [
-    "git diff --stat omits the new untracked files; git status confirms all expected new paths",
-    "Pre-existing modifications remain in AGENTS.md and prior-research files"
-  ]
+  "checks": [
+    "git diff --check exited 0",
+    "bash syntax checks exited 0",
+    "Mem0 client compiled in memory",
+    "tracked config parsed as TOML",
+    "Graphify MCP shape matched the approved design",
+    "live Graphify initialize and tools/list succeeded",
+    "live Mem0 add/search/get/delete succeeded",
+    "installed skills discovery symlink was created"
+  ],
+  "concerns": []
 }

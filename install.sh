@@ -50,7 +50,7 @@ if [ -d "$CODEX_SYNC_HOME/codex/agents" ]; then
     mkdir -p "$HOME/.codex/agents"
     cp "$CODEX_SYNC_HOME/codex/agents/"*.toml "$HOME/.codex/agents/"
     echo "  ✓ Codex agent templates installed to ~/.codex/agents"
-    echo "  → Execution/test/repair/debugging: gpt-5.3-codex; review/verification: gpt-5.4-mini"
+    echo "  → Execution/test/repair/debugging: deepseek-v4-flash; exploration/review/verification: deepseek-v4-pro; reasoning: max"
 fi
 
 echo ""

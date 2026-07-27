@@ -1,29 +1,33 @@
 {
-  "status": "pass",
-  "verdict": "PASS",
-  "cleanRounds": 2,
-  "commandEvidence": [
-    "python3 codex/scripts/sync_from_local.py --check exited 0 twice",
-    "cmp ~/.codex/AGENTS.md codex/global/AGENTS.md exited 0 twice",
-    "all seven local agent TOMLs matched repository templates",
-    "bash tests/test-codex-local-sync.sh exited 0 in both final rounds",
-    "all tests/test-*.sh scripts exited 0 when executed individually in both final rounds",
-    "quick_validate.py skills/methodology/prior-research reported Skill is valid",
-    "git diff --check exited 0 in both final rounds"
+  "timestamp": "2026-07-24T11:54:11+08:00",
+  "verdict": "PASS_WITH_RISK",
+  "iterations": 2,
+  "repositoryEvidence": [
+    "All 9 tests/test-*.sh files passed in two clean rounds",
+    "skills/mem0, skills/sync-ccswitch-config-codex, and skills/tools/sync-ccswitch-config-codex passed quick_validate.py",
+    "codex/scripts/sync_from_local.py --check reported both tracked global snapshots up to date",
+    "git diff --check exited 0",
+    "tracked TOML parsed and contained Graphify without either legacy MCP",
+    "active skills contained no codebase-memory-mcp or MemPalace references",
+    "container credential values were absent from repository content"
   ],
-  "semanticEvidence": [
-    "Global AGENTS source and snapshot share SHA-256 c9950818e2645554256ac363b195bfb2499efbef82577751915fcb9c232dbab6",
-    "Generated config bytes equal a fresh sanitized render of ~/.codex/config.toml",
-    "Provider selection and provider configuration are absent",
-    "Postman API key and MySQL password are environment-style placeholders",
-    "Every current local agent TOML passed the credential-path preflight",
-    "Snapshot files use mode 0644",
-    "Symlink, camelCase credential, agent credential, drift, and non-finite float regressions are tested"
+  "liveEvidence": [
+    "codex mcp list and codex mcp get graphify showed the approved URL and bearer environment variable",
+    "Graphify completed authenticated MCP initialize, initialized notification, and tools/list with 10 tools",
+    "Mem0 completed authenticated status and temporary add/search/get/delete flows",
+    "~/.agents/skills/jessy-skills resolved to /root/.jessy-skills-codex/skills",
+    "the installed Mem0 skill and helper were present and the installed MemPalace skill was absent",
+    "~/.config/jessy-skills/runtime.env had mode 0600 and ~/.profile contained one loading block"
   ],
-  "residualRisk": "Heuristic credential detection cannot identify an arbitrary secret stored under an innocuous key with no recognizable token shape; known sensitive key families and credential-like values fail closed.",
-  "unrelatedChangesPreserved": [
-    "AGENTS.md",
-    "skills/methodology/prior-research/SKILL.md",
-    "tests/test-prior-research.sh"
+  "unavailableChecks": [
+    {
+      "command": "python3 skills/sync-ccswitch-config-codex/scripts/sync_config.py --dry-run",
+      "reason": "/root/.cc-switch/cc-switch.db is not installed in this environment",
+      "impact": "The optional cc-switch persistence target was not verified; the changed sync skill documentation and skill structure were validated independently."
+    }
+  ],
+  "residualRisks": [
+    "Restart Codex so the new global MCP configuration, global instructions, skills snapshot, and profile variables are loaded by a new process.",
+    "Graphify serves one loaded graph; verify it covers the active corpus before relying on graph answers."
   ]
 }

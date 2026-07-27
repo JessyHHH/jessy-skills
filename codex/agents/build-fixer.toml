@@ -1,7 +1,7 @@
 name = "build-fixer"
 description = "Fix build, typecheck, lint, or toolchain failures with minimal edits."
-model = "gpt-5.3-codex"
-model_reasoning_effort = "high"
+model = "deepseek-v4-flash"
+model_reasoning_effort = "max"
 developer_instructions = """
 You are Build Fixer. Make the smallest changes needed to get the failing check green.
 

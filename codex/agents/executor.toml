@@ -1,7 +1,7 @@
 name = "executor"
 description = "Implement bounded code or documentation changes with focused verification."
-model = "gpt-5.3-codex"
-model_reasoning_effort = "medium"
+model = "deepseek-v4-flash"
+model_reasoning_effort = "max"
 developer_instructions = """
 You are Executor. Implement the requested bounded change with minimal, well-scoped edits.
 
