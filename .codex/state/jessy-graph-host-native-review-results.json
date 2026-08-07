@@ -1,0 +1,42 @@
+{
+  "planPath": ".codex/plans/2026-07-27_224921-jessy-graph-host-native.md",
+  "iteration": 1,
+  "status": "PASS_WITH_RISK",
+  "specCompliance": {
+    "verdict": "PASS",
+    "evidence": [
+      "Host-native root systemd, uv, project-local data/config, 0.0.0.0:8003 MCP, host Codex, five-worker cap, internal worktrees, and serial integration match the approved spec.",
+      "Docker source, container, and exact named volumes are absent.",
+      "Worker argv forbids strict-config, output-schema, ignore-user-config, danger-full-access, and sandbox bypass while overriding mcp_servers={}.",
+      "The composed authenticated ASGI app is the live entrypoint; a live-gate finding that server.run bypassed it was repaired and retested."
+    ]
+  },
+  "codeQuality": {
+    "verdict": "PASS",
+    "evidence": [
+      "Codex runtime preflight is explicit, bounded, and covered for path, executable, invalid output, and supported version.",
+      "The systemd unit uses absolute paths, a controlled PATH, process-group termination, bounded stop, restart-on-failure, and UMask 0077.",
+      "Stale ignored codex_home test parameters were removed from all tests."
+    ]
+  },
+  "verificationAdequacy": {
+    "verdict": "PASS_WITH_RISK",
+    "evidence": [
+      "Focused settings, runner, MCP, systemd, E2E, DAG, recovery, and security checks passed.",
+      "A real host Codex task reached waiting_approval, survived service restart, and approved idempotently with the exact artifact hash.",
+      "Credential scans found zero MCP token or API key matches in runtime data, journal, or process command lines.",
+      "The source fixture fingerprint and worktree status remained unchanged."
+    ],
+    "residualRisk": "LAN MCP was proven through the host's 192.168.0.126 interface, not from a second physical LAN machine."
+  },
+  "scope": {
+    "verdict": "PASS",
+    "recordedException": "The only raw guard exception is pre-existing untracked .idea/.gitignore, which remained outside all edits."
+  },
+  "criticalFindings": [],
+  "resolvedFindings": [
+    "Changed main.run from FastMCP server.run to uvicorn.run over the composed authenticated ASGI app.",
+    "Removed stale codex_home arguments from four test settings constructions."
+  ]
+}
+

@@ -1,0 +1,50 @@
+{
+  "requestSummary": "Upgrade Jessy Graph to V2 so it turns the subagent deviations observed in the jessy-skills-only session into deterministic runtime controls, while explicitly routing worker-safe jessy-skills for implementation and code-quality guidance.",
+  "repoRoot": "/root/hzx_mixlinker/jessy-skills",
+  "targetProjectRoot": "/root/hzx_mixlinker/jessy-graph",
+  "approvedInScope": [
+    "Add a real plan-only and execution-resume task protocol",
+    "Disable built-in worker multi-agent delegation and deny recursive Codex execution through worker commands",
+    "Validate task changes against the immutable task base, including worker-created commits",
+    "Add explicit task roles, required skill routing, immutable skill snapshots, and deterministic code-quality profiles",
+    "Run verification and review through clean or read-only execution contexts that workers cannot weaken",
+    "Convert the audited T7 and T8 deviation patterns into V2 regression and live acceptance cases",
+    "Preserve host-native MCP operation, five-process scheduling, durable recovery, and serial integration",
+    "Route all planners and semantic reviewers to gpt-5.6-luna, and all implementers and repair workers to deepseek-v4-flash"
+  ],
+  "approvedOutOfScope": [
+    "Public Internet or multi-user operation",
+    "Container or virtual-machine worker isolation",
+    "Automatic merge into operator repositories, push, deployment, or migration",
+    "Replacing jessy-skills semantic planning with autonomous Jessy Graph planning",
+    "Treating JSONL monitoring or worker self-reports as the primary security authority",
+    "Modifying unrelated .idea content"
+  ],
+  "preservedDecisions": [
+    "Host-native root systemd service",
+    "Authenticated Streamable HTTP MCP on 0.0.0.0:8003 for localhost and trusted LAN use",
+    "Project-local runtime data and service configuration",
+    "Reuse of host /root/.codex configuration and authentication",
+    "At most five conflict-free workers and serial integration",
+    "all task planners use gpt-5.6-luna regardless of complexity",
+    "all per-task and final combined reviewers use gpt-5.6-luna",
+    "all implementers and repair workers use deepseek-v4-flash; deepseek-v4-pro is forbidden",
+    "No automatic write-back to operator source repositories"
+  ],
+  "sourceEvidence": [
+    "The audited session used jessy-skills directly rather than Jessy Graph and supplies threat-model cases, not Jessy Graph failure evidence",
+    "Codex CLI 0.145.0 supports read-only and workspace-write sandboxes, exact-session resume, JSONL events, and a per-process multi_agent feature override",
+    "Official Codex source evidence shows built-in subagents are in-process and shell commands can still start a separate Codex process",
+    "Current Jessy Graph workers discover the global skill catalog but do not select, snapshot, or require specific skills",
+    "Current Git boundary checks inspect working-tree status relative to current HEAD and do not reject worker-created commits"
+  ],
+  "constraints": [
+    "Keep project-workflow-codex in the main Codex session rather than inside bounded workers",
+    "Use only worker-safe execution and domain skills selected by the approved task contract",
+    "Do not rely on prompts alone for delegation, command, file, plan, or evidence boundaries",
+    "Do not use --strict-config, --output-schema, --ignore-user-config, danger-full-access, or sandbox bypass",
+    "Keep credentials and worker-control policies outside target task worktrees",
+    "Preserve all unrelated user changes in both repositories",
+    "Do not preserve or migrate V1 runtime state because Jessy Graph has never carried user data"
+  ]
+}

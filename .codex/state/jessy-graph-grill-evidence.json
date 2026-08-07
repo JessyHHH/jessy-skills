@@ -1,0 +1,157 @@
+{
+  "timestamp": "2026-07-27T17:10:00+08:00",
+  "session": "jessy-graph-architecture-20260727",
+  "ambiguityRegister": [
+    {
+      "id": "A1",
+      "question": "What is the V1 trust and user model?",
+      "status": "answered",
+      "impact": "authentication, deployment, persistence, and security scope",
+      "recommendedAnswer": "Local single-user trusted operation",
+      "decision": "Local single-user only; remote access, multi-tenancy, and distributed deployment are out of scope."
+    },
+    {
+      "id": "A2",
+      "question": "Which persistence backend should V1 use?",
+      "status": "answered",
+      "impact": "recovery, query model, packaging, and concurrency",
+      "recommendedAnswer": "Separate runtime and checkpoint SQLite databases",
+      "decision": "Use runtime.db as the application fact source and checkpoints.db only for LangGraph checkpoints."
+    },
+    {
+      "id": "A3",
+      "question": "Where does the runtime and Codex worker execute?",
+      "status": "answered",
+      "impact": "image composition, mounts, credentials, sandbox, and toolchains",
+      "recommendedAnswer": "One self-contained Docker image for V1",
+      "decision": "Run MCP, LangGraph, Codex CLI workers, Git, and Go/Python/Node.js tools in one container; do not mount the Docker socket."
+    },
+    {
+      "id": "A4",
+      "question": "How are accepted task changes combined?",
+      "status": "answered",
+      "impact": "Git topology, user-worktree safety, and combined verification",
+      "recommendedAnswer": "Dedicated integration worktree and branch",
+      "decision": "Integrate accepted tasks serially in an internal integration worktree and export a final patch without touching the host source worktree."
+    },
+    {
+      "id": "A5",
+      "question": "Does the first delivery include DAG scheduling?",
+      "status": "answered",
+      "impact": "milestones and V1 completion definition",
+      "recommendedAnswer": "Prove a vertical slice first, but require DAG scheduling for V1",
+      "decision": "M1 completes one durable TaskExecutionSubgraph; M2 adds DAG scheduling and is required for V1."
+    },
+    {
+      "id": "A6",
+      "question": "What is the V1 user interface and transport?",
+      "status": "answered",
+      "impact": "process lifetime, background work, recovery, and Codex integration",
+      "recommendedAnswer": "Persistent loopback Streamable HTTP MCP",
+      "decision": "Expose MCP only. Docker publishes the MCP endpoint only on host 127.0.0.1; no user-facing orchestration CLI."
+    },
+    {
+      "id": "A7",
+      "question": "Which verification languages and command forms are supported?",
+      "status": "answered",
+      "impact": "image size, command policy, and acceptance coverage",
+      "recommendedAnswer": "Language-neutral core with Go, Python, and Node.js profiles",
+      "decision": "Only argv command arrays are accepted; shell strings, pipelines, and redirection are rejected."
+    },
+    {
+      "id": "A8",
+      "question": "Which failures may retry automatically?",
+      "status": "answered",
+      "impact": "drift risk, attempt history, and recovery semantics",
+      "recommendedAnswer": "Retry transient infrastructure only",
+      "decision": "Infrastructure failures retry at most twice; malformed output gets one format repair; semantic and boundary failures require human action or terminate."
+    },
+    {
+      "id": "A9",
+      "question": "What is the V1 concurrency model?",
+      "status": "answered",
+      "impact": "scheduler, SQLite pressure, CPU/memory, and repository locks",
+      "recommendedAnswer": "Bounded conflict-aware workers with serial integration",
+      "decision": "Allow up to five global Codex workers, one executing ProjectRun per repository, resource-aware verification, and serial integration."
+    },
+    {
+      "id": "A10",
+      "question": "Who owns semantic planning and task-DAG creation?",
+      "status": "answered",
+      "impact": "authority boundary and scope expansion",
+      "recommendedAnswer": "Main Codex plus jessy-skills",
+      "decision": "Main Codex creates and approves the DAG; jessy-graph validates and executes it and returns BOUNDARY_BLOCKED rather than redesigning it."
+    },
+    {
+      "id": "A11",
+      "question": "How does the container authenticate Codex CLI through the existing custom relay?",
+      "status": "answered",
+      "impact": "container configuration, credential isolation, relay routing, and Codex session persistence",
+      "recommendedAnswer": "Use an independent container CODEX_HOME with safely derived config.toml and auth.json",
+      "decision": "Do not mount host /root/.codex. Generate a container-specific custom Responses provider config, seed auth.json from a Docker secret with mode 0600, persist sessions in a dedicated volume, and verify the container-reachable relay without direct-provider fallback."
+    }
+  ],
+  "assumptionLedger": [
+    {
+      "id": "S1",
+      "assumption": "All V1 repositories are trusted by the single operator.",
+      "evidence": "User selected local single-user operation and accepted the trusted-repository boundary.",
+      "confidence": "high",
+      "correctionPath": "Require isolated worker containers and a stronger credential broker before accepting untrusted repositories."
+    },
+    {
+      "id": "S2",
+      "assumption": "Only committed Git objects are valid project bases.",
+      "evidence": "Immutable base commits and no host-worktree mutation are required.",
+      "confidence": "high",
+      "correctionPath": "Add an explicit snapshot-import artifact type rather than reading uncommitted host changes."
+    },
+    {
+      "id": "S3",
+      "assumption": "Five Codex workers fit local resources when verification is separately limited.",
+      "evidence": "Host has 12 CPUs and 16 GiB available memory, but no swap.",
+      "confidence": "medium",
+      "correctionPath": "Lower the configured worker limit without changing persisted contracts or scheduler semantics."
+    },
+    {
+      "id": "S4",
+      "assumption": "The existing custom Responses relay can be reached through a container-specific endpoint and authenticated by a dedicated auth.json.",
+      "evidence": "The host uses a custom provider with API-key auth.json; the user confirmed equivalent independent container files.",
+      "confidence": "medium",
+      "correctionPath": "Verify the known host relay proxy from the container; if unreachable, add an explicit host gateway proxy before enabling worker execution."
+    },
+    {
+      "id": "S5",
+      "assumption": "A loopback-published Streamable HTTP endpoint plus bearer token is sufficient for V1.",
+      "evidence": "The service is single-user and never exposed beyond 127.0.0.1.",
+      "confidence": "high",
+      "correctionPath": "Add TLS and an identity-aware authorization layer before any non-loopback binding."
+    }
+  ],
+  "checklistResults": {
+    "ambiguityRegisterPrinted": true,
+    "assumptionLedgerPrinted": true,
+    "openAmbiguitiesAddressed": true,
+    "successCriteriaObservable": true,
+    "constraintsDocumented": true,
+    "selfGrade": "PASS"
+  },
+  "requirementEcho": [
+    "Create /root/hzx_mixlinker/jessy-graph as a separate LangGraph project",
+    "Keep main-session planning in jessy-skills and enforce execution in jessy-graph",
+    "Ship V1 as one Docker image exposed to host Codex only through local MCP",
+    "Give container Codex an independent relay config.toml and secret-seeded auth.json",
+    "Support durable project/task orchestration with deterministic boundaries and evidence"
+  ],
+  "scopeStatement": "Specify a local single-user Dockerized LangGraph execution control plane that accepts approved task DAGs over MCP, runs bounded Codex CLI workers in internal Git worktrees, persists restart-safe state, and exports reviewed artifacts without modifying host source worktrees.",
+  "successCriteria": [
+    "MCP submission returns a stable ProjectRun ID and remains queryable after client disconnect",
+    "A paused approval survives container restart and resumes without duplicating completed side effects",
+    "Conflict-free tasks run with a hard global limit of five while conflicting tasks and integration serialize",
+    "Git scope validation includes tracked, untracked, deleted, renamed, binary, symlink, and submodule changes",
+    "Host source repositories remain byte-for-byte and Git-status unchanged",
+    "Go, Python, and Node.js command policies execute allowed argv commands and reject arbitrary shell syntax",
+    "Final diff, logs, events, tests, and patch are immutable hash-addressed artifacts",
+    "Container Codex uses an independent CODEX_HOME with custom relay config and mode-0600 secret-seeded auth.json; host /root/.codex is not mounted and relay failure cannot fall back to direct OpenAI routing"
+  ]
+}

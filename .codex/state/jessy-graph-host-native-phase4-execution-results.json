@@ -1,0 +1,72 @@
+{
+  "planPath": ".codex/plans/2026-07-27_224921-jessy-graph-host-native.md",
+  "baseCommit": "5e59c6144b820ab4a5e75858743c5369fa09507b",
+  "planApproved": true,
+  "executionMode": "main-session serial reconciliation",
+  "escapeHatch": "main-session-dirty-pivot-reconciliation",
+  "tasks": [
+    {
+      "taskId": "T1-host-settings",
+      "planApproved": true,
+      "scopeGate": "PASS",
+      "scopeGateEvidence": "Only settings.py, conftest.py, and the new test_settings.py changed during the T1 checkpoint; raw base-commit guard also listed the recorded pre-task dirty pivot.",
+      "changedFiles": ["src/jessy_graph/settings.py", "tests/conftest.py", "tests/unit/test_settings.py"],
+      "acceptanceCommands": [{"command": "uv run pytest tests/unit/test_settings.py -q", "result": "5 passed"}],
+      "diffEvidence": "captured",
+      "status": "APPROVED"
+    },
+    {
+      "taskId": "T2-host-codex-runner",
+      "planApproved": true,
+      "scopeGate": "PASS",
+      "scopeGateEvidence": "All T2 edits remain inside the approved runner, main, fake, and runner test paths.",
+      "changedFiles": ["src/jessy_graph/adapters/codex_runner.py", "src/jessy_graph/main.py", "tests/fakes/fake_codex.py", "tests/integration/test_codex_runner.py", "tests/unit/test_codex_runner.py"],
+      "acceptanceCommands": [{"command": "uv run pytest tests/unit/test_codex_runner.py tests/integration/test_codex_runner.py -q", "result": "12 passed"}],
+      "diffEvidence": "captured",
+      "status": "APPROVED"
+    },
+    {
+      "taskId": "T3-systemd-docker-replacement",
+      "planApproved": true,
+      "scopeGate": "PASS",
+      "scopeGateEvidence": "Docker deletions and the new unit/config test exactly match the T3 allowlist.",
+      "changedFiles": [".dockerignore", "Dockerfile", "compose.yaml", "docker/codex-config.toml.template", "docker/entrypoint.sh", "docker/healthcheck.py", "docker/render_codex_config.py", "systemd/jessy-graph.service", "tests/e2e/test_m1_project_run.py", "tests/e2e/test_v1_recovery.py", "tests/integration/test_container_config.py", "tests/integration/test_host_service_config.py", "tests/integration/test_mcp_evidence.py", "tests/integration/test_mcp_server.py"],
+      "acceptanceCommands": [{"command": "uv run pytest tests/integration/test_host_service_config.py -q", "result": "5 passed after live-gate ASGI correction"}],
+      "diffEvidence": "captured",
+      "status": "APPROVED"
+    },
+    {
+      "taskId": "T4-regression-gate",
+      "planApproved": true,
+      "scopeGate": "PASS",
+      "scopeGateEvidence": "Read-only task; complete changed-path comparison found only the pre-existing .idea/.gitignore outside the plan, unchanged by this implementation.",
+      "changedFiles": [],
+      "acceptanceCommands": [
+        {"command": "uv lock --check", "result": "passed"},
+        {"command": "uv run pytest -q", "result": "90 passed"},
+        {"command": "git diff --check", "result": "passed"}
+      ],
+      "diffEvidence": "captured",
+      "status": "APPROVED"
+    },
+    {
+      "taskId": "T5-activate-and-live-verify",
+      "planApproved": true,
+      "scopeGate": "PASS",
+      "scopeGateEvidence": "Operational state only; no tracked file or source fixture was modified.",
+      "changedFiles": [],
+      "acceptanceCommands": [
+        {"command": "systemctl is-active jessy-graph.service", "result": "active"},
+        {"command": "authenticated local and LAN MCP initialization", "result": "10 tools from both addresses"},
+        {"command": "real host Codex approval and restart recovery", "result": "approved, duplicate approval version stable"},
+        {"command": "targeted DAG/recovery/security tests", "result": "10 passed"}
+      ],
+      "diffEvidence": "captured",
+      "status": "APPROVED"
+    }
+  ],
+  "blockedAgents": [
+    "Plan consensus reviewers repeatedly reviewed the unrelated workflow-control diff; main session recorded BLOCKED_AGENT and performed fresh local architecture, risk, and feasibility synthesis."
+  ],
+  "status": "PASS"
+}

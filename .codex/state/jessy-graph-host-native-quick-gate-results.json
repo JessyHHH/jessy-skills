@@ -1,0 +1,25 @@
+{
+  "planPath": ".codex/plans/2026-07-27_224921-jessy-graph-host-native.md",
+  "status": "PASS",
+  "baseCommit": "5e59c6144b820ab4a5e75858743c5369fa09507b",
+  "checks": {
+    "lockfile": "PASS",
+    "focusedTests": "PASS",
+    "fullTests": "PASS: 90 passed",
+    "diffCheck": "PASS",
+    "forbiddenActivePatterns": "PASS",
+    "systemd": "PASS: active and enabled on 0.0.0.0:8003",
+    "mcpSecurity": "PASS: local/LAN initialize; invalid bearer/host/origin rejected",
+    "realCodex": "PASS: waiting_approval -> restart -> approved",
+    "sourceFingerprint": "PASS",
+    "credentialRedaction": "PASS",
+    "dockerCleanup": "PASS"
+  },
+  "scope": {
+    "verdict": "PASS",
+    "recordedException": ".idea/.gitignore was untracked before implementation, remained unmodified, and is explicitly outside scope.",
+    "unexpectedImplementationFiles": []
+  },
+  "concerns": []
+}
+

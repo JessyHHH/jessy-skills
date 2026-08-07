@@ -1,0 +1,67 @@
+{
+  "rootContextPath": "CONTEXT.md",
+  "rootContextStatus": "present",
+  "instructionsPath": "AGENTS.md",
+  "instructionsStatus": "present",
+  "knowledgePath": ".codex/context/knowledge.md",
+  "knowledgeStatus": "present",
+  "projectType": "existing-python-langgraph-mcp-runtime-host-native-pivot",
+  "sourceRepoRoot": "/root/hzx_mixlinker/jessy-skills",
+  "targetProjectRoot": "/root/hzx_mixlinker/jessy-graph",
+  "targetBaseCommit": "5e59c61",
+  "targetWorktreeStatus": "contains uncommitted Docker diagnostic changes and unrelated untracked .idea content",
+  "hostCodex": {
+    "binary": "/root/.nvm/versions/node/v24.18.0/bin/codex",
+    "version": "0.145.0",
+    "codexHome": "/root/.codex",
+    "model": "gpt-5.6-sol",
+    "modelProvider": "custom",
+    "wireApi": "responses",
+    "authentication": "file-backed host auth.json; secret contents were not recorded",
+    "hostInvocationVerified": true
+  },
+  "documentationEvidence": [
+    "Current OpenAI Codex documentation confirms workspace-write limits writes to cwd and configured writable roots",
+    "Current OpenAI Codex documentation confirms -c can apply per-process config overrides",
+    "Current OpenAI Codex source documentation confirms an empty MCP server map clears MCP server visibility"
+  ],
+  "diagnosticEvidence": [
+    "Normal host Codex execution works with the custom Responses relay",
+    "--strict-config fails on a host config field that normal execution ignores",
+    "The relay rejects --output-schema, while local Pydantic validation of --output-last-message works",
+    "Docker worker execution remains blocked by container sandbox incompatibility after relay routing was corrected"
+  ],
+  "hostNativeRuntime": {
+    "serviceManager": "root systemd service linked from the project systemd directory",
+    "pythonIsolation": "uv lockfile and project .venv",
+    "mcpBind": "0.0.0.0:8003",
+    "localMcpUrl": "http://127.0.0.1:8003/mcp",
+    "lanMcpUrl": "http://192.168.0.126:8003/mcp",
+    "dataDir": "/root/hzx_mixlinker/jessy-graph/data",
+    "environmentFile": "/root/hzx_mixlinker/jessy-graph/.env",
+    "repositoryRegistry": "/root/hzx_mixlinker/jessy-graph/data/repositories.json",
+    "workerMcpOverride": "mcp_servers={}"
+  },
+  "preservedDecisions": [
+    "Local single-user trusted operation",
+    "MCP-only user interface with bearer authentication and exact Host/Origin policy",
+    "Main Codex owns planning and Jessy Graph owns validated execution",
+    "Separate runtime.db and checkpoints.db",
+    "Internal mirrors and worktrees keep host source worktrees unchanged",
+    "Maximum five Codex workers with serial integration",
+    "No automatic merge, push, deploy, or migration"
+  ],
+  "supersededDecisions": [
+    "Docker is the V1 final runtime",
+    "Container-specific CODEX_HOME and Docker-secret auth bootstrap",
+    "Container relay forwarding and startup probe",
+    "Container sandbox and filesystem boundary assumptions"
+  ],
+  "loadedSkills": [
+    "project-workflow-codex",
+    "karpathy-guidelines",
+    "designing-solutions",
+    "grill-me",
+    "mem0"
+  ]
+}

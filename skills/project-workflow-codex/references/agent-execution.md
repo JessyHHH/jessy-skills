@@ -1,84 +1,81 @@
 # Codex Subagent Execution
 
-Use Codex subagents as the execution plane for `project-workflow-codex`.
+Use Codex subagents as a bounded execution plane. Main Codex owns routing, approvals, integration, state, and final claims.
 
-This workflow uses native Codex subagent workflows and custom agents from
-`~/.codex/agents/`. The repository templates live in `codex/agents/` and are
-installed by `install.sh`. Hooks, OMX, and oh-my-codex are not part of the
-execution path.
+## Dispatch Rules
 
-## Spawn Rules
-
-- Spawn subagents only after Phase 3 preflight passes.
-- Spawn subagents only when the task explicitly asks for delegation or the plan
-  explicitly authorizes Phase 4 subagent work.
-- Keep the main agent on the critical path: routing, integration, state updates, and final audit stay local.
-- Prefer subagents for read-heavy work first: exploration, tests, triage, log
-  analysis, and summarization.
-- Use one writer subagent by default for implementation.
-- Use multiple writer subagents only when each has a disjoint write set.
-- Give every subagent a bounded ownership set. Prefer disjoint write sets.
-- Tell every subagent that other edits may exist and must not be reverted.
-- Require a structured result: changed files, commands run, evidence, open risks.
-- Close completed subagent threads when their results are integrated so they do
-  not keep consuming the open-thread cap.
+- Use only `gpt-5.6-luna` and `gpt-5.6-terra` for subagents. Never dispatch
+  `gpt-5.6-sol` or a DeepSeek model. If the live spawn interface exposes a stale
+  fixed-model role, use `agent_type="default"`, `fork_turns="none"`, and an
+  explicit allowed model, then include the role contract in the task prompt.
+  If native spawn does not expose Luna, use a fresh task-local
+  `codex exec -m gpt-5.6-luna` session instead of falling back to Sol.
+- Dispatch only after Phase 3 preflight and explicit delegation authorization.
+- Give each subagent one atomic task and task-local context. Use `fork_turns="none"` when supported.
+- Prohibit recursive delegation from execution subagents.
+- Prefer parallel subagents for read-only exploration, tests, triage, and review.
+- Run writers concurrently only when the Phase 4 guard puts them in the same dependency/resource wave and slots are available.
+- Give every writer a unique harness-managed Git worktree and branch.
+- Never run concurrent writers in the main worktree or the same linked worktree.
+- Preserve unrelated user changes and close integrated threads.
 
 ## Role Map
 
 | Need | Agent role | Model |
 | --- | --- | --- |
-| Read-heavy exploration | `explorer` | `deepseek-v4-pro` |
-| Implement a bounded patch | `executor` or `worker` | `deepseek-v4-flash` |
-| Improve or assess tests | `test-engineer` | `deepseek-v4-flash` |
-| Fix build, lint, typecheck, or toolchain failures | `build-fixer` | `deepseek-v4-flash` |
-| Diagnose failing checks or reproductions | `debugger` | `deepseek-v4-flash` |
-| Review diff against plan | `code-reviewer` | `deepseek-v4-pro` |
-| Validate claims and evidence | `verifier` | `deepseek-v4-pro` |
+| Read-heavy exploration | `explorer` | `gpt-5.6-luna` |
+| Implement a bounded patch | `executor` or `worker` | `gpt-5.6-luna` |
+| Improve or assess tests | `test-engineer` | `gpt-5.6-terra` |
+| Fix build, lint, typecheck, or toolchain failures | `build-fixer` | `gpt-5.6-terra` |
+| Diagnose failing checks or reproductions | `debugger` | `gpt-5.6-terra` |
+| Review diff against plan | `code-reviewer` | `gpt-5.6-luna` |
+| Validate claims and evidence | `verifier` | `gpt-5.6-luna` |
 
-All repo-managed subagent roles use `model_reasoning_effort = "max"`. The
-`explorer` role is configured explicitly and does not inherit the main session
-model.
+All repository-managed roles use maximum reasoning effort. Model strength does
+not relax task boundaries or evidence requirements. `gpt-5.6-luna` is the
+quality-first default for implementation, exploration, review, and verification;
+`gpt-5.6-terra` is limited to bounded mechanical build, test, and diagnosis work.
 
-The main Codex session model is configured outside the agent templates and is
-expected to be `gpt-5.5` for this repository workflow.
+## Direct Writer Protocol
+
+Phase 3 already produced and reviewed the Plan and Spec. Give the writer the exact approved task and tell it to edit immediately in its isolated worktree, run the target acceptance commands, and return concise evidence. Do not add a planning-only turn or a second execution approval.
+
+If an unlisted file, shared resource, behavior, or decision is needed, require `BOUNDARY_BLOCKED`. Stop and revise the approved Plan; never grant implicit scope expansion through a steering message.
 
 ## Runtime Controls
 
-- Set an expected first update window in the plan or prompt for each subagent.
-- If a subagent is idle beyond that window, inspect it with `/agent` when
-  available.
-- Send one steering prompt with the exact next command, file, or output needed.
-- If the subagent remains idle after the steering prompt, stop or close it and
-  record `BLOCKED_AGENT` with the agent name, owned scope, and last observed
-  state.
-- Do not let the main session silently take over implementation after a stuck
-  subagent. Either respawn with a narrower scope or ask the user before main
-  performs code edits outside integration and verification.
-- Keep `agents.max_depth = 1` unless recursive delegation is explicitly needed.
-  Broad recursive delegation increases latency, token usage, and coordination
-  risk.
+- Inspect the completed writer diff directly in its worktree.
+- Run the deterministic scope gate after the writer finishes.
+- Steer once only toward an exact next action already inside the contract.
+- Stop a semantically drifting task even when it is producing output.
+- Record `BLOCKED_AGENT` after one unsuccessful in-scope steering prompt.
 
 ## Prompt Contract
 
-Every execution prompt should include:
+Every writer prompt includes:
 
 ```text
-You own: <files/directories>
-Do not edit: <forbidden files/directories>
-Read first: <plan path>, <relevant docs>
-Task: <specific outcome>
-Constraints: preserve unrelated dirty worktree changes; do not revert others.
-First update window: <duration or milestone>
-Return:
-  - changed_files
-  - commands_run
-  - evidence
-  - risks_or_blockers
+Protocol: direct-phase4 writer
+Task ID and atomic outcome
+Base commit and unique worktree
+Relevant approved Spec and Plan sections
+Exact readable and writable files
+Shared resources and dependencies
+Explicit forbidden behavior
+Acceptance commands
+No delegation and no scope expansion
+Edit immediately and run target tests
+Concise changed-file, command, evidence, and blocker report
 ```
+
+See `skills/implementing-changes/references/task-enrichment.md` for the exact return shapes.
+
+After a writer passes target tests, start one fresh read-only reviewer for that task diff. The reviewer checks the relevant Spec and Plan, correctness, safety, and target-test adequacy in one pass. Independent task reviews may run concurrently. A repair returns to the same writer, and the same reviewer checks only the repair diff.
 
 ## Integration Rules
 
-- Inspect agent changes before claiming success.
-- Re-run verification locally when feasible.
-- If two agents touch overlapping files, the main agent resolves the overlap and reruns checks.
-- "Agent completed" is not evidence. Evidence is file content, diff, command output, or reproducible behavior.
+- Treat an agent completion message as a claim, never as evidence.
+- Inspect `git status`, changed paths, the diff, and acceptance output locally.
+- Integrate approved worktrees one at a time.
+- Do not repeat target tests after every integration; Phase 6 owns fresh full verification.
+- Do not enter review with unresolved scope drift.

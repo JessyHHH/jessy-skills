@@ -11,6 +11,7 @@ Use this for Codex Phase 5.
 
 - `.codex/state/project-workflow-state.json`
 - `.codex/plans/<plan>.md`
+- `.codex/state/phase4-execution-results.json`
 - `.codex/state/quick-gate-results.json`
 - `.codex/state/grill-evidence.json` when present
 - Current git diff
@@ -25,7 +26,8 @@ Use this for Codex Phase 5.
    - Read plan.
    - Compute changed files and relevant diffs.
    - Map diffs to tasks.
-   - Include quick gate concerns and grill decisions.
+   - Include Phase 4 plan approvals, scope gates, diff evidence, quick gate concerns, and grill decisions.
+   - Block when a writer task lacks `planApproved=true`, `scopeGate=PASS`, or captured diff evidence.
 
 3. Fast gate.
    - `git diff --check`.

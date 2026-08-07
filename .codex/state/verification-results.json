@@ -1,33 +1,19 @@
 {
-  "timestamp": "2026-07-24T11:54:11+08:00",
-  "verdict": "PASS_WITH_RISK",
-  "iterations": 2,
+  "timestamp": "2026-07-27T16:26:32+08:00",
+  "verdict": "PASS",
   "repositoryEvidence": [
-    "All 9 tests/test-*.sh files passed in two clean rounds",
-    "skills/mem0, skills/sync-ccswitch-config-codex, and skills/tools/sync-ccswitch-config-codex passed quick_validate.py",
-    "codex/scripts/sync_from_local.py --check reported both tracked global snapshots up to date",
-    "git diff --check exited 0",
-    "tracked TOML parsed and contained Graphify without either legacy MCP",
-    "active skills contained no codebase-memory-mcp or MemPalace references",
-    "container credential values were absent from repository content"
-  ],
-  "liveEvidence": [
-    "codex mcp list and codex mcp get graphify showed the approved URL and bearer environment variable",
-    "Graphify completed authenticated MCP initialize, initialized notification, and tools/list with 10 tools",
-    "Mem0 completed authenticated status and temporary add/search/get/delete flows",
-    "~/.agents/skills/jessy-skills resolved to /root/.jessy-skills-codex/skills",
-    "the installed Mem0 skill and helper were present and the installed MemPalace skill was absent",
-    "~/.config/jessy-skills/runtime.env had mode 0600 and ~/.profile contained one loading block"
-  ],
-  "unavailableChecks": [
-    {
-      "command": "python3 skills/sync-ccswitch-config-codex/scripts/sync_config.py --dry-run",
-      "reason": "/root/.cc-switch/cc-switch.db is not installed in this environment",
-      "impact": "The optional cc-switch persistence target was not verified; the changed sync skill documentation and skill structure were validated independently."
-    }
+    "All four changed skills passed quick_validate.py",
+    "All tests/test-*.sh files passed",
+    "tests/test-mem0.sh passed outside the default sandbox because it requires a loopback socket",
+    "tests/test-phase4-controls.sh exercised contract validation, dependency scheduling, shared-resource conflicts, read/write conflicts, no-isolation serialization, linked-worktree scope pass, boundary failure, and combined scope pass",
+    "phase4_guard.py validated the implementation plan",
+    "phase4_guard.py check-plan-scope found no unexpected files",
+    "bash install.sh synced the global skill snapshot and Codex agent templates",
+    "installed Phase 4 skill, guard script, and writer agent templates match the repository byte-for-byte",
+    "the installed Phase 4 guard successfully validated the implementation plan",
+    "git diff --check exited 0"
   ],
   "residualRisks": [
-    "Restart Codex so the new global MCP configuration, global instructions, skills snapshot, and profile variables are loaded by a new process.",
-    "Graphify serves one loaded graph; verify it covers the active corpus before relying on graph answers."
+    "Restart Codex so the current process reloads the installed skills and custom agent templates"
   ]
 }

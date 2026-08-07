@@ -1,0 +1,48 @@
+{
+  "timestamp": "2026-07-27T16:26:32+08:00",
+  "executionMode": "main-session-only",
+  "baseCommit": "dc1fcd6",
+  "planPath": ".codex/plans/2026-07-27-phase4-controlled-worktree-execution.md",
+  "tasks": [
+    {
+      "taskId": "T1-phase4-guard",
+      "planApproved": true,
+      "scopeGate": "PASS",
+      "changedFiles": [
+        "skills/implementing-changes/scripts/phase4_guard.py",
+        "tests/test-phase4-controls.sh"
+      ],
+      "acceptanceCommands": [
+        "bash tests/test-phase4-controls.sh"
+      ],
+      "diffEvidence": "full diff inspected by main Codex",
+      "status": "APPROVED"
+    },
+    {
+      "taskId": "T2-phase4-contract-docs",
+      "planApproved": true,
+      "scopeGate": "PASS",
+      "changedFiles": [
+        "skills/implementing-changes/SKILL.md",
+        "skills/implementing-changes/references/task-enrichment.md",
+        "skills/implementing-changes/references/worktree-quick-gate.md",
+        "skills/planning-implementation/SKILL.md",
+        "skills/planning-implementation/references/task-schema.md",
+        "skills/project-workflow-codex/references/agent-execution.md",
+        "skills/project-workflow-codex/references/contract-template.md",
+        "skills/reviewing-implementation/SKILL.md",
+        "codex/agents/executor.toml",
+        "codex/agents/worker.toml",
+        "codex/agents/test-engineer.toml",
+        "tests/test-codex-workflow.sh",
+        "README.md"
+      ],
+      "acceptanceCommands": [
+        "bash tests/test-phase4-controls.sh",
+        "bash tests/test-codex-workflow.sh"
+      ],
+      "diffEvidence": "full diff inspected by main Codex",
+      "status": "APPROVED"
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "planPath": ".codex/plans/2026-07-27_224921-jessy-graph-host-native.md",
+  "status": "PASS_WITH_RISK",
+  "iterations": 2,
+  "rounds": [
+    {
+      "round": 1,
+      "uvLockCheck": "PASS",
+      "pytest": "PASS: 91 passed in 7.39s",
+      "diffCheck": "PASS",
+      "service": "PASS",
+      "dockerAbsence": "PASS",
+      "sourceFingerprint": "PASS"
+    },
+    {
+      "round": 2,
+      "uvLockCheck": "PASS",
+      "pytest": "PASS: 91 passed in 7.40s",
+      "diffCheck": "PASS",
+      "mcpLocal": "PASS: 10 tools, approved project",
+      "mcpLan": "PASS: 10 tools, approved project",
+      "security": "PASS: invalid bearer 401, host 421, origin 403",
+      "credentialScan": "PASS: zero matches in data, journal, and process command lines"
+    }
+  ],
+  "semanticEvidence": {
+    "systemd": "active and enabled; project-linked unit; one 0.0.0.0:8003 listener",
+    "permissions": ".env and repositories.json 0600; data 0700",
+    "realCodex": "host task reached waiting_approval, survived restart, and approved idempotently",
+    "workerBoundary": "internal worktrees only; source fixture unchanged",
+    "dockerCleanup": "exact container and two named volumes absent",
+    "forbiddenPatterns": "absent from active source and unit"
+  },
+  "scope": {
+    "verdict": "PASS",
+    "recordedException": "Pre-existing untracked .idea/.gitignore remained untouched."
+  },
+  "residualRisk": "LAN validation used the host's own LAN address rather than a second physical LAN client."
+}
+

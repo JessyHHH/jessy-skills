@@ -1,0 +1,21 @@
+{
+  "workflow": "project-workflow-codex",
+  "project": "jessy-graph",
+  "targetRoot": "/root/hzx_mixlinker/jessy-graph",
+  "headCommit": "5e59c61",
+  "checks": [
+    {
+      "command": "uv lock --check",
+      "result": "PASS"
+    },
+    {
+      "command": "uv run pytest tests/e2e/test_v1_security.py tests/integration/test_dag_execution.py -q",
+      "result": "PASS: 7 passed"
+    },
+    {
+      "command": "git diff --check",
+      "result": "PASS"
+    }
+  ],
+  "verdict": "PASS"
+}

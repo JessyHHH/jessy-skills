@@ -13,9 +13,16 @@ Codex main owns routing, state, integration, and final claims. Codex subagents o
 
 Use Codex subagents deliberately:
 
+- Route every subagent to `gpt-5.6-luna` or `gpt-5.6-terra`; `gpt-5.6-sol`
+  and DeepSeek are forbidden for subagents. When a live named role is still
+  pinned to another model, spawn a `default` agent with an explicit allowed
+  model and inject the role instructions. If native spawn does not expose Luna,
+  use a fresh `codex exec -m gpt-5.6-luna` task-local session; never fall back
+  silently to Sol.
 - Spawn Codex subagents only for explicitly bounded work.
 - Prefer parallel subagents for read-heavy work.
 - Allow parallel writers only when file sets are disjoint.
+- In Phase 4, writers execute the approved Phase 3 Plan and Spec directly; do not add another planning-only writer turn.
 - Use `/agent` to inspect, steer, stop, or close subagent threads.
 - Record `BLOCKED_AGENT` evidence when a subagent stalls after inspection and one steering prompt.
 - Do not treat subagent completion as evidence. Verify locally before claiming completion.

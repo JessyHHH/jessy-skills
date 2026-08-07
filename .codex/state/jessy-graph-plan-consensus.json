@@ -1,0 +1,31 @@
+{
+  "planPath": ".codex/plans/2026-07-27_173111-jessy-graph-v1.md",
+  "iterations": 2,
+  "verdict": "APPROVE",
+  "userApproval": "2026-07-27",
+  "reviewAngles": [
+    "architecture",
+    "risk",
+    "feasibility"
+  ],
+  "closedFindings": [
+    "M1 now owns a one-task ProjectGraph and stable ProjectRun thread identity",
+    "MCP bearer authentication and allowed Host/Origin checks have implementation and negative-test ownership",
+    "A static read-only repository registry maps configured IDs beneath /sources",
+    "Deterministic fake-relay tests are separated from mandatory live-relay operational evidence",
+    "Codex and verification subprocess controls are explicit without claiming hostile-code isolation",
+    "Crash reconciliation records boot, process, argv, and attempt-owned result identity",
+    "Worker admission defaults to two, is hard-capped at five, and has resource-pressure evidence",
+    "M1 submission and final approval enforce request/contract and current-artifact idempotency contracts"
+  ],
+  "mechanicalValidation": {
+    "taskCount": 14,
+    "validatePlan": "PASS",
+    "schedule": "PASS",
+    "diffCheck": "PASS"
+  },
+  "remainingRisks": [
+    "V1 remains limited to trusted repositories because same-container workers are not a hard credential boundary",
+    "The mandatory live relay gate depends on the operator-provided relay and Docker secret"
+  ]
+}

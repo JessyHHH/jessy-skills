@@ -1,0 +1,76 @@
+{
+  "session": "jessy-graph-v2-supervision-20260728",
+  "status": "shared-understanding-reached",
+  "answered": 10,
+  "total": 10,
+  "source": ".codex/state/jessy-graph-v2-supervision-grill-seed.md",
+  "closedAt": "2026-07-28T08:32:28+08:00",
+  "scopeStatement": "Upgrade the unused host-native Jessy Graph V1 into a strict V2 execution supervisor that accepts main-session task DAGs, enforces role and skill boundaries, produces patches only from immutable Git bases, verifies and reviews in isolated contexts, and returns reviewed artifacts without writing to operator source repositories.",
+  "decisions": [
+    {
+      "id": "D1",
+      "topic": "contract-rollout",
+      "decision": "Accept only ProjectContractV2. Reject V1 submissions and provide no compatibility adapter."
+    },
+    {
+      "id": "D2",
+      "topic": "human-boundary",
+      "decision": "The user clarifies requirements in Phase 1 and approves the completed spec and plan once after Phase 3. The main Codex session then owns all dispatch, repair, review, test, retry, verification, and completion decisions without further human gates."
+    },
+    {
+      "id": "D3",
+      "topic": "skill-authority",
+      "decision": "The main session selects role-scoped required_skills. Jessy Graph validates the exact selection against worker-safe allowlists and repository quality profiles, never silently changes it, and workers cannot mutate it."
+    },
+    {
+      "id": "D4",
+      "topic": "skill-delivery",
+      "decision": "Create immutable run-scoped bundles containing complete selected SKILL.md files, explicitly selected required references, source paths, and SHA-256 hashes. Resume reuses the same bundle. project-workflow-codex is forbidden in every worker bundle."
+    },
+    {
+      "id": "D5",
+      "topic": "verification",
+      "decision": "Authoritative checks run only in a fresh verifier worktree with worker-inaccessible hashed policy, profile, and harness inputs. Worker tests are diagnostic and verifiers never repair."
+    },
+    {
+      "id": "D6",
+      "topic": "review",
+      "decision": "Every patch-producing task receives an independent read-only semantic review after verification. Blocking findings require a main-session bounded repair contract, followed by re-verification and re-review. A final combined-diff review runs after serial integration."
+    },
+    {
+      "id": "D7",
+      "topic": "model-routing",
+      "decision": "Every planner and every task or combined reviewer uses gpt-5.6-luna. Every implementer and repair worker uses deepseek-v4-flash. deepseek-v4-pro is forbidden for every V2 role. Complexity never changes model routing."
+    },
+    {
+      "id": "D8",
+      "topic": "evidence-authority",
+      "decision": "Worker status, summary, changed_files, and evidence are advisory. Mismatches fail closed. Only controlled Git, supervised process and policy records, immutable hashes, verifier command results, and structured reviewer findings are authoritative within their respective domains."
+    },
+    {
+      "id": "D9",
+      "topic": "database-rollout",
+      "decision": "Jessy Graph V1 has no user data. Stop the service, assert no nonterminal runs, discard the smoke runtime and checkpoint databases, initialize fresh strict-V2 databases, smoke-test, and restart. Keep only a short-lived rollback copy until verification passes. This supersedes D1's original terminal-history preservation wording."
+    },
+    {
+      "id": "D10",
+      "topic": "release-acceptance",
+      "decision": "No skipped gate and no PASS_WITH_RISK. Deterministic hostile-worker tests plus an authenticated live MCP canary on 0.0.0.0:8003 must pass; provider or relay unavailability leaves V2 unreleased."
+    }
+  ],
+  "mandatoryControls": [
+    "planner is read-only and implementation resumes its exact session",
+    "every Codex process receives --disable multi_agent",
+    "worker policy denies nested Codex, worker Git commits, and policy mutation",
+    "JSONL is streamed for audit and emergency termination but is not the authorization boundary",
+    "task worktree HEAD remains equal to its immutable base",
+    "patches and changed paths derive from a controlled temporary index against the immutable base",
+    "the main Codex session remains the semantic planning and orchestration authority",
+    "one service-global semaphore limits planner, implementer, repair, and reviewer Codex processes to five"
+  ],
+  "remainingAmbiguities": [],
+  "supersessions": [
+    "D7 supersedes the earlier simple/medium Flash and complex Pro routing.",
+    "D9 supersedes preservation of the single terminal V1 smoke record."
+  ]
+}

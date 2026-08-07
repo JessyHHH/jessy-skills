@@ -20,7 +20,10 @@ Use this for Codex Phase 7 and 8 after verification passes.
 
 2. Reconfirm freshness.
    - Run `git status --short`.
-   - If unverified changes exist after Phase 6, return to `verifying-completion`.
+   - Graphify outputs recorded by Phase 6 are expected generated changes and do
+     not by themselves invalidate verification.
+   - If any other unverified changes exist after Phase 6, return to
+     `verifying-completion`.
 
 3. Retrospective.
    - Record lessons, missed skills, repeated user corrections, and verification issues in `.codex/state/retrospective.md` when useful.

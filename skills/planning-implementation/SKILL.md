@@ -28,17 +28,21 @@ Use this for Codex Phase 2 and Phase 3.
 
 4. Validate task schema.
    - Unique `id`.
-   - Self-contained prompt.
-   - Exact `files`.
+   - One atomic outcome and a self-contained prompt.
+   - Exact writable `files` and known `readFiles`.
+   - Explicit `resources` and acyclic `dependsOn`.
    - `complexity`.
-   - Mutating tasks specify patch strategy.
-   - Expected evidence or a verification explanation.
+   - Writer subagents use `harness-managed`; `no-isolation` is main-session-only or a recorded escape hatch.
+   - At least one inspected executable `acceptanceCommands` entry.
+   - Non-empty expected and forbidden evidence.
+   - Run `python3 skills/implementing-changes/scripts/phase4_guard.py validate-plan <plan>` and `schedule <plan>`.
 
 5. Run consensus review.
    - Use Codex subagents for independent architecture, risk, and feasibility review when the plan is non-trivial.
    - Wait for all reviewers, then synthesize.
    - Reject if scope contradicts `approvedOutOfScope`.
    - Reject if unresolved critical ambiguities remain.
+   - Reject unsafe concurrency: file-only disjointness is insufficient when dependencies or shared resources overlap.
 
 6. Act on verdict.
    - `APPROVE`: ask user to approve the plan.

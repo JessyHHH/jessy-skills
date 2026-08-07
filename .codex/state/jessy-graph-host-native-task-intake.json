@@ -1,0 +1,35 @@
+{
+  "requestSummary": "Revise jessy-graph from a Dockerized runtime to a host-native local LangGraph and MCP service. Codex workers execute directly on the host and reuse the host Codex configuration and authentication under /root/.codex.",
+  "repoRoot": "/root/hzx_mixlinker/jessy-skills",
+  "targetProjectRoot": "/root/hzx_mixlinker/jessy-graph",
+  "approvedInScope": [
+    "Replace the active Docker and Compose runtime with a host-native service",
+    "Keep the bearer-authenticated Streamable HTTP MCP interface for localhost and trusted LAN clients on port 8003",
+    "Reuse host Codex CLI, config.toml, auth.json, custom provider, and session storage without copying credentials into the project",
+    "Preserve the approved task DAG, durable LangGraph execution, internal mirrors and worktrees, deterministic validation, and immutable artifacts",
+    "Allow up to five conflict-free Codex workers while serializing integration and high-pressure verification",
+    "Revise the architecture specification, implementation plan, tests, and operational setup to match the host-native runtime"
+  ],
+  "approvedOutOfScope": [
+    "Public Internet or multi-user access",
+    "Running unknown or hostile repositories",
+    "Automatic merge into host repositories, push, deployment, migration, or production changes",
+    "Copying or logging API keys, bearer tokens, or auth.json contents",
+    "Modifying unrelated .idea content"
+  ],
+  "sourceEvidence": [
+    "User explicitly replaced the container strategy with host-native orchestration using the same host Codex configuration",
+    "User explicitly requested restarting grill-me and the Codex project workflow",
+    "User explicitly requested durable Mem0 recall across context compaction",
+    "Previous production diagnostics proved host Codex and the custom Responses relay work while container execution is blocked by relay and sandbox incompatibilities"
+  ],
+  "constraints": [
+    "Do not use --strict-config because the working host config contains an unknown field",
+    "Do not use --output-schema because the relay rejects it; validate --output-last-message locally with CodexResultV1",
+    "Bind MCP to 0.0.0.0:8003 but allow only authenticated localhost and trusted LAN clients through exact Host/Origin policy",
+    "Do not expose credential contents through logs, state, artifacts, MCP responses, or repository files",
+    "Do not let worker Codex recursively invoke the Jessy Graph MCP orchestrator",
+    "Do not modify host source worktrees; execute in internal worktrees from immutable Git bases",
+    "Delete only resolved Jessy Graph Docker code, container, and volumes during implementation; preserve unrelated user changes"
+  ]
+}

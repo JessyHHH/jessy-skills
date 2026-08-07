@@ -1,0 +1,18 @@
+{
+  "workflow": "project-workflow-codex",
+  "project": "jessy-graph",
+  "targetRoot": "/root/hzx_mixlinker/jessy-graph",
+  "planPath": ".codex/plans/2026-07-27_173111-jessy-graph-v1.md",
+  "executionMode": "main-session serial bootstrap and implementation",
+  "planApproved": true,
+  "scopeGate": "PASS",
+  "baseCommit": "4eba928",
+  "headCommit": "5e59c61",
+  "finalRepairCommit": "5e59c61",
+  "finalRepair": "Re-check task file ownership after acceptance commands before patch export.",
+  "changedFiles": [
+    "src/jessy_graph/application/commands.py",
+    "tests/e2e/test_v1_security.py"
+  ],
+  "status": "PASS"
+}

@@ -26,6 +26,18 @@ Use Context7 for library, framework, SDK, API, CLI tool, and cloud-service docum
 Before claiming Firecrawl is unavailable, run `command -v firecrawl`. If the CLI is unavailable or fails, use another available search/browser tool and state the fallback. Keep source evidence explicit, distinguish facts from inference, and do not fabricate inaccessible results.
 <!-- firecrawl -->
 
+<!-- codex-subagent-models:start -->
+# Codex Subagent Models
+
+- Use only `gpt-5.6-luna` or `gpt-5.6-terra` for Codex subagents.
+- Use Luna for planning, implementation, exploration, review, and verification.
+- Use Terra for bounded tests, build repair, and diagnosis.
+- Never use `gpt-5.6-sol` or DeepSeek for a subagent. The main-session model is
+  configured independently and is not changed by this rule.
+- If native subagent spawning does not expose Luna, use a fresh task-local
+  `codex exec -m gpt-5.6-luna` session; do not silently fall back to Sol.
+<!-- codex-subagent-models:end -->
+
 <!-- go-resource-safety -->
 # Go Build/Test Resource Safety
 

@@ -1,0 +1,60 @@
+{
+  "workflow": "project-workflow-codex",
+  "project": "jessy-graph",
+  "targetRoot": "/root/hzx_mixlinker/jessy-graph",
+  "verifiedCommit": "5e59c61",
+  "commands": [
+    {
+      "command": "uv lock --check",
+      "result": "PASS"
+    },
+    {
+      "command": "uv run pytest -q",
+      "result": "PASS: 76 passed in 7.51s"
+    },
+    {
+      "command": "docker compose config --quiet",
+      "result": "PASS"
+    },
+    {
+      "command": "docker build -t jessy-graph:local .",
+      "result": "PASS"
+    },
+    {
+      "command": "git status --short && git diff --stat && git diff --check",
+      "result": "PASS: clean"
+    }
+  ],
+  "runtimeEvidence": {
+    "container": "jessy-graph-jessy-graph-1",
+    "health": "healthy",
+    "imageDigest": "sha256:63f1cdc0ac2d0d18421fd16c1c547f5c62b63518c2ca7c034a1fb82bfc3b336e",
+    "healthProbeTransportCreations": 0,
+    "gitConfigMode": "0600",
+    "codexAuthMode": "0600",
+    "codexConfigMode": "0600",
+    "exactSafeDirectories": 4,
+    "wildcardSafeDirectory": false
+  },
+  "liveMcpEvidence": {
+    "requestId": "live-relay-20260727-194010-fb1fa933",
+    "projectRunId": "run-bff81924-bd03-43ee-a885-ec504e5724af",
+    "status": "failed",
+    "attempts": 3,
+    "artifactHashes": [
+      "9a6b0e08553646f1c3980907acd30d3d3cbbf05a9c00f5d68a91d3c39e9e50bc",
+      "b77b329ef696f8a71967d88970d54c2f6ff7e6932ecc35c4b251e49ec2ca3e62",
+      "a09360da9447348672b9360a5280e0f6b1e690c5796ab60c03d4338c31532ae0"
+    ],
+    "artifactRedaction": "PASS",
+    "externalFailure": "502 Bad Gateway: Upstream request failed",
+    "statusAfterContainerRestart": "failed",
+    "artifactCountAfterContainerRestart": 3
+  },
+  "hostFixtureEvidence": {
+    "head": "ab369b2c401b98318f1c2ce30f4d1eb53a44758a",
+    "statusBytes": 0,
+    "indexSha256": "8a99f56bd3599f16165eb30aa3c8c626923a7d63855907a5b97b98b5c6cdea2b"
+  },
+  "verdict": "PASS_WITH_RISK"
+}

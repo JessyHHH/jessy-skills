@@ -1,0 +1,45 @@
+{
+  "requestSummary": "Design and then implement a new Dockerized LangGraph orchestration project named jessy-graph at /root/hzx_mixlinker/jessy-graph. The host Codex client will use a loopback-only Streamable HTTP MCP service; the container will run the MCP server, LangGraph runtime, Codex CLI workers, Git, and verification tooling.",
+  "repoRoot": "/root/hzx_mixlinker/jessy-skills",
+  "targetProjectRoot": "/root/hzx_mixlinker/jessy-graph",
+  "approvedInScope": [
+    "Keep jessy-skills as the policy, prompt, role, and versioned task-contract layer",
+    "Accept a main-session-approved project task DAG through MCP",
+    "Use a ProjectGraph and reusable TaskExecutionSubgraph",
+    "Persist runtime entities and LangGraph checkpoints in separate SQLite databases",
+    "Run a self-contained Docker image with loopback-only Streamable HTTP MCP exposure",
+    "Provision a container-specific CODEX_HOME with relay-specific config.toml and auth.json without mounting the host /root/.codex",
+    "Run up to five conflict-free Codex workers with serial integration",
+    "Support built-in Go, Python, and Node.js verification command policies",
+    "Produce immutable diff, event, log, test, and patch artifacts"
+  ],
+  "approvedOutOfScope": [
+    "Remote or multi-user access",
+    "Authentication identities, tenants, or distributed scheduling",
+    "Running untrusted third-party repositories",
+    "Automatic merge, push, pull request creation, deployment, migration, or production changes",
+    "Letting jessy-graph redesign or expand the submitted task DAG",
+    "Arbitrary shell strings, pipelines, or redirection in verification commands",
+    "A user-facing orchestration CLI"
+  ],
+  "sourceEvidence": [
+    "User required LangGraph and the new /root/hzx_mixlinker/jessy-graph project",
+    "User confirmed local single-user operation",
+    "User selected direct MCP rather than a user-facing CLI",
+    "User required the final V1 form to be a Docker image/container connected to host Codex through MCP",
+    "User accepted SQLite dual stores, a dedicated integration worktree, M1/M2 delivery, built-in language policies, bounded retries, and main-session-owned planning",
+    "User set the global Codex worker concurrency limit to five"
+  ],
+  "constraints": [
+    "The host source repository must not be modified by jessy-graph",
+    "LangGraph checkpoints are recovery data, not the canonical application query model",
+    "Git and deterministic validators are evidence authorities; Codex self-reports are not",
+    "Every external side effect is idempotent or reconciled before replay",
+    "MCP binds to the container network internally but Docker publishes it only on host 127.0.0.1",
+    "No Docker socket is mounted into the container",
+    "Codex auth.json is supplied from a Docker secret with mode 0600 and never committed or included in image layers",
+    "The container-specific config.toml must load the custom Responses provider, so worker execution must not use --ignore-user-config",
+    "Container startup must verify the configured relay is reachable and must not silently fall back to direct OpenAI routing",
+    "High-pressure whole-repository verification commands remain serial"
+  ]
+}

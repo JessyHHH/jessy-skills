@@ -66,15 +66,19 @@ Codex supports subagent workflows with custom agents and `/agent` thread inspect
 - The main Codex session owns routing, state, integration, and final claims.
 - Subagents own bounded exploration, implementation, review, test, or verification work.
 - The main session may inspect `/agent`, steer active subagents, stop stuck subagents, and close completed threads.
-- Parallel write work is allowed only for disjoint file sets.
+- Writer subagents first return a plan and wait for explicit execution approval.
+- Each writer uses a dedicated Git worktree; the main session checks its actual diff against an exact file allowlist.
+- Writers default to serial execution. At most two may run concurrently when dependencies, read/write sets, shared resources, and worktrees are independent.
+- Integration remains serial even when implementation ran concurrently.
 - Fresh local verification is required before completion claims.
 
 Repo-managed agent templates:
 
 | Agent | Purpose | Model | Reasoning |
 | --- | --- | --- | --- |
-| `executor`, `worker`, `test-engineer`, `build-fixer`, `debugger` | execution, tests, repair, debugging | `deepseek-v4-flash` | `max` |
-| `explorer`, `code-reviewer`, `verifier` | read-only exploration, review, and completion verification | `deepseek-v4-pro` | `max` |
+| `executor`, `worker` | bounded implementation and repair | `gpt-5.6-luna` | `max` |
+| `explorer`, `code-reviewer`, `verifier` | exploration, review, and completion verification | `gpt-5.6-luna` | `max` |
+| `test-engineer`, `build-fixer`, `debugger` | bounded mechanical tests, build repair, and diagnosis | `gpt-5.6-terra` | `max` |
 
 The main Codex model is configured outside this repo, typically in `~/.codex/config.toml`.
 

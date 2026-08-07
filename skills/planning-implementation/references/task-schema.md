@@ -1,113 +1,114 @@
-# Task Schema
+# Phase 4 Task Schema
 
-Each task in the `json:tasks` block of an implementation plan MUST include all required fields below. The schema is designed for Phase 4 Codex subagent execution. Subagents implementing tasks start with bounded context and rely on the task object plus injected file/context snippets for instructions.
+Every object in a plan's `json:tasks` block defines one atomic deliverable. Phase 4 validates the block with `skills/implementing-changes/scripts/phase4_guard.py` before dispatch.
 
-## Required Fields
+## Required Shape
 
 ```json
 {
   "id": "T1-short-name",
-  "prompt": "Self-contained implementation instruction for a subagent starting with blank context.",
-  "files": ["exact/path/to/file.go", "exact/path/to/another.go"],
+  "prompt": "Self-contained atomic outcome for task-local context.",
+  "files": ["exact/allowed/write.go"],
+  "readFiles": ["exact/input/interface.go"],
+  "resources": ["db:test-users"],
+  "dependsOn": [],
   "complexity": "simple | medium | complex",
   "mutatesFiles": true,
   "contextRefs": [],
   "intakeRefs": [],
   "grillRefs": [],
+  "acceptanceCommands": ["go test ./internal/user"],
   "expectedEvidence": [],
   "forbiddenEvidence": [],
-  "patchBackStrategy": "no-isolation | harness-managed | external-report",
-  "fileContents": [],
-  "grillDecisions": [],
-  "planSections": ""
+  "patchBackStrategy": "harness-managed"
 }
 ```
 
-## Field Descriptions
+## Boundary Fields
 
-### `id` (string, required)
+### `id`
 
-Unique task identifier. Format: `T<number>-<short-name>`. Example: `T1-create-store-interface`, `T2-implement-grpc-handler`.
+Use a unique `T<number>-<short-name>` identifier.
 
-### `prompt` (string, required)
+### `prompt`
 
-Self-contained implementation instruction. The subagent starts with blank context -- this prompt is its sole source of instruction. Must include:
-- What to implement
-- Where to put it
-- Any constraints or conventions to follow
-- Expected behavior
+Describe one independently reviewable outcome, its required behavior, and relevant conventions. Do not combine unrelated deliverables or refer to missing conversation context.
 
-### `files` (string[], required)
+### `files`
 
-Exact file paths this task creates or modifies. Relative to the repository root. Used by the master agent to pre-read file contents for enrichment, and by the Quick Gate to verify expected changes.
+List every file the task may create, modify, rename, or delete. Paths are exact and repository-relative; globs and directory-wide ownership are invalid. This array is the mechanical write allowlist. A writer must stop with `BOUNDARY_BLOCKED` before touching anything else.
 
-### `complexity` (string, required)
+### `readFiles`
 
-Task complexity level. Drives subagent selection and review gating:
-- `simple`: usually handled by main Codex or one executor; skips spec review.
-- `medium`: use one bounded executor or reviewer as needed; runs spec review.
-- `complex`: may use parallel read-only reviewers or disjoint writer subagents; runs full review.
+List known repository files whose contents affect the task even when they are not writable. Read/write intersections prevent unsafe concurrency.
 
-### `mutatesFiles` (boolean, required)
+### `resources`
 
-Whether this task writes to the filesystem. Controls isolation strategy selection. Set `false` for read-only analysis or verification tasks.
+List shared non-file state such as `db:test-users`, `service:docker-compose`, `port:8080`, `cache:go-build`, or `generated:go.sum`. Tasks sharing a resource run serially. Use `unknown` when resource ownership cannot be bounded; it conflicts with every task.
 
-### `contextRefs` (string[], optional)
+### `dependsOn`
 
-References to Phase 0/0.3 context artifacts this task depends on. Used as fallback references when `fileContents` is not provided by the master agent during Phase 4 enrichment. Example: `["contextSummary.confirmedFacts", "knowledgePath"]`.
+List task IDs whose accepted integration must exist before this task starts. Dependencies must exist, cannot reference the task itself, and must form an acyclic graph.
 
-### `intakeRefs` (string[], optional)
+## Evidence Fields
 
-References to Phase 0 Task Intake Snapshot entries relevant to this task. Example: `["taskIntake.approvedInScope", "taskIntake.constraints"]`.
+### `acceptanceCommands`
 
-### `grillRefs` (string[], optional)
+Provide at least one concrete command that can be inspected and executed inside the task worktree. Commands are evidence contracts, not automatically trusted shell input; the main session reviews them before execution.
 
-References to Phase 1 Ambiguity Register or Assumption Ledger entries relevant to this task. Used as fallback references when `grillDecisions` is not provided. Example: `["A1-ConfigRouting", "S1-DatabaseSchema"]`. The main Codex session resolves these against `.codex/state/grill-evidence.json` during Phase 4 enrichment.
+### `expectedEvidence`
 
-### `expectedEvidence` (string[], required)
+List observable completion facts, such as a named test passing or a new file existing. Do not use subjective phrases such as "looks correct".
 
-Specific evidence expected upon completion. Examples:
-- `"go build ./... exits 0"`
-- `"TestCreateUser passes"`
-- `"golangci-lint run ./... shows 0 new warnings"`
-- `"new file internal/store/user.go exists"`
+### `forbiddenEvidence`
 
-### `forbiddenEvidence` (string[], required)
+List explicit non-goals and prohibited results, including forbidden dependencies, APIs, files, migrations, or external state changes.
 
-Evidence that MUST NOT appear after implementation. Examples:
-- `"no new TODO comments in production code"`
-- `"no import cycles"`
-- `"no os.Getenv in library code"`
+## Execution Fields
 
-### `patchBackStrategy` (string, required for mutating tasks)
+### `complexity`
 
-How changes flow back to the master tree:
+- `simple`: narrow local behavior.
+- `medium`: multiple related edits or meaningful compatibility concerns.
+- `complex`: cross-module contracts, migrations, or high-risk behavior.
 
-- `no-isolation`: Agent works directly in the current tree. Use for simple, low-risk tasks. Changes are immediately visible.
-- `harness-managed`: Worktree isolation with harness-managed lifecycle. Phase 4.5 master agent reviews worktree diffs and merges back approved changes.
-- `external-report`: Manual integration. Task marked `DONE_WITH_CONCERNS` and requires human intervention.
+Complexity affects review depth, not task boundaries.
 
-### `fileContents` (object[], optional, filled by master agent)
+### `mutatesFiles`
 
-Full file contents for embedding in the sub-agent prompt. The master agent fills this before Phase 4 by reading each file in `task.files`. Each entry: `{file: "path/to/file.go", content: "<full file content>"}`.
+Set `true` for writer tasks. Read-only tasks must have an empty `files` array.
 
-### `grillDecisions` (object[], optional, filled by master agent)
+### `patchBackStrategy`
 
-Resolved grill decisions by key. The main Codex session fills this from `.codex/state/grill-evidence.json` before Phase 4. Each entry: `{key: "A1-ConfigRouting", decision: "Two MySQL configs: admin stays in yunui_mixyun..."}`.
+- `harness-managed`: required for writer subagents. Use an isolated linked worktree and main-session integration.
+- `no-isolation`: allowed only for main-session implementation or a recorded escape hatch. Never run concurrently.
+- `external-report`: no automatic integration; requires manual handling.
 
-Resolution logic: match `grillRefs` keys against `ambiguityRegister[].id` or `assumptionLedger[].id` in grill-evidence.json. Extract the `decision` field (for register entries) or `assumption`+`evidence`+`confidence` fields (for ledger entries).
+## Context References
 
-### `planSections` (string, optional, filled by master agent)
+`contextRefs`, `intakeRefs`, and `grillRefs` identify task-local facts that the main session resolves before dispatch. Do not pass the entire parent conversation. The main session may also inject fresh `fileContents`, resolved `grillDecisions`, and relevant `planSections`; these are enrichment outputs, not canonical plan requirements.
 
-Relevant plan sections extracted from the implementation plan. The master agent extracts approach steps and verification sections relevant to this task's scope before Phase 4. Injected into the sub-agent prompt under a dedicated heading.
+## Concurrency Rule
 
-## Validation Rules
+Tasks may share one execution wave only when all conditions hold:
 
-1. Every task MUST have a unique `id`.
-2. Every `id` MUST match the pattern `T<number>-<short-name>`.
-3. Every `prompt` MUST be self-contained (no "see above" or "as discussed").
-4. Every mutating task (`mutatesFiles: true`) MUST have a `patchBackStrategy`.
-5. Every task MUST have at least one `expectedEvidence` entry or a documented verification approach.
-6. `files` paths MUST be exact (relative to repo root, no globs).
-7. `complexity` MUST be one of: `simple`, `medium`, `complex`.
-8. `patchBackStrategy` MUST be one of: `no-isolation`, `harness-managed`, `external-report`.
+```text
+W1 intersects (R2 union W2) = empty
+W2 intersects (R1 union W1) = empty
+resources do not overlap
+neither task depends on the other
+both writers use separate harness-managed worktrees
+```
+
+Default to one writer. Cap writer concurrency at two. Run integration serially.
+
+## Validation
+
+Run:
+
+```bash
+python3 skills/implementing-changes/scripts/phase4_guard.py validate-plan <plan>
+python3 skills/implementing-changes/scripts/phase4_guard.py schedule <plan>
+```
+
+Do not approve a plan that fails either command.

@@ -1,6 +1,6 @@
 name = "verifier"
 description = "Validate completion claims with direct evidence."
-model = "deepseek-v4-pro"
+model = "gpt-5.6-luna"
 model_reasoning_effort = "max"
 developer_instructions = """
 You are Verifier. Prove or disprove completion using observable evidence.

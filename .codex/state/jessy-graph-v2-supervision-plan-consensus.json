@@ -1,0 +1,76 @@
+{
+  "specPath": ".codex/specs/2026-07-28-jessy-graph-v2-supervision-design.md",
+  "specSha256": "ba0021a4360c14f97b330dc0f94f83714799b693af4c8d0fe4afdb35e21e6672",
+  "planPath": ".codex/plans/2026-07-28_083907-jessy-graph-v2-supervision.md",
+  "planSha256": "4a40f149b00375d7264b12bbae3e8484ce678ce6212b2b6efd29f664a069dcc4",
+  "iterations": 3,
+  "verdict": "APPROVE",
+  "userApproval": {
+    "status": "pending",
+    "scope": "one combined approval for the complete V2 spec and plan"
+  },
+  "reviews": {
+    "architecture": {
+      "model": "gpt-5.6-luna",
+      "sessionId": "019fa663-b4c2-7de2-96a2-8786003f17fb",
+      "verdict": "APPROVE",
+      "evidence": [
+        "Runtime SQLite is canonical; checkpoints are reconstructable cursors and every node reconciles runtime first.",
+        "Fenced intents plus fsynced wrapper launch receipts close duplicate-launch and stale-reconciler windows.",
+        "Task/project repair materialization, supersession epochs, replay-prefix hashes, and fresh verifier tree hashes are deterministic.",
+        "Targeted closure review found no unresolved major architecture gap."
+      ]
+    },
+    "risk": {
+      "model": "gpt-5.6-luna",
+      "sessionId": "019fa65c-7f63-71b2-a46b-b0454ed15c37",
+      "verdict": "APPROVE",
+      "evidence": [
+        "The same-UID credential limitation is explicit and no credential-isolation claim remains.",
+        "Cold rollout and rollback are bound by absolute allowlists, exact smoke data, three-domain CAS, an exclusive lock, zero live children/DB handles, prepared images, and a resumable fsynced journal.",
+        "No unresolved blocking or major safety/rollback gap was found."
+      ]
+    },
+    "feasibility": {
+      "model": "gpt-5.6-luna",
+      "sessionId": "019fa65c-7f60-76a2-bf7a-b1e8b8586fb8",
+      "verdict": "APPROVE",
+      "evidence": [
+        "V2 is staged beside V1 until T7; all current V1 consumers are owned before the cutover deletion gate.",
+        "RunManifest, schema parity, capability, launch fencing, repair replay, multi-run scheduling, role-manifest chain, cutover inventory, hostile-worker, and rollout CAS tests have explicit owners.",
+        "The validated schedule contains ten tasks and only the disjoint T3/T4 writer wave is parallel."
+      ]
+    }
+  },
+  "resolvedFindings": [
+    "Declared runtime.db the sole canonical state and checkpoints.db a disposable cursor cache with intent-first crash ordering.",
+    "Staged V2 contracts beside V1 and moved final V1 consumer/schema/migration deletion to T7.",
+    "Defined TaskRepairContractV2 and ProjectRepairContractV2 with explicit materialization, invalidation, closure, and replay semantics.",
+    "Added fenced wrapper launch receipts, exact-session crash rules, and stale-reconciler rejection.",
+    "Required fresh detached verifier, task reviewer, and combined reviewer worktrees with immutable input hashes.",
+    "Separated per-role skill bundle hashes under one aggregate immutable RunManifestV2.",
+    "Reframed host authentication as a trusted-host limitation rather than worker credential isolation.",
+    "Added complete code/SQLite/service rollout CAS, exact sidecar handling, rollback lock, prepared images, and resumable journal.",
+    "Defined durable multi-run FIFO scheduling, exact file/resource conflicts, cancellation, lease recovery, and the global five-child cap.",
+    "Added valid/invalid JSON Schema parity and canonical round-trip requirements."
+  ],
+  "mechanicalValidation": {
+    "taskCount": 10,
+    "validatePlan": "PASS",
+    "schedule": "PASS",
+    "onlyParallelWriterWave": [
+      "T3-role-codex-supervisor",
+      "T4-git-verifier-review-inputs"
+    ],
+    "t10MissingPriorWritePaths": 0,
+    "diffCheck": "PASS",
+    "targetHead": "5e59c6144b820ab4a5e75858743c5369fa09507b",
+    "targetTrackedDiffSha256": "1b13316daabc7e56641f89e7b1665ba576b3ef162b62fffe73d07c36658fe066"
+  },
+  "criticalAmbiguities": [],
+  "scopeContradictions": [],
+  "remainingAcceptedLimitations": [
+    "Host-native same-UID workers can read authentication required for provider access; V2 provides deterministic configuration, non-recording, redaction, and leak detection, not OS credential isolation.",
+    "The hard live gate depends on the configured relay and required models being available; unavailability leaves V2 unreleased."
+  ]
+}

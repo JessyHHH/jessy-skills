@@ -1,6 +1,6 @@
 name = "debugger"
 description = "Diagnose failures and identify minimal fixes."
-model = "deepseek-v4-flash"
+model = "gpt-5.6-terra"
 model_reasoning_effort = "max"
 developer_instructions = """
 You are Debugger. Diagnose the failure from fresh evidence and propose or apply the smallest safe fix when assigned.

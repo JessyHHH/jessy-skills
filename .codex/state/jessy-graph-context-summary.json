@@ -1,0 +1,59 @@
+{
+  "rootContextPath": "CONTEXT.md",
+  "rootContextStatus": "present",
+  "instructionsPath": "AGENTS.md",
+  "instructionsStatus": "present",
+  "knowledgePath": ".codex/context/knowledge.md",
+  "knowledgeStatus": "present",
+  "projectType": "new-python-langgraph-mcp-runtime",
+  "sourceRepoRoot": "/root/hzx_mixlinker/jessy-skills",
+  "targetProjectRoot": "/root/hzx_mixlinker/jessy-graph",
+  "baseCommit": "dc1fcd60662513b708db75af6e9cf19830842df2",
+  "targetPathStatus": "available",
+  "tooling": {
+    "docker": "29.6.2",
+    "dockerCompose": "5.3.1",
+    "python": "3.12.3",
+    "uv": "0.11.31",
+    "node": "24.18.0",
+    "npm": "12.0.1",
+    "go": "1.22.2",
+    "codex": "0.145.0"
+  },
+  "resources": {
+    "cpuCount": 12,
+    "memoryTotalGiB": 23,
+    "memoryAvailableGiB": 16,
+    "swapGiB": 0,
+    "workerHardLimit": 5,
+    "resourceWarning": "Five workers are feasible as a hard ceiling, but high-pressure verification must be separately serialized because the host has no swap."
+  },
+  "documentationEvidence": [
+    "LangGraph current documentation confirms checkpointer plus stable thread_id for interrupt/resume and durable subgraphs",
+    "MCP Python SDK v1.12.4 supports Streamable HTTP, configurable host/port/path, lifespan, stateful or stateless sessions, JSON responses, cancellation, and localhost DNS-rebinding protection",
+    "Codex CLI 0.145.0 locally confirms exec JSONL, output schema, resume by session ID, MCP Streamable HTTP registration, and workspace-write sandbox options"
+  ],
+  "codexRelayProfile": {
+    "model": "gpt-5.6-sol",
+    "modelProvider": "custom",
+    "wireApi": "responses",
+    "requiresOpenAIAuth": true,
+    "hostBaseUrl": "http://192.168.88.14:8080",
+    "authMode": "API key stored in auth.json",
+    "secretValuesInspected": false,
+    "containerRequirement": "Generate an independent config.toml and auth.json under container CODEX_HOME; verify a container-reachable relay endpoint before execution."
+  },
+  "loadedSkills": [
+    "project-workflow-codex",
+    "karpathy-guidelines",
+    "designing-solutions",
+    "grill-me"
+  ],
+  "contextWarnings": [
+    "The current jessy-skills worktree contains unrelated uncommitted workflow changes that must be preserved",
+    "The original Chinese orchestration document is an untracked draft and is treated as source material, not an implementation specification",
+    "Container egress is required for Codex model access even though model-generated verification commands remain network-restricted",
+    "The host relay URL may not be directly reachable from Docker; the known host relay proxy is a candidate but must be verified from inside the container",
+    "The Dockerized worker decision supersedes the earlier host-worker grill answer"
+  ]
+}

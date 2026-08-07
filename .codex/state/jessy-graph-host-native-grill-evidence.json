@@ -1,0 +1,120 @@
+{
+  "session": "jessy-graph-host-native-20260727",
+  "status": "closed",
+  "sharedUnderstandingReached": true,
+  "ambiguityRegister": [
+    {
+      "id": "A1",
+      "question": "Which host identity runs Jessy Graph?",
+      "status": "answered",
+      "decision": "Run a root-owned systemd service so workers directly reuse /root/.codex and the host Codex CLI."
+    },
+    {
+      "id": "A2",
+      "question": "Which MCP servers are visible to Codex workers?",
+      "status": "answered",
+      "decision": "Workers reuse host config and auth but receive a per-process mcp_servers={} override; the main Codex session retains its MCP configuration."
+    },
+    {
+      "id": "A3",
+      "question": "What is the operator interface and process lifecycle?",
+      "status": "answered",
+      "decision": "Keep Streamable HTTP MCP as the only operator interface and run the supervisor persistently through systemd; do not add a user-facing Jessy Graph CLI."
+    },
+    {
+      "id": "A4",
+      "question": "How is MCP exposed?",
+      "status": "answered",
+      "decision": "Bind 0.0.0.0:8003. Local clients use 127.0.0.1 and LAN clients use 192.168.0.126. Retain bearer authentication and exact Host/Origin allowlists."
+    },
+    {
+      "id": "A5",
+      "question": "Where is host-native runtime data stored?",
+      "status": "answered",
+      "decision": "Use /root/hzx_mixlinker/jessy-graph/data for databases, artifacts, attempts, mirrors, and worktrees; keep it root-only and Git-ignored."
+    },
+    {
+      "id": "A6",
+      "question": "What happens to the Docker runtime and its state?",
+      "status": "answered",
+      "decision": "Do not migrate Docker state. Remove Docker/Compose code and tests, then delete the obsolete container and volumes during implementation."
+    },
+    {
+      "id": "A7",
+      "question": "How are Python dependencies isolated?",
+      "status": "answered",
+      "decision": "Use uv, the committed lockfile, and a project .venv. Codex, Git, Go, and Node remain controlled host dependencies."
+    },
+    {
+      "id": "A8",
+      "question": "Which Codex invocation and environment are authoritative?",
+      "status": "answered",
+      "decision": "Use the absolute host Codex binary, CODEX_HOME=/root/.codex, approval never, workspace-write, internal worktree cwd, mcp_servers={}, JSONL, and output-last-message. Forbid strict-config, output-schema, ignore-user-config, danger-full-access, and sandbox bypass."
+    },
+    {
+      "id": "A9",
+      "question": "What proves host-native completion?",
+      "status": "answered",
+      "decision": "Require systemd health, local and LAN MCP authentication, a real host-relay task through approval, restart recovery, five-worker pressure, serial integration, unchanged host source, credential redaction, Docker removal, full tests, diff-check, and real MCP E2E."
+    },
+    {
+      "id": "A10",
+      "question": "Where are service configuration and secrets stored?",
+      "status": "answered",
+      "decision": "Keep .env, data/repositories.json, and systemd/jessy-graph.service in the project; .env and the registry are root-only and ignored. systemctl link creates only the required unit symlink. Codex credentials remain only in /root/.codex/auth.json."
+    }
+  ],
+  "assumptionLedger": [
+    {
+      "id": "S1",
+      "assumption": "All repositories and LAN clients are trusted by the single operator.",
+      "evidence": "User retained the single-user model and approved plain HTTP on all host IPv4 interfaces with bearer authentication.",
+      "confidence": "high",
+      "correctionPath": "Add TLS, identity authorization, a dedicated service user, and stronger worker isolation before accepting untrusted clients or repositories."
+    },
+    {
+      "id": "S2",
+      "assumption": "The host Codex configuration remains compatible with normal non-strict loading.",
+      "evidence": "Host Codex 0.145.0 and the custom Responses relay were verified; strict loading fails on an unknown field while normal execution succeeds.",
+      "confidence": "high",
+      "correctionPath": "Fail startup health checks and update the host configuration or pinned Codex path before admitting work."
+    },
+    {
+      "id": "S3",
+      "assumption": "Five workers fit host resources when heavy checks and integration serialize.",
+      "evidence": "The host has 12 CPUs and about 23 GiB RAM with no swap; five is already enforced as a hard maximum.",
+      "confidence": "medium",
+      "correctionPath": "Lower JESSY_GRAPH_WORKER_LIMIT without changing persisted contracts."
+    },
+    {
+      "id": "S4",
+      "assumption": "Project-local data is acceptable despite sharing a parent directory with source code.",
+      "evidence": "User explicitly chose the project data directory; /data is already ignored by the repository.",
+      "confidence": "high",
+      "correctionPath": "Move JESSY_GRAPH_DATA_DIR and preserve the same layout if repository tooling or storage pressure makes co-location unsafe."
+    }
+  ],
+  "requirementEcho": [
+    "Replace the Docker runtime with a host-native root systemd service",
+    "Retain authenticated Streamable HTTP MCP on 0.0.0.0:8003 for local and LAN use",
+    "Reuse host Codex configuration and authentication while suppressing all worker MCP tools",
+    "Use uv for Python dependency isolation and project-local data/configuration",
+    "Preserve durable DAG execution, five-worker scheduling, internal worktrees, deterministic evidence, and serial integration",
+    "Delete the Docker implementation and state rather than migrating it"
+  ],
+  "successCriteria": [
+    "A real authenticated MCP project run invokes host Codex through the custom relay and reaches approved completion",
+    "A restart during approval resumes without duplicate external effects",
+    "Five conflict-free workers run concurrently while conflicts, heavy checks, and integration serialize",
+    "The operator source repository remains unchanged",
+    "No credential or authentication content appears in logs, databases, artifacts, or MCP responses",
+    "No Docker runtime code, container, or volume remains"
+  ],
+  "checklistResults": {
+    "ambiguityRegisterComplete": true,
+    "assumptionLedgerComplete": true,
+    "successCriteriaObservable": true,
+    "constraintsDocumented": true,
+    "selfGrade": "PASS"
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "rootContextPath": "CONTEXT.md",
+  "instructionsPath": "AGENTS.md",
+  "knowledgePath": ".codex/context/knowledge.md",
+  "projectType": "existing-host-native-python-langgraph-mcp-orchestrator-v2-hardening",
+  "sourceRepoRoot": "/root/hzx_mixlinker/jessy-skills",
+  "targetProjectRoot": "/root/hzx_mixlinker/jessy-graph",
+  "targetBaseCommit": "5e59c6144b820ab4a5e75858743c5369fa09507b",
+  "targetWorktreeStatus": "contains the approved but uncommitted host-native pivot and unrelated untracked .idea content",
+  "currentRuntime": {
+    "service": "active root systemd service",
+    "mcpBind": "0.0.0.0:8003",
+    "codexVersion": "0.145.0",
+    "roleModels": {
+      "planner": "gpt-5.6-luna",
+      "implementer": "deepseek-v4-flash",
+      "repair": "deepseek-v4-flash",
+      "taskReviewer": "gpt-5.6-luna",
+      "combinedReviewer": "gpt-5.6-luna"
+    },
+    "codexProcessLimit": 5,
+    "forbiddenModels": ["deepseek-v4-pro"]
+  },
+  "confirmedGaps": [
+    "The implemented executor directly enters workspace-write and does not run the designed plan-only validation nodes",
+    "Built-in multi-agent delegation is inherited from host config unless disabled per worker",
+    "mcp_servers={} does not disable native collaboration tools or shell recursion into Codex",
+    "JSONL is collected after process completion rather than streamed for audit and emergency termination",
+    "Task contracts contain no role or required_skills fields",
+    "Workers see the full global skill catalog but are not required to load a routed skill set",
+    "Changed-file checks are based on git status relative to current HEAD and can miss committed changes",
+    "Expected and forbidden evidence fields are stored but not deterministically evaluated",
+    "Acceptance checks run in the worker worktree where the worker may have changed their inputs"
+  ],
+  "verifiedCodexCapabilities": [
+    "--disable multi_agent changes the stable multi_agent feature to false for the process",
+    "read-only and workspace-write sandbox modes are available",
+    "codex exec resume accepts an exact session ID",
+    "AGENTS.md instructions load from project root to current working directory",
+    "JSONL emits file_change and command_execution lifecycle events",
+    "Shell execution has no built-in guard against invoking the Codex binary",
+    "codex exec resume accepts an exact session ID plus a model override",
+    "exec-level sandbox and cwd controls apply to resume, and --disable multi_agent is a per-process override"
+  ],
+  "loadedSkills": [
+    "project-workflow-codex",
+    "designing-solutions",
+    "grill-me",
+    "karpathy-guidelines",
+    "mem0"
+  ]
+}

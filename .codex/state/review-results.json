@@ -1,43 +1,16 @@
 {
-  "timestamp": "2026-07-24T11:53:00+08:00",
+  "timestamp": "2026-07-27T16:26:32+08:00",
   "verdict": "PASS",
   "executionMode": "main-session-only",
-  "specCompliance": {
-    "verdict": "PASS",
-    "findings": [],
-    "evidence": [
-      "Graphify is the only requested code graph MCP and uses the approved URL and bearer environment variable",
-      "MemPalace MCP and skill were removed and replaced by a self-hosted Mem0 REST skill",
-      "private credentials are stored outside Git with mode 0600 and loaded once from ~/.profile",
-      "repository snapshots were regenerated from the latest live Codex settings",
-      "skills are installed through the single approved discovery symlink",
-      "Docker services were not modified"
-    ]
-  },
-  "codeQuality": {
-    "verdict": "PASS",
-    "findings": [],
-    "evidence": [
-      "Mem0 client uses only Python standard library and has one command dispatch boundary",
-      "expected transport, authentication, JSON, metadata, and HTTP errors return concise failures without tracebacks",
-      "snapshot sanitizer preserves bearer_token_env_var while continuing to sanitize actual credential fields",
-      "changed skills keep only name and description frontmatter and validate successfully"
-    ]
-  },
-  "verificationAdequacy": {
-    "verdict": "PASS",
-    "findings": [],
-    "evidence": [
-      "Mem0 mock-server tests cover all seven commands and error paths",
-      "migration tests cover active legacy removal and Graphify configuration shape",
-      "live Graphify MCP initialize and tools/list succeeded",
-      "live Mem0 status and add/search/get/delete succeeded",
-      "installed snapshot and discovery symlink were inspected after the final install",
-      "active service credentials were scanned against repository content without printing values"
-    ]
-  },
+  "findings": [],
+  "evidence": [
+    "Task schema now models exact writes, reads, resources, dependencies, executable acceptance commands, expected evidence, and forbidden evidence",
+    "Writer roles require a planning-only first turn and explicit APPROVE_EXECUTION follow-up",
+    "The scheduler defaults to serial writers, caps isolated writers at two, and serializes file, resource, dependency, unknown-resource, and no-isolation conflicts",
+    "Scope gates compare actual Git changes with per-task and combined plan allowlists",
+    "Phase 5 now consumes plan approval, scope gate, and diff evidence"
+  ],
   "residualRisks": [
-    "The running Graphify service exposes one loaded graph; global instructions require checking that it covers the current corpus and verifying results against the filesystem.",
-    "A new Codex process is required to load the changed global instructions, MCP configuration, and profile environment."
+    "Git worktrees isolate repository files and indexes, not external services or files outside the worktree; plans must declare those shared resources"
   ]
 }

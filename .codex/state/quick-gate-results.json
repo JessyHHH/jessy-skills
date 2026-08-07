@@ -1,33 +1,18 @@
 {
-  "timestamp": "2026-07-24T11:52:00+08:00",
+  "timestamp": "2026-07-27T16:26:32+08:00",
   "verdict": "PASS",
-  "executionMode": "main-session-only",
-  "expectedFiles": {
-    "skills/mem0/SKILL.md": "present",
-    "skills/mem0/scripts/mem0_client.py": "present",
-    "skills/mem0/agents/openai.yaml": "present",
-    "tests/test-mem0.sh": "present",
-    "tests/test-codex-integrations.sh": "present",
-    "codex/global/config.toml": "modified",
-    "codex/global/AGENTS.md": "modified",
-    "codex/scripts/sync_from_local.py": "modified"
-  },
-  "forbiddenEvidence": {
-    "skills/mempalace": "absent",
-    "legacyNamesInActiveSkills": "absent",
-    "legacyMcpTables": "absent",
-    "legacySessionStartHook": "absent",
-    "literalServiceCredentialsInTrackedConfig": "absent"
+  "baseCommit": "dc1fcd6",
+  "planScope": {
+    "status": "PASS",
+    "unexpectedFiles": []
   },
   "checks": [
+    "phase4_guard.py validate-plan passed",
+    "phase4_guard.py schedule produced serial T1 then T2 waves",
+    "phase4_guard.py check-plan-scope found no unexpected files",
     "git diff --check exited 0",
-    "bash syntax checks exited 0",
-    "Mem0 client compiled in memory",
-    "tracked config parsed as TOML",
-    "Graphify MCP shape matched the approved design",
-    "live Graphify initialize and tools/list succeeded",
-    "live Mem0 add/search/get/delete succeeded",
-    "installed skills discovery symlink was created"
+    "focused Phase 4 controls test passed",
+    "Codex workflow structure test passed"
   ],
   "concerns": []
 }
